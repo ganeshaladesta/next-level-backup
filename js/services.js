@@ -22,7 +22,7 @@ const Services = (() => {
     });
   }
 
-  function _save() {
+  async function _save() {
     const nameIn = document.getElementById("svcName");
     const priceIn = document.getElementById("svcPrice");
 
@@ -39,24 +39,20 @@ const Services = (() => {
       return;
     }
 
-    if (editingId) {
-      Store.updateService(editingId, {
-        name,
-        price,
-      });
-
-      editingId = null;
-
-      document.getElementById("svcSubmitBtn").textContent = "➕ Add Service";
-
-      showToast("Service updated!");
-    } else {
-      Store.addService({
-        name,
-        price,
-      });
-
-      showToast("Service successfully added!");
+    try {
+      if (editingId) {
+        await Store.updateService(editingId, { name, price });
+        editingId = null;
+        document.getElementById("svcSubmitBtn").textContent = "➕ Add Service";
+        showToast("Service updated!");
+      } else {
+        await Store.addService({ name, price });
+        showToast("Service successfully added!");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to save service", "danger");
+      return;
     }
 
     nameIn.value = "";
@@ -168,21 +164,22 @@ const Services = (() => {
     });
   }
 
-  function toggleSvc(id) {
+  async function toggleSvc(id) {
     const s = Store.getServiceById(id);
 
     if (!s) return;
 
-    Store.updateService(id, {
-      active: !s.active,
-    });
-
-    _renderList();
-
-    showToast(s.active ? "Service deactivated" : "Service activated");
+    try {
+      await Store.updateService(id, { active: !s.active });
+      _renderList();
+      showToast(s.active ? "Service deactivated" : "Service activated");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to update service", "danger");
+    }
   }
 
-  function deleteSvc(id) {
+  async function deleteSvc(id) {
     if (
       !confirm(
         "Delete this service? Existing transactions will not be affected.",
@@ -191,11 +188,14 @@ const Services = (() => {
       return;
     }
 
-    Store.deleteService(id);
-
-    _renderList();
-
-    showToast("Service deleted!");
+    try {
+      await Store.deleteService(id);
+      _renderList();
+      showToast("Service deleted!");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to delete service", "danger");
+    }
   }
 
   return {

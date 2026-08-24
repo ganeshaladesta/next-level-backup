@@ -83,7 +83,7 @@ const Transactions = (() => {
         .join("");
   }
 
-  function _saveTransaction() {
+  async function _saveTransaction() {
     const branchSel = document.getElementById("txnBranch");
     const svcSel = document.getElementById("txnService");
     const priceIn = document.getElementById("txnPrice");
@@ -125,19 +125,20 @@ const Transactions = (() => {
       promoDiscount,
     };
 
-    if (editingId) {
-      Store.updateTransaction(editingId, data);
-
-      editingId = null;
-
-      document.getElementById("txnSubmitBtn").textContent =
-        "💾 Save Transaction";
-
-      showToast("Transaction updated!");
-    } else {
-      Store.addTransaction(data);
-
-      showToast("Transaction saved successfully!");
+    try {
+      if (editingId) {
+        await Store.updateTransaction(editingId, data);
+        editingId = null;
+        document.getElementById("txnSubmitBtn").textContent = "💾 Save Transaction";
+        showToast("Transaction updated!");
+      } else {
+        await Store.addTransaction(data);
+        showToast("Transaction saved successfully!");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to save transaction", "danger");
+      return;
     }
 
     document.getElementById("txnForm").reset();
@@ -267,17 +268,21 @@ const Transactions = (() => {
     });
   }
 
-  function remove(id, fromHistory = false) {
+  async function remove(id, fromHistory = false) {
     if (!confirm("Delete this transaction?")) return;
 
-    Store.deleteTransaction(id);
+    try {
+      await Store.deleteTransaction(id);
+      showToast("Transaction deleted!");
 
-    showToast("Transaction deleted!");
-
-    if (fromHistory) {
-      renderHistory();
-    } else {
-      _renderRecent();
+      if (fromHistory) {
+        renderHistory();
+      } else {
+        _renderRecent();
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to delete transaction", "danger");
     }
   }
 

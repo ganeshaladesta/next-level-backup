@@ -581,6 +581,44 @@ input, select, textarea { font-family: inherit; font-size: 0.93rem; }
   .form-group-btn { grid-column: span 2; }
 }
 
+.toast-danger  { background: #1f2937; border-left: 4px solid var(--danger); }
+
+/* ---------- App Loading ---------- */
+.app-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+.app-loading.hidden { display: none; }
+.app-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.app-loading-error {
+  max-width: 420px;
+  padding: 24px;
+  text-align: center;
+  line-height: 1.6;
+}
+.app-loading-error code {
+  background: var(--card-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); }
   .sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,0.8); }

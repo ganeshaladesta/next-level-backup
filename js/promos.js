@@ -22,7 +22,7 @@ const Promos = (() => {
     });
   }
 
-  function _save() {
+  async function _save() {
     const nameIn = document.getElementById("promoName");
     const startIn = document.getElementById("promoStart");
     const endIn = document.getElementById("promoEnd");
@@ -54,18 +54,20 @@ const Promos = (() => {
       description: descIn.value.trim(),
     };
 
-    if (editingId) {
-      Store.updatePromo(editingId, data);
-
-      editingId = null;
-
-      document.getElementById("promoSubmitBtn").textContent = "➕ Add Promo";
-
-      showToast("Promo updated!");
-    } else {
-      Store.addPromo(data);
-
-      showToast("Promo successfully added! 🎉");
+    try {
+      if (editingId) {
+        await Store.updatePromo(editingId, data);
+        editingId = null;
+        document.getElementById("promoSubmitBtn").textContent = "➕ Add Promo";
+        showToast("Promo updated!");
+      } else {
+        await Store.addPromo(data);
+        showToast("Promo successfully added! 🎉");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to save promo", "danger");
+      return;
     }
 
     document.getElementById("promoForm").reset();
@@ -224,14 +226,17 @@ const Promos = (() => {
     });
   }
 
-  function deletePromo(id) {
+  async function deletePromo(id) {
     if (!confirm("Delete this promo?")) return;
 
-    Store.deletePromo(id);
-
-    _renderList();
-
-    showToast("Promo deleted!");
+    try {
+      await Store.deletePromo(id);
+      _renderList();
+      showToast("Promo deleted!");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to delete promo", "danger");
+    }
   }
 
   return {
