@@ -47,6 +47,9 @@ const Dashboard = (() => {
         renderCharts();
       });
     }
+
+    const exportBtn = document.getElementById('exportPdfBtn');
+    if (exportBtn) exportBtn.addEventListener('click', exportPDF);
   }
 
   /* ---------- Promo Banner ---------- */
@@ -323,5 +326,94 @@ const Dashboard = (() => {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
-  return { render };
+  async function exportPDF() {
+    const btn = document.getElementById('exportPdfBtn');
+    const target = document.getElementById('dashboardExport');
+    if (!target || typeof html2canvas === 'undefined' || !window.jspdf) {
+      showToast('PDF export libraries not loaded', 'danger');
+      return;
+    }
+
+    const originalLabel = btn?.textContent;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Exporting...';
+    }
+
+    try {
+      const snapshot = await html2canvas(target, {
+        backgroundColor: '#09090a',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        onclone: (doc) => {
+          doc.querySelectorAll('canvas').forEach(canvas => {
+            const chart = Chart.getChart(canvas);
+            if (!chart) return;
+            const img = doc.createElement('img');
+            img.src = chart.toBase64Image('image/png', 1);
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.display = 'block';
+            canvas.replaceWith(img);
+          });
+        }
+      });
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const margin = 10;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const contentWidth = pageWidth - margin * 2;
+      const imgHeight = (snapshot.height * contentWidth) / snapshot.width;
+      const imgData = snapshot.toDataURL('image/png');
+
+      pdf.setFontSize(14);
+      pdf.text('Next Level Beauty Bar — Dashboard', margin, 14);
+      pdf.setFontSize(9);
+      pdf.setTextColor(120);
+      pdf.text(_exportMetaLine(), margin, 20);
+      pdf.setTextColor(0);
+
+      let heightLeft = imgHeight;
+      let y = 26;
+
+      pdf.addImage(imgData, 'PNG', margin, y, contentWidth, imgHeight);
+      heightLeft -= pageHeight - y;
+
+      while (heightLeft > 0) {
+        pdf.addPage();
+        y = heightLeft - imgHeight + margin;
+        pdf.addImage(imgData, 'PNG', margin, y, contentWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const dateStamp = Store.getTodayStr();
+      pdf.save(`next-level-dashboard-${dateStamp}.pdf`);
+      showToast('Dashboard exported to PDF');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to export PDF', 'danger');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+      }
+    }
+  }
+
+  function _exportMetaLine() {
+    const periodLabels = { daily: 'Daily', monthly: 'Monthly', yearly: 'Yearly' };
+    const branchEl = document.getElementById('dashBranchFilter');
+    const branch = branchEl?.selectedOptions?.[0]?.textContent || currentBranch;
+    const period = periodLabels[currentFilter] || currentFilter;
+    const chartType = currentChartType === 'bar' ? 'Bar' : 'Line';
+    const generated = new Date().toLocaleString('en-US', {
+      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+    return `Generated ${generated} · Branch: ${branch} · Period: ${period} · Chart: ${chartType}`;
+  }
+
+  return { render, exportPDF };
 })();

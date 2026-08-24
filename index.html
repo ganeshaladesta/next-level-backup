@@ -11,6 +11,8 @@
       rel="stylesheet"
     />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="css/style.css" />
     <link rel="icon" href="assets/logo.png" />
   </head>
@@ -79,6 +81,13 @@
 
       <!-- ========== Dashboard View ========== -->
       <div class="view active" id="view-dashboard">
+        <div class="dashboard-toolbar">
+          <button class="btn btn-outline" id="exportPdfBtn" type="button">
+            📄 Export PDF
+          </button>
+        </div>
+
+        <div id="dashboardExport">
         <!-- Summary Cards -->
         <div class="summary-cards">
           <div class="card summary-card card-pink">
@@ -190,6 +199,7 @@
           <div class="chart-container">
             <canvas id="barChart"></canvas>
           </div>
+        </div>
         </div>
       </div>
 

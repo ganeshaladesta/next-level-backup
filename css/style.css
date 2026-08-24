@@ -333,6 +333,12 @@ input, select, textarea { font-family: inherit; font-size: 0.93rem; }
 
 .card-sub { font-size: 0.78rem; color: var(--text-muted); }
 
+.dashboard-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
 /* ---------- Chart Filter ---------- */
 .chart-filter {
   display: flex;
