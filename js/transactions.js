@@ -11,15 +11,15 @@ const Transactions = (() => {
        TRANSACTION FORM
        ============================================================ */
 
-  function render() {
+  async function render() {
     if (!_initTxn) {
       _setupTxnForm();
       _initTxn = true;
     }
 
-    _populateServiceDropdown();
-    _updatePromoOptions();
-    _renderRecent();
+    await _populateServiceDropdown();
+    await _updatePromoOptions();
+    await _renderRecent();
   }
 
   function _setupTxnForm() {
@@ -29,111 +29,98 @@ const Transactions = (() => {
 
     const dateIn = document.getElementById("txnDate");
 
-    const timeIn = document.getElementById("txnTreatmentTime");
+    if (!form || !svcSel || !dateIn) {
+      console.error("Transaction form tidak ditemukan.");
+      return;
+    }
 
-    const dpIn = document.getElementById("txnDP");
+    dateIn.value = Store.getTodayStr();
+
+    svcSel.addEventListener("change", async () => {
+      const opt = svcSel.selectedOptions[0];
+
+      if (opt && opt.dataset.price) {
+        document.getElementById("txnPrice").value = opt.dataset.price;
+      }
+
+      await _updatePromoOptions();
+      _updatePaymentPreview();
+    });
+
+    dateIn.addEventListener("change", async () => {
+      await _updatePromoOptions();
+    });
 
     const promoSel = document.getElementById("txnPromo");
 
-    if (dateIn) {
-      dateIn.value = Store.getTodayStr();
-    }
-
-    /*
-     * Default jam treatment = sekarang
-     */
-    if (timeIn && !timeIn.value) {
-      const now = new Date();
-
-      timeIn.value =
-        `${String(now.getHours()).padStart(2, "0")}:` +
-        `${String(now.getMinutes()).padStart(2, "0")}`;
-    }
-
-    /*
-     * Saat pilih service:
-     * otomatis isi harga treatment
-     */
-    if (svcSel) {
-      svcSel.addEventListener("change", () => {
-        const opt = svcSel.selectedOptions[0];
-
-        if (opt && opt.dataset.price) {
-          document.getElementById("txnPrice").value = opt.dataset.price;
-        }
-
-        _updatePaymentSummary();
+    if (promoSel) {
+      promoSel.addEventListener("change", () => {
+        _updatePaymentPreview();
       });
     }
 
-    /*
-     * Saat DP berubah
-     */
+    const dpIn = document.getElementById("txnDP");
+
     if (dpIn) {
-      dpIn.addEventListener("input", _updatePaymentSummary);
+      dpIn.addEventListener("input", () => {
+        _updatePaymentPreview();
+      });
     }
 
-    /*
-     * Saat promo berubah
-     */
-    if (promoSel) {
-      promoSel.addEventListener("change", _updatePaymentSummary);
-    }
-
-    /*
-     * Saat harga berubah
-     */
     const priceIn = document.getElementById("txnPrice");
 
     if (priceIn) {
-      priceIn.addEventListener("input", _updatePaymentSummary);
-    }
-
-    /*
-     * Saat tanggal berubah,
-     * promo aktif ikut berubah.
-     */
-    if (dateIn) {
-      dateIn.addEventListener("change", () => {
-        _updatePromoOptions();
-        _updatePaymentSummary();
+      priceIn.addEventListener("input", () => {
+        _updatePaymentPreview();
       });
     }
 
-    if (form) {
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        _saveTransaction();
-      });
-    }
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      await _saveTransaction();
+    });
   }
 
   /* ============================================================
        SERVICE DROPDOWN
        ============================================================ */
 
-  function _populateServiceDropdown() {
+  async function _populateServiceDropdown(selectedId = null) {
     const sel = document.getElementById("txnService");
 
     if (!sel) return;
 
-    const svcs = Store.getActiveServices();
+    sel.innerHTML = '<option value="">Loading service...</option>';
 
-    const current = sel.value;
+    const svcs = await Store.getActiveServices();
+
+    if (!svcs.length) {
+      sel.innerHTML = '<option value="">— Tidak ada service aktif —</option>';
+
+      console.warn("Tidak ada service aktif di Supabase.");
+
+      return;
+    }
 
     sel.innerHTML =
       '<option value="">— Choose Service —</option>' +
       svcs
         .map(
-          (s) =>
-            `<option value="${s.id}" data-price="${s.price}">
-                ${s.name} (${Store.formatCurrency(s.price)})
-              </option>`,
+          (s) => `
+              <option
+                value="${s.id}"
+                data-price="${s.price}"
+              >
+                ${s.name}
+                (${Store.formatCurrency(s.price)})
+              </option>
+            `,
         )
         .join("");
 
-    if (current) {
-      sel.value = current;
+    if (selectedId) {
+      sel.value = selectedId;
     }
   }
 
@@ -141,47 +128,56 @@ const Transactions = (() => {
        PROMO DROPDOWN
        ============================================================ */
 
-  function _updatePromoOptions() {
+  async function _updatePromoOptions(selectedPromoId = null) {
     const sel = document.getElementById("txnPromo");
 
-    const dateIn = document.getElementById("txnDate");
+    const dateEl = document.getElementById("txnDate");
 
-    if (!sel || !dateIn) return;
+    if (!sel || !dateEl) {
+      return;
+    }
 
-    const dateVal = dateIn.value;
+    const dateVal = dateEl.value || Store.getTodayStr();
 
-    const promos = Store.getActivePromos(dateVal);
-
-    const current = sel.value;
+    const promos = await Store.getActivePromos(dateVal);
 
     sel.innerHTML =
       '<option value="">Tanpa Promo</option>' +
       promos
         .map(
-          (p) =>
-            `<option value="${p.id}" data-discount="${p.discount}">
-                ${p.name} (−${p.discount}%)
-              </option>`,
+          (p) => `
+              <option
+                value="${p.id}"
+                data-discount="${p.discount}"
+              >
+                ${p.name}
+                (−${p.discount}%)
+              </option>
+            `,
         )
         .join("");
 
-    if (current && promos.some((p) => p.id === current)) {
-      sel.value = current;
+    if (selectedPromoId) {
+      sel.value = selectedPromoId;
     }
 
-    _updatePaymentSummary();
+    _updatePaymentPreview();
   }
 
   /* ============================================================
-       PAYMENT CALCULATION
+       CALCULATION
        ============================================================ */
 
-  function _getFormCalculation() {
-    const price = Number(document.getElementById("txnPrice")?.value) || 0;
+  function _getCurrentCalculation() {
+    const priceIn = document.getElementById("txnPrice");
 
-    const dp = Number(document.getElementById("txnDP")?.value) || 0;
+    const dpIn = document.getElementById("txnDP");
 
     const promoSel = document.getElementById("txnPromo");
+
+    const price = Number(priceIn?.value) || 0;
+
+    const dp = Number(dpIn?.value) || 0;
 
     let promoDiscount = 0;
 
@@ -198,38 +194,47 @@ const Transactions = (() => {
     });
   }
 
-  function _updatePaymentSummary() {
-    const calc = _getFormCalculation();
+  function _updatePaymentPreview() {
+    const calc = _getCurrentCalculation();
 
-    /*
-     * ID ini nanti kita pasang di HTML.
-     * Kalau belum ada, tidak error.
-     */
+    const totalEl = document.getElementById("txnPreviewTotal");
 
-    _setText("txnTotalTreatment", Store.formatCurrency(calc.totalTreatment));
+    const dpEl = document.getElementById("txnPreviewDP");
 
-    _setText("txnDPSummary", Store.formatCurrency(calc.dp));
+    const beforePromoEl = document.getElementById("txnPreviewBeforePromo");
 
-    _setText(
-      "txnRemainingBeforePromo",
-      Store.formatCurrency(calc.remainingBeforePromo),
-    );
+    const discountEl = document.getElementById("txnPreviewDiscount");
 
-    _setText("txnDiscountAmount", Store.formatCurrency(calc.discountAmount));
+    const remainingEl = document.getElementById("txnPreviewRemaining");
 
-    _setText("txnRemainingAmount", Store.formatCurrency(calc.remainingAmount));
+    const finalEl = document.getElementById("txnPreviewFinal");
 
-    _setText(
-      "txnFinalTreatmentAmount",
-      Store.formatCurrency(calc.finalTreatmentAmount),
-    );
-  }
+    if (totalEl) {
+      totalEl.textContent = Store.formatCurrency(calc.totalTreatment);
+    }
 
-  function _setText(id, value) {
-    const el = document.getElementById(id);
+    if (dpEl) {
+      dpEl.textContent = Store.formatCurrency(calc.dp);
+    }
 
-    if (el) {
-      el.textContent = value;
+    if (beforePromoEl) {
+      beforePromoEl.textContent = Store.formatCurrency(
+        calc.remainingBeforePromo,
+      );
+    }
+
+    if (discountEl) {
+      discountEl.textContent = `−${calc.promoDiscount}% (${Store.formatCurrency(
+        calc.discountAmount,
+      )})`;
+    }
+
+    if (remainingEl) {
+      remainingEl.textContent = Store.formatCurrency(calc.remainingAmount);
+    }
+
+    if (finalEl) {
+      finalEl.textContent = Store.formatCurrency(calc.finalTreatmentAmount);
     }
   }
 
@@ -237,7 +242,7 @@ const Transactions = (() => {
        SAVE TRANSACTION
        ============================================================ */
 
-  function _saveTransaction() {
+  async function _saveTransaction() {
     const branchSel = document.getElementById("txnBranch");
 
     const svcSel = document.getElementById("txnService");
@@ -254,35 +259,26 @@ const Transactions = (() => {
 
     const dpIn = document.getElementById("txnDP");
 
-    /* ---------- Validation ---------- */
-
     if (!svcSel?.value) {
       showToast("Pilih layanan terlebih dahulu!", "warning");
       return;
     }
 
-    const totalTreatment = Number(priceIn?.value) || 0;
-
-    if (!totalTreatment || totalTreatment <= 0) {
+    if (!priceIn?.value || Number(priceIn.value) <= 0) {
       showToast("Masukkan harga yang valid!", "warning");
       return;
     }
 
+    const service = await Store.getServiceById(svcSel.value);
+
+    if (!service) {
+      showToast("Service tidak ditemukan!", "warning");
+      return;
+    }
+
+    const price = Number(priceIn.value);
+
     const dp = Number(dpIn?.value) || 0;
-
-    if (dp < 0) {
-      showToast("DP tidak boleh kurang dari 0!", "warning");
-      return;
-    }
-
-    if (dp > totalTreatment) {
-      showToast("DP tidak boleh lebih besar dari total treatment!", "warning");
-      return;
-    }
-
-    const service = Store.getServiceById(svcSel.value);
-
-    /* ---------- Promo ---------- */
 
     let promoId = promoSel?.value || null;
 
@@ -294,134 +290,115 @@ const Transactions = (() => {
       promoDiscount = Number(opt?.dataset?.discount) || 0;
     }
 
-    /* ---------- Calculation ---------- */
-
     const calculation = Store.calculateTransaction({
-      price: totalTreatment,
+      price,
       dp,
       promoDiscount,
     });
-
-    /* ---------- Data ---------- */
 
     const data = {
       branch: branchSel?.value || "Kemang",
 
       serviceId: svcSel.value,
 
-      serviceName: service ? service.name : "Unknown",
+      serviceName: service.name,
 
-      /*
-       * Harga treatment asli
-       */
       price: calculation.totalTreatment,
-
-      /*
-       * Jam treatment
-       */
-      treatmentTime: timeIn?.value || "",
 
       date: dateIn?.value || Store.getTodayStr(),
 
+      treatmentTime: timeIn?.value || null,
+
       notes: notesIn?.value.trim() || "",
 
-      /*
-       * DP
-       */
-      dp: calculation.dp,
-
-      /*
-       * Promo
-       */
       promoId,
 
       promoDiscount: calculation.promoDiscount,
 
-      /*
-       * Hasil perhitungan
-       */
-      discountAmount: calculation.discountAmount,
-
-      remainingBeforePromo: calculation.remainingBeforePromo,
-
-      remainingAmount: calculation.remainingAmount,
-
-      finalTreatmentAmount: calculation.finalTreatmentAmount,
+      dp: calculation.dp,
     };
 
-    /* ---------- Edit ---------- */
+    let result = null;
 
     if (editingId) {
-      Store.updateTransaction(editingId, data);
+      result = await Store.updateTransaction(editingId, data);
+
+      if (!result) return;
 
       editingId = null;
 
-      const submitBtn = document.getElementById("txnSubmitBtn");
-
-      if (submitBtn) {
-        submitBtn.textContent = "💾 Simpan Transaksi";
-      }
+      document.getElementById("txnSubmitBtn").textContent =
+        "💾 Simpan Transaksi";
 
       showToast("Transaksi diperbarui!");
     } else {
+      result = await Store.addTransaction(data);
 
-    /* ---------- New ---------- */
-      Store.addTransaction(data);
+      if (!result) return;
 
       showToast("Transaksi berhasil disimpan!");
     }
 
-    /* ---------- Reset ---------- */
+    _resetForm();
 
+    await _updatePromoOptions();
+
+    await _renderRecent();
+  }
+
+  /* ============================================================
+       RESET FORM
+       ============================================================ */
+
+  function _resetForm() {
     const form = document.getElementById("txnForm");
 
     if (form) {
       form.reset();
     }
 
+    const dateIn = document.getElementById("txnDate");
+
     if (dateIn) {
       dateIn.value = Store.getTodayStr();
     }
 
-    if (timeIn) {
-      const now = new Date();
+    editingId = null;
 
-      timeIn.value =
-        `${String(now.getHours()).padStart(2, "0")}:` +
-        `${String(now.getMinutes()).padStart(2, "0")}`;
+    const btn = document.getElementById("txnSubmitBtn");
+
+    if (btn) {
+      btn.textContent = "💾 Simpan Transaksi";
     }
 
-    if (dpIn) {
-      dpIn.value = "";
-    }
-
-    _updatePromoOptions();
-
-    _updatePaymentSummary();
-
-    _renderRecent();
+    _updatePaymentPreview();
   }
 
   /* ============================================================
        RECENT TRANSACTIONS
        ============================================================ */
 
-  function _renderRecent() {
+  async function _renderRecent() {
     const el = document.getElementById("recentTransactions");
 
     if (!el) return;
 
-    const txns = Store.getTransactions().slice(0, 10);
+    el.innerHTML = '<p class="empty-state">Loading transaksi...</p>';
+
+    const txns = (await Store.getTransactions()).slice(0, 10);
 
     if (txns.length === 0) {
       el.innerHTML =
         '<p class="empty-state">Belum ada transaksi. Mulai tambahkan transaksi pertama! 💰</p>';
+
       return;
     }
 
     el.innerHTML = `
         <div class="table-responsive">
+  
           <table class="data-table">
+  
             <thead>
               <tr>
                 <th>Tanggal</th>
@@ -439,11 +416,22 @@ const Transactions = (() => {
             <tbody>
               ${txns.map(_txnRow).join("")}
             </tbody>
+  
           </table>
-        </div>`;
+  
+        </div>
+      `;
   }
 
   function _txnRow(t) {
+    const calc = Store.calculateTransaction({
+      price: Number(t.price) || 0,
+
+      dp: Number(t.dp) || 0,
+
+      promoDiscount: Number(t.promo_discount) || 0,
+    });
+
     return `
         <tr>
   
@@ -452,9 +440,7 @@ const Transactions = (() => {
           </td>
   
           <td data-label="Jam">
-            <strong>
-              ${t.treatmentTime || "—"}
-            </strong>
+            ${t.treatment_time ? Store.formatTime(t.treatment_time) : "—"}
           </td>
   
           <td data-label="Cabang">
@@ -465,24 +451,24 @@ const Transactions = (() => {
   
           <td data-label="Layanan">
             <span class="service-tag">
-              ${t.serviceName}
+              ${t.service_name}
             </span>
           </td>
   
           <td data-label="Total">
-            ${Store.formatCurrency(t.price)}
+            ${Store.formatCurrency(calc.totalTreatment)}
           </td>
   
           <td data-label="DP">
-            ${Number(t.dp) > 0 ? Store.formatCurrency(t.dp) : "—"}
+            ${Store.formatCurrency(calc.dp)}
           </td>
   
           <td data-label="Promo">
             ${
-              Number(t.promoDiscount) > 0
+              calc.promoDiscount
                 ? `
                   <span class="discount-tag">
-                    −${t.promoDiscount}%
+                    −${calc.promoDiscount}%
                   </span>
                 `
                 : "—"
@@ -491,7 +477,7 @@ const Transactions = (() => {
   
           <td data-label="Sisa Bayar">
             <strong>
-              ${Store.formatCurrency(t.remainingAmount ?? t.price)}
+              ${Store.formatCurrency(calc.remainingAmount)}
             </strong>
           </td>
   
@@ -518,99 +504,54 @@ const Transactions = (() => {
   
           </td>
   
-        </tr>`;
+        </tr>
+      `;
   }
 
   /* ============================================================
-       EDIT TRANSACTION
+       EDIT
        ============================================================ */
 
-  function edit(id) {
-    const txn = Store.getTransactions().find((t) => t.id === id);
+  async function edit(id) {
+    const txns = await Store.getTransactions();
+
+    const txn = txns.find((t) => t.id === id);
 
     if (!txn) return;
 
     editingId = id;
 
-    /* ---------- Branch ---------- */
+    await _populateServiceDropdown(txn.service_id);
 
-    if (txn.branch) {
-      const branchEl = document.getElementById("txnBranch");
+    document.getElementById("txnBranch").value = txn.branch || "Kemang";
 
-      if (branchEl) {
-        branchEl.value = txn.branch;
-      }
+    document.getElementById("txnService").value = txn.service_id || "";
+
+    document.getElementById("txnPrice").value = txn.price || 0;
+
+    document.getElementById("txnDate").value = txn.date;
+
+    const timeIn = document.getElementById("txnTreatmentTime");
+
+    if (timeIn) {
+      timeIn.value = txn.treatment_time
+        ? String(txn.treatment_time).slice(0, 5)
+        : "";
     }
 
-    /* ---------- Service ---------- */
+    const dpIn = document.getElementById("txnDP");
 
-    const svcSel = document.getElementById("txnService");
-
-    if (svcSel) {
-      svcSel.value = txn.serviceId;
+    if (dpIn) {
+      dpIn.value = txn.dp || 0;
     }
 
-    /* ---------- Price ---------- */
+    document.getElementById("txnNotes").value = txn.notes || "";
 
-    const priceEl = document.getElementById("txnPrice");
+    await _updatePromoOptions(txn.promo_id);
 
-    if (priceEl) {
-      priceEl.value = txn.price;
-    }
+    document.getElementById("txnSubmitBtn").textContent = "✏️ Update Transaksi";
 
-    /* ---------- DP ---------- */
-
-    const dpEl = document.getElementById("txnDP");
-
-    if (dpEl) {
-      dpEl.value = Number(txn.dp) || "";
-    }
-
-    /* ---------- Date ---------- */
-
-    const dateEl = document.getElementById("txnDate");
-
-    if (dateEl) {
-      dateEl.value = txn.date || Store.getTodayStr();
-    }
-
-    /* ---------- Treatment Time ---------- */
-
-    const timeEl = document.getElementById("txnTreatmentTime");
-
-    if (timeEl) {
-      timeEl.value = txn.treatmentTime || "";
-    }
-
-    /* ---------- Notes ---------- */
-
-    const notesEl = document.getElementById("txnNotes");
-
-    if (notesEl) {
-      notesEl.value = txn.notes || "";
-    }
-
-    /* ---------- Promo ---------- */
-
-    _updatePromoOptions();
-
-    const promoEl = document.getElementById("txnPromo");
-
-    if (promoEl) {
-      promoEl.value = txn.promoId || "";
-    }
-
-    /* ---------- Button ---------- */
-
-    const submitBtn = document.getElementById("txnSubmitBtn");
-
-    if (submitBtn) {
-      submitBtn.textContent = "✏️ Update Transaksi";
-    }
-
-    /* ---------- Summary ---------- */
-
-    _updatePaymentSummary();
+    _updatePaymentPreview();
 
     window.location.hash = "transactions";
 
@@ -624,19 +565,21 @@ const Transactions = (() => {
        DELETE
        ============================================================ */
 
-  function remove(id, fromHistory = false) {
+  async function remove(id, fromHistory = false) {
     if (!confirm("Hapus transaksi ini?")) {
       return;
     }
 
-    Store.deleteTransaction(id);
+    const result = await Store.deleteTransaction(id);
+
+    if (!result) return;
 
     showToast("Transaksi dihapus!");
 
     if (fromHistory) {
-      renderHistory();
+      await renderHistory();
     } else {
-      _renderRecent();
+      await _renderRecent();
     }
   }
 
@@ -644,13 +587,13 @@ const Transactions = (() => {
        HISTORY
        ============================================================ */
 
-  function renderHistory() {
+  async function renderHistory() {
     if (!_initHist) {
       _setupHistory();
       _initHist = true;
     }
 
-    _renderHistoryTable();
+    await _renderHistoryTable();
   }
 
   function _setupHistory() {
@@ -675,25 +618,19 @@ const Transactions = (() => {
     }
 
     if (clearBtn) {
-      clearBtn.addEventListener("click", () => {
-        if (search) {
-          search.value = "";
-        }
+      clearBtn.addEventListener("click", async () => {
+        if (search) search.value = "";
 
-        if (branchF) {
-          branchF.value = "";
-        }
+        if (branchF) branchF.value = "";
 
-        if (dateF) {
-          dateF.value = "";
-        }
+        if (dateF) dateF.value = "";
 
-        _renderHistoryTable();
+        await _renderHistoryTable();
       });
     }
   }
 
-  function _renderHistoryTable() {
+  async function _renderHistoryTable() {
     const el = document.getElementById("historyTable");
 
     if (!el) return;
@@ -706,59 +643,48 @@ const Transactions = (() => {
 
     const dateF = document.getElementById("historyFilterDate")?.value || "";
 
-    let txns = Store.getTransactions();
-
-    /* ---------- Search ---------- */
+    let txns = await Store.getTransactions();
 
     if (search) {
       txns = txns.filter(
         (t) =>
-          (t.serviceName || "").toLowerCase().includes(search) ||
+          (t.service_name || "").toLowerCase().includes(search) ||
           (t.notes || "").toLowerCase().includes(search),
       );
     }
-
-    /* ---------- Branch ---------- */
 
     if (branchF) {
       txns = txns.filter((t) => t.branch === branchF);
     }
 
-    /* ---------- Date ---------- */
-
     if (dateF) {
       txns = txns.filter((t) => t.date === dateF);
     }
 
-    /* ---------- Summary ---------- */
+    const total = txns.reduce((sum, t) => {
+      const calc = Store.calculateTransaction({
+        price: t.price,
 
-    const totalTreatment = txns.reduce((s, t) => s + (Number(t.price) || 0), 0);
+        dp: t.dp,
 
-    const totalDP = txns.reduce((s, t) => s + (Number(t.dp) || 0), 0);
+        promoDiscount: t.promo_discount,
+      });
 
-    const totalDiscount = txns.reduce(
-      (s, t) => s + (Number(t.discountAmount) || 0),
-      0,
-    );
-
-    const totalRemaining = txns.reduce(
-      (s, t) => s + (Number(t.remainingAmount) || Number(t.price) || 0),
-      0,
-    );
+      // Revenue treatment setelah promo
+      return sum + calc.finalTreatmentAmount;
+    }, 0);
 
     const totalEl = document.getElementById("historyTotal");
 
     const countEl = document.getElementById("historyCount");
 
     if (totalEl) {
-      totalEl.textContent = Store.formatCurrency(totalTreatment);
+      totalEl.textContent = Store.formatCurrency(total);
     }
 
     if (countEl) {
       countEl.textContent = txns.length + " transaksi";
     }
-
-    /* ---------- Empty ---------- */
 
     if (txns.length === 0) {
       el.innerHTML =
@@ -767,10 +693,9 @@ const Transactions = (() => {
       return;
     }
 
-    /* ---------- Table ---------- */
-
     el.innerHTML = `
         <div class="table-responsive">
+  
           <table class="data-table">
   
             <thead>
@@ -779,10 +704,9 @@ const Transactions = (() => {
                 <th>Jam</th>
                 <th>Cabang</th>
                 <th>Layanan</th>
-                <th>Total</th>
+                <th>Total Treatment</th>
                 <th>DP</th>
                 <th>Promo</th>
-                <th>Diskon</th>
                 <th>Sisa Bayar</th>
                 <th>Catatan</th>
                 <th>Aksi</th>
@@ -792,145 +716,153 @@ const Transactions = (() => {
             <tbody>
   
               ${txns
-                .map(
-                  (t) => `
-                    <tr>
+                .map((t) => {
+                  const calc = Store.calculateTransaction({
+                    price: t.price,
+
+                    dp: t.dp,
+
+                    promoDiscount: t.promo_discount,
+                  });
+
+                  return `
+                      <tr>
   
-                      <td data-label="Tanggal">
-                        ${Store.formatDate(t.date)}
-                      </td>
+                        <td data-label="Tanggal">
+                          ${Store.formatDate(t.date)}
+                        </td>
   
-                      <td data-label="Jam">
-                        <strong>
-                          ${t.treatmentTime || "—"}
-                        </strong>
-                      </td>
+                        <td data-label="Jam">
+                          ${
+                            t.treatment_time
+                              ? Store.formatTime(t.treatment_time)
+                              : "—"
+                          }
+                        </td>
   
-                      <td data-label="Cabang">
-                        <strong>
-                          ${t.branch || "Kemang"}
-                        </strong>
-                      </td>
+                        <td data-label="Cabang">
+                          <strong>
+                            ${t.branch || "Kemang"}
+                          </strong>
+                        </td>
   
-                      <td data-label="Layanan">
-                        <span class="service-tag">
-                          ${t.serviceName}
-                        </span>
-                      </td>
+                        <td data-label="Layanan">
+                          <span class="service-tag">
+                            ${t.service_name}
+                          </span>
+                        </td>
   
-                      <td data-label="Total">
-                        ${Store.formatCurrency(t.price)}
-                      </td>
+                        <td data-label="Total Treatment">
+                          ${Store.formatCurrency(calc.totalTreatment)}
+                        </td>
   
-                      <td data-label="DP">
-                        ${Number(t.dp) > 0 ? Store.formatCurrency(t.dp) : "—"}
-                      </td>
+                        <td data-label="DP">
+                          ${Store.formatCurrency(calc.dp)}
+                        </td>
   
-                      <td data-label="Promo">
-                        ${
-                          Number(t.promoDiscount) > 0
-                            ? `
-                              <span class="discount-tag">
-                                −${t.promoDiscount}%
-                              </span>
-                            `
-                            : "—"
-                        }
-                      </td>
+                        <td data-label="Promo">
+                          ${
+                            calc.promoDiscount
+                              ? `
+                                <span class="discount-tag">
+                                  −${calc.promoDiscount}%
+                                </span>
+                              `
+                              : "—"
+                          }
+                        </td>
   
-                      <td data-label="Diskon">
-                        ${
-                          Number(t.discountAmount) > 0
-                            ? Store.formatCurrency(t.discountAmount)
-                            : "—"
-                        }
-                      </td>
+                        <td data-label="Sisa Bayar">
+                          <strong>
+                            ${Store.formatCurrency(calc.remainingAmount)}
+                          </strong>
+                        </td>
   
-                      <td data-label="Sisa Bayar">
-                        <strong>
-                          ${Store.formatCurrency(t.remainingAmount ?? t.price)}
-                        </strong>
-                      </td>
+                        <td data-label="Catatan">
+                          ${t.notes || "—"}
+                        </td>
   
-                      <td data-label="Catatan">
-                        ${t.notes || "—"}
-                      </td>
-  
-                      <td
-                        data-label="Aksi"
-                        class="actions"
-                      >
-  
-                        <button
-                          class="btn-icon btn-edit"
-                          onclick="Transactions.edit('${t.id}')"
-                          title="Edit"
+                        <td
+                          data-label="Aksi"
+                          class="actions"
                         >
-                          ✏️
-                        </button>
   
-                        <button
-                          class="btn-icon btn-delete"
-                          onclick="Transactions.remove('${t.id}', true)"
-                          title="Hapus"
-                        >
-                          🗑️
-                        </button>
+                          <button
+                            class="btn-icon btn-edit"
+                            onclick="Transactions.edit('${t.id}')"
+                            title="Edit"
+                          >
+                            ✏️
+                          </button>
   
-                      </td>
+                          <button
+                            class="btn-icon btn-delete"
+                            onclick="Transactions.remove('${t.id}', true)"
+                            title="Hapus"
+                          >
+                            🗑️
+                          </button>
   
-                    </tr>
-                  `,
-                )
+                        </td>
+  
+                      </tr>
+                    `;
+                })
                 .join("")}
   
             </tbody>
   
           </table>
+  
         </div>
       `;
-
-    /*
-     * Optional summary tambahan.
-     * Kalau element-nya belum ada, tidak masalah.
-     */
-
-    _setText("historyTotalTreatment", Store.formatCurrency(totalTreatment));
-
-    _setText("historyTotalDP", Store.formatCurrency(totalDP));
-
-    _setText("historyTotalDiscount", Store.formatCurrency(totalDiscount));
-
-    _setText("historyTotalRemaining", Store.formatCurrency(totalRemaining));
   }
 
   /* ============================================================
        EXPORT CSV
        ============================================================ */
 
-  function exportCSV() {
-    const txns = Store.getTransactions();
+  async function exportCSV() {
+    const txns = await Store.getTransactions();
 
     if (txns.length === 0) {
       showToast("Tidak ada data untuk di-export!", "warning");
-
       return;
     }
 
     const header =
-      "Tanggal,Jam,Cabang,Layanan,Total Treatment,DP,Sisa Sebelum Promo,Diskon Promo (%),Nominal Diskon,Sisa Bayar,Catatan\n";
+      "Tanggal,Jam,Cabang,Layanan,Total Treatment,DP,Diskon Promo (%),Sisa Bayar,Catatan\n";
 
     const rows = txns
-      .map(
-        (t) =>
-          `${t.date},"${t.treatmentTime || ""}","${t.branch || "Kemang"}","${
-            t.serviceName
-          }",${Number(t.price) || 0},${Number(t.dp) || 0},${
-            Number(t.remainingBeforePromo) || 0
-          },${Number(t.promoDiscount) || 0},${Number(t.discountAmount) || 0},${
-            Number(t.remainingAmount ?? t.price) || 0
-          },"${(t.notes || "").replace(/"/g, '""')}"`,
-      )
+      .map((t) => {
+        const calc = Store.calculateTransaction({
+          price: t.price,
+
+          dp: t.dp,
+
+          promoDiscount: t.promo_discount,
+        });
+
+        return [
+          t.date,
+
+          `"${t.treatment_time || ""}"`,
+
+          `"${t.branch || "Kemang"}"`,
+
+          `"${(t.service_name || "").replace(/"/g, '""')}"`,
+
+          calc.totalTreatment,
+
+          calc.dp,
+
+          calc.promoDiscount,
+
+          calc.remainingAmount,
+
+          `"${(t.notes || "").replace(/"/g, '""')}"`,
+        ].join(",");
+      })
       .join("\n");
 
     const blob = new Blob(["\uFEFF" + header + rows], {

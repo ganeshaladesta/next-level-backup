@@ -1,508 +1,221 @@
 /* ============================================================
-   Next Level Beauty Bar — Data Store
-   Supabase Database
+   Next Level Beauty Bar
+   Data Store — Supabase Online
    ============================================================ */
 
 const Store = (() => {
   /* ============================================================
-       SUPABASE CONFIG
+       SUPABASE CLIENT
        ============================================================ */
 
-  const SUPABASE_URL = window.SUPABASE_URL;
-  const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
+  let supabaseClient = null;
 
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.error(
-      "Supabase configuration belum ditemukan. " +
-        "Pastikan SUPABASE_URL dan SUPABASE_ANON_KEY sudah di-set di index.html.",
+  function _client() {
+    if (supabaseClient) {
+      return supabaseClient;
+    }
+
+    if (
+      !window.APP_CONFIG ||
+      !window.APP_CONFIG.supabaseUrl ||
+      !window.APP_CONFIG.supabaseAnonKey
+    ) {
+      console.error("APP_CONFIG Supabase tidak ditemukan.");
+
+      throw new Error(
+        "Supabase config tidak ditemukan. Pastikan config.js sudah di-load.",
+      );
+    }
+
+    if (!window.supabase) {
+      console.error("Supabase JS belum di-load.");
+
+      throw new Error("Supabase library belum di-load.");
+    }
+
+    supabaseClient = window.supabase.createClient(
+      window.APP_CONFIG.supabaseUrl,
+      window.APP_CONFIG.supabaseAnonKey,
     );
-  }
 
-  if (!window.supabase) {
-    console.error(
-      "Supabase JS belum dimuat. " +
-        "Pastikan CDN @supabase/supabase-js sudah ada sebelum store.js.",
-    );
+    return supabaseClient;
   }
-
-  const supabaseClient =
-    window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY
-      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-      : null;
 
   /* ============================================================
-       LOCAL CACHE
-       
-       LocalStorage sekarang HANYA dipakai sebagai cache sementara.
-       Database utama = Supabase.
+       ERROR HANDLER
        ============================================================ */
 
-  const SERVICES_CACHE_KEY = "bb_services_cache";
-  const TRANSACTIONS_CACHE_KEY = "bb_transactions_cache";
-  const PROMOS_CACHE_KEY = "bb_promos_cache";
+  function _handleError(error, action = "Database operation") {
+    console.error(`[Store] ${action}:`, error);
 
-  let servicesCache = [];
-  let transactionsCache = [];
-  let promosCache = [];
+    if (error) {
+      const message =
+        error.message ||
+        error.details ||
+        error.hint ||
+        "Terjadi kesalahan database.";
 
-  let initialized = false;
+      showToast(message, "warning");
+    }
+
+    return null;
+  }
 
   /* ============================================================
-       HELPERS
+       ID
        ============================================================ */
 
   function _id(prefix) {
-    return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-  }
-
-  function _loadCache(key) {
-    try {
-      return JSON.parse(localStorage.getItem(key)) || [];
-    } catch {
-      return [];
-    }
-  }
-
-  function _saveCache(key, data) {
-    try {
-      localStorage.setItem(key, JSON.stringify(data));
-    } catch (err) {
-      console.warn("Gagal menyimpan cache:", err);
-    }
-  }
-
-  function _cacheAll() {
-    _saveCache(SERVICES_CACHE_KEY, servicesCache);
-    _saveCache(TRANSACTIONS_CACHE_KEY, transactionsCache);
-    _saveCache(PROMOS_CACHE_KEY, promosCache);
-  }
-
-  function _ensureSupabase() {
-    if (!supabaseClient) {
-      throw new Error(
-        "Supabase belum terhubung. Periksa SUPABASE_URL dan SUPABASE_ANON_KEY.",
-      );
-    }
-  }
-
-  function _handleError(error, context) {
-    console.error(`[Supabase] ${context}`, error);
-
-    if (typeof showToast === "function") {
-      showToast(`Gagal ${context}. Cek koneksi/database.`, "danger");
-    }
-  }
-
-  /* ============================================================
-       DATABASE → APP FORMAT
-       
-       Supabase menggunakan snake_case.
-       JavaScript menggunakan camelCase.
-       ============================================================ */
-
-  function _serviceFromDB(row) {
-    if (!row) return null;
-
-    return {
-      id: row.id,
-      name: row.name,
-      price: Number(row.price) || 0,
-      active: row.active !== false,
-      createdAt: row.created_at || null,
-    };
-  }
-
-  function _transactionFromDB(row) {
-    if (!row) return null;
-
-    return {
-      id: row.id,
-
-      branch: row.branch || "Kemang",
-
-      serviceId: row.service_id || null,
-
-      serviceName: row.service_name || "Unknown",
-
-      // Harga treatment asli
-      price: Number(row.price) || 0,
-
-      date: row.date || getTodayStr(),
-
-      // Jam treatment
-      treatmentTime: row.treatment_time || "",
-
-      notes: row.notes || "",
-
-      promoId: row.promo_id || null,
-
-      promoDiscount: Number(row.promo_discount) || 0,
-
-      dp: Number(row.dp) || 0,
-
-      createdAt: row.created_at || null,
-
-      /*
-       * Nilai berikut dihitung ulang oleh calculateTransaction()
-       * karena belum disimpan sebagai kolom database.
-       */
-      ...calculateTransaction({
-        price: Number(row.price) || 0,
-        dp: Number(row.dp) || 0,
-        promoDiscount: Number(row.promo_discount) || 0,
-      }),
-    };
-  }
-
-  function _promoFromDB(row) {
-    if (!row) return null;
-
-    return {
-      id: row.id,
-
-      name: row.name,
-
-      startDate: row.start_date,
-
-      endDate: row.end_date,
-
-      discount: Number(row.discount) || 0,
-
-      description: row.description || "",
-
-      createdAt: row.created_at || null,
-    };
-  }
-
-  /* ============================================================
-       APP → DATABASE FORMAT
-       ============================================================ */
-
-  function _serviceToDB(service) {
-    return {
-      id: service.id,
-      name: service.name,
-      price: Number(service.price) || 0,
-      active: service.active !== false,
-    };
-  }
-
-  function _transactionToDB(txn) {
-    return {
-      id: txn.id,
-
-      branch: txn.branch || "Kemang",
-
-      service_id: txn.serviceId || null,
-
-      service_name: txn.serviceName || "Unknown",
-
-      price: Number(txn.price) || 0,
-
-      date: txn.date || getTodayStr(),
-
-      treatment_time: txn.treatmentTime || null,
-
-      notes: txn.notes || "",
-
-      promo_id: txn.promoId || null,
-
-      promo_discount: Number(txn.promoDiscount) || 0,
-
-      dp: Number(txn.dp) || 0,
-    };
-  }
-
-  function _promoToDB(promo) {
-    return {
-      id: promo.id,
-
-      name: promo.name,
-
-      start_date: promo.startDate,
-
-      end_date: promo.endDate,
-
-      discount: Number(promo.discount) || 0,
-
-      description: promo.description || "",
-    };
-  }
-
-  /* ============================================================
-       INITIALIZE
-       ============================================================ */
-
-  async function init() {
-    if (initialized) {
-      return true;
-    }
-
-    /*
-     * Load cache dulu supaya UI tidak blank.
-     */
-    servicesCache = _loadCache(SERVICES_CACHE_KEY);
-
-    transactionsCache = _loadCache(TRANSACTIONS_CACHE_KEY);
-
-    promosCache = _loadCache(PROMOS_CACHE_KEY);
-
-    if (!supabaseClient) {
-      console.warn("Supabase tidak tersedia. Menggunakan cache lokal.");
-
-      initialized = true;
-
-      return false;
-    }
-
-    try {
-      await _loadFromSupabase();
-
-      /*
-       * Kalau database benar-benar kosong,
-       * buat service default.
-       */
-      if (servicesCache.length === 0) {
-        await _seedDefaultServices();
-      }
-
-      initialized = true;
-
-      return true;
-    } catch (error) {
-      console.error("Gagal initialize Supabase:", error);
-
-      initialized = true;
-
-      if (typeof showToast === "function") {
-        showToast(
-          "Database tidak bisa diakses. Menggunakan cache lokal.",
-          "warning",
-        );
-      }
-
-      return false;
-    }
-  }
-
-  /* ============================================================
-       LOAD FROM SUPABASE
-       ============================================================ */
-
-  async function _loadFromSupabase() {
-    _ensureSupabase();
-
-    const [servicesResult, transactionsResult, promosResult] =
-      await Promise.all([
-        supabaseClient.from("services").select("*").order("created_at", {
-          ascending: true,
-        }),
-
-        supabaseClient
-          .from("transactions")
-          .select("*")
-          .order("date", {
-            ascending: false,
-          })
-          .order("treatment_time", {
-            ascending: false,
-          })
-          .order("created_at", {
-            ascending: false,
-          }),
-
-        supabaseClient.from("promos").select("*").order("start_date", {
-          ascending: false,
-        }),
-      ]);
-
-    if (servicesResult.error) {
-      throw servicesResult.error;
-    }
-
-    if (transactionsResult.error) {
-      throw transactionsResult.error;
-    }
-
-    if (promosResult.error) {
-      throw promosResult.error;
-    }
-
-    servicesCache = (servicesResult.data || []).map(_serviceFromDB);
-
-    transactionsCache = (transactionsResult.data || []).map(_transactionFromDB);
-
-    promosCache = (promosResult.data || []).map(_promoFromDB);
-
-    _cacheAll();
-
-    console.log("Supabase loaded:", {
-      services: servicesCache.length,
-      transactions: transactionsCache.length,
-      promos: promosCache.length,
-    });
+    return `${prefix}-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 7)}`;
   }
 
   /* ============================================================
        SERVICES
        ============================================================ */
 
-  function getServices() {
-    return [...servicesCache];
-  }
+  async function getServices() {
+    try {
+      const { data, error } = await _client()
+        .from("services")
+        .select("*")
+        .order("name", { ascending: true });
 
-  function getActiveServices() {
-    return servicesCache.filter((s) => s.active);
-  }
+      if (error) {
+        return _handleError(error, "Get services");
+      }
 
-  function getServiceById(id) {
-    return servicesCache.find((s) => s.id === id) || null;
-  }
-
-  async function addService({ name, price }) {
-    _ensureSupabase();
-
-    const svc = {
-      id: _id("svc"),
-      name,
-      price: Number(price) || 0,
-      active: true,
-    };
-
-    const { data, error } = await supabaseClient
-      .from("services")
-      .insert(_serviceToDB(svc))
-      .select()
-      .single();
-
-    if (error) {
-      _handleError(error, "menambahkan layanan");
-      throw error;
+      return data || [];
+    } catch (error) {
+      return _handleError(error, "Get services");
     }
-
-    const saved = _serviceFromDB(data);
-
-    servicesCache.push(saved);
-
-    _saveCache(SERVICES_CACHE_KEY, servicesCache);
-
-    return saved;
   }
 
-  async function updateService(id, updates) {
-    _ensureSupabase();
+  async function getActiveServices() {
+    try {
+      const { data, error } = await _client()
+        .from("services")
+        .select("*")
+        .eq("active", true)
+        .order("name", { ascending: true });
 
-    const current = getServiceById(id);
+      if (error) {
+        return _handleError(error, "Get active services");
+      }
 
-    if (!current) {
+      return data || [];
+    } catch (error) {
+      return _handleError(error, "Get active services");
+    }
+  }
+
+  async function getServiceById(id) {
+    if (!id) {
       return null;
     }
 
-    const updated = {
-      ...current,
-      ...updates,
-    };
+    try {
+      const { data, error } = await _client()
+        .from("services")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
 
-    if (updates.price !== undefined) {
-      updated.price = Number(updates.price) || 0;
+      if (error) {
+        return _handleError(error, "Get service");
+      }
+
+      return data || null;
+    } catch (error) {
+      return _handleError(error, "Get service");
+    }
+  }
+
+  async function addService({ name, price }) {
+    try {
+      const service = {
+        id: _id("svc"),
+        name: String(name || "").trim(),
+        price: Number(price) || 0,
+        active: true,
+      };
+
+      const { data, error } = await _client()
+        .from("services")
+        .insert(service)
+        .select()
+        .single();
+
+      if (error) {
+        _handleError(error, "Add service");
+
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      return _handleError(error, "Add service");
+    }
+  }
+
+  async function updateService(id, updates) {
+    if (!id) {
+      return null;
     }
 
-    const { data, error } = await supabaseClient
-      .from("services")
-      .update(_serviceToDB(updated))
-      .eq("id", id)
-      .select()
-      .single();
+    try {
+      const payload = {
+        ...updates,
+      };
 
-    if (error) {
-      _handleError(error, "memperbarui layanan");
-      throw error;
+      if (payload.price !== undefined) {
+        payload.price = Number(payload.price) || 0;
+      }
+
+      const { data, error } = await _client()
+        .from("services")
+        .update(payload)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) {
+        _handleError(error, "Update service");
+
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      return _handleError(error, "Update service");
     }
-
-    const saved = _serviceFromDB(data);
-
-    const idx = servicesCache.findIndex((s) => s.id === id);
-
-    if (idx !== -1) {
-      servicesCache[idx] = saved;
-    }
-
-    _saveCache(SERVICES_CACHE_KEY, servicesCache);
-
-    return saved;
   }
 
   async function deleteService(id) {
-    _ensureSupabase();
-
-    const { error } = await supabaseClient
-      .from("services")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      _handleError(error, "menghapus layanan");
-      throw error;
+    if (!id) {
+      return false;
     }
 
-    servicesCache = servicesCache.filter((s) => s.id !== id);
+    try {
+      const { error } = await _client().from("services").delete().eq("id", id);
 
-    _saveCache(SERVICES_CACHE_KEY, servicesCache);
+      if (error) {
+        _handleError(error, "Delete service");
+
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      _handleError(error, "Delete service");
+
+      return false;
+    }
   }
 
   /* ============================================================
-       TRANSACTIONS
-       ============================================================ */
-
-  function getTransactions() {
-    return [...transactionsCache].sort((a, b) => {
-      if (b.date !== a.date) {
-        return b.date.localeCompare(a.date);
-      }
-
-      if ((b.treatmentTime || "") !== (a.treatmentTime || "")) {
-        return (b.treatmentTime || "").localeCompare(a.treatmentTime || "");
-      }
-
-      return (b.createdAt || "").localeCompare(a.createdAt || "");
-    });
-  }
-
-  /* ============================================================
-       PAYMENT CALCULATION
-  
-       Total Treatment = harga asli
-  
-       DP = pembayaran awal
-  
-       Sisa sebelum promo
-         = Total Treatment - DP
-  
-       Diskon
-         = Sisa sebelum promo × promo%
-  
-       Sisa bayar
-         = Sisa sebelum promo - Diskon
-  
-       Contoh:
-  
-       Treatment       200.000
-       DP               100.000
-       Promo                50%
-  
-       Sisa sebelum promo
-         = 200.000 - 100.000
-         = 100.000
-  
-       Diskon
-         = 100.000 × 50%
-         = 50.000
-  
-       Sisa bayar
-         = 100.000 - 50.000
-         = 50.000
-  
-       TOTAL CUSTOMER BAYAR = 50.000
+       TRANSACTION CALCULATION
        ============================================================ */
 
   function calculateTransaction({ price, dp = 0, promoDiscount = 0 }) {
@@ -510,24 +223,35 @@ const Store = (() => {
 
     const requestedDP = Math.max(0, Number(dp) || 0);
 
+    // DP tidak boleh melebihi harga treatment
     const actualDP = Math.min(requestedDP, totalTreatment);
 
     const discountPercent = Math.max(0, Number(promoDiscount) || 0);
 
+    // ----------------------------------------------------------
+    // SISA SETELAH DP
+    // ----------------------------------------------------------
+
     const remainingBeforePromo = totalTreatment - actualDP;
+
+    // ----------------------------------------------------------
+    // DISKON HANYA DARI SISA SETELAH DP
+    // ----------------------------------------------------------
 
     const discountAmount = Math.round(
       remainingBeforePromo * (discountPercent / 100),
     );
 
+    // ----------------------------------------------------------
+    // SISA YANG HARUS DIBAYAR
+    // ----------------------------------------------------------
+
     const remainingAmount = Math.max(0, remainingBeforePromo - discountAmount);
 
-    /*
-     * Ini bukan "uang customer harus bayar".
-     *
-     * Ini adalah nilai treatment setelah
-     * memperhitungkan DP + diskon.
-     */
+    // ----------------------------------------------------------
+    // NILAI FINAL TREATMENT
+    // ----------------------------------------------------------
+
     const finalTreatmentAmount = actualDP + remainingAmount;
 
     return {
@@ -547,337 +271,490 @@ const Store = (() => {
     };
   }
 
-  async function addTransaction({
-    branch,
-    serviceId,
-    serviceName,
-    price,
-    date,
-    treatmentTime,
-    notes,
-    promoId,
-    promoDiscount,
-    dp,
-  }) {
-    _ensureSupabase();
+  /* ============================================================
+       GET TRANSACTIONS
+       ============================================================ */
 
-    const calculation = calculateTransaction({
-      price,
-      dp,
-      promoDiscount,
-    });
+  async function getTransactions() {
+    try {
+      const { data, error } = await _client()
+        .from("transactions")
+        .select("*")
+        .order("date", {
+          ascending: false,
+        })
+        .order("treatment_time", {
+          ascending: false,
+          nullsFirst: false,
+        })
+        .order("created_at", {
+          ascending: false,
+        });
 
-    const txn = {
-      id: _id("txn"),
+      if (error) {
+        _handleError(error, "Get transactions");
 
-      branch: branch || "Kemang",
+        return [];
+      }
 
-      serviceId,
+      return data || [];
+    } catch (error) {
+      _handleError(error, "Get transactions");
 
-      serviceName,
-
-      price: calculation.totalTreatment,
-
-      date: date || getTodayStr(),
-
-      treatmentTime: treatmentTime || "",
-
-      notes: notes || "",
-
-      dp: calculation.dp,
-
-      promoId: promoId || null,
-
-      promoDiscount: calculation.promoDiscount,
-
-      createdAt: new Date().toISOString(),
-    };
-
-    const { data, error } = await supabaseClient
-      .from("transactions")
-      .insert(_transactionToDB(txn))
-      .select()
-      .single();
-
-    if (error) {
-      _handleError(error, "menyimpan transaksi");
-
-      throw error;
+      return [];
     }
-
-    const saved = _transactionFromDB(data);
-
-    transactionsCache.push(saved);
-
-    _saveCache(TRANSACTIONS_CACHE_KEY, transactionsCache);
-
-    return saved;
   }
 
+  /* ============================================================
+       ADD TRANSACTION
+       ============================================================ */
+
+  async function addTransaction({
+    branch,
+
+    serviceId,
+
+    serviceName,
+
+    price,
+
+    date,
+
+    treatmentTime,
+
+    notes,
+
+    promoId,
+
+    promoDiscount,
+
+    dp,
+  }) {
+    try {
+      const calculation = calculateTransaction({
+        price,
+        dp,
+        promoDiscount,
+      });
+
+      const txn = {
+        id: _id("txn"),
+
+        branch: branch || "Kemang",
+
+        service_id: serviceId || null,
+
+        service_name: serviceName || "Unknown",
+
+        // Harga asli
+        price: calculation.totalTreatment,
+
+        // Jam treatment
+        treatment_time: treatmentTime || null,
+
+        // DP
+        dp: calculation.dp,
+
+        // Tanggal
+        date: date || getTodayStr(),
+
+        // Catatan
+        notes: notes || "",
+
+        // Promo
+        promo_id: promoId || null,
+
+        promo_discount: calculation.promoDiscount,
+      };
+
+      const { data, error } = await _client()
+        .from("transactions")
+        .insert(txn)
+        .select()
+        .single();
+
+      if (error) {
+        _handleError(error, "Add transaction");
+
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      return _handleError(error, "Add transaction");
+    }
+  }
+
+  /* ============================================================
+       UPDATE TRANSACTION
+       ============================================================ */
+
   async function updateTransaction(id, updates) {
-    _ensureSupabase();
-
-    const current = transactionsCache.find((t) => t.id === id);
-
-    if (!current) {
+    if (!id) {
       return null;
     }
 
-    const price =
-      updates.price !== undefined
-        ? Number(updates.price)
-        : Number(current.price) || 0;
+    try {
+      // Ambil transaksi lama
+      const { data: current, error: getError } = await _client()
+        .from("transactions")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
 
-    const dp =
-      updates.dp !== undefined ? Number(updates.dp) : Number(current.dp) || 0;
+      if (getError) {
+        _handleError(getError, "Get transaction before update");
 
-    const promoDiscount =
-      updates.promoDiscount !== undefined
-        ? Number(updates.promoDiscount)
-        : Number(current.promoDiscount) || 0;
+        return null;
+      }
 
-    const calculation = calculateTransaction({
-      price,
-      dp,
-      promoDiscount,
-    });
+      if (!current) {
+        showToast("Transaksi tidak ditemukan.", "warning");
 
-    const updated = {
-      ...current,
-      ...updates,
+        return null;
+      }
 
-      price: calculation.totalTreatment,
+      // --------------------------------------------------------
+      // DATA YANG AKAN DIGUNAKAN UNTUK CALCULATION
+      // --------------------------------------------------------
 
-      dp: calculation.dp,
+      const price =
+        updates.price !== undefined
+          ? Number(updates.price) || 0
+          : Number(current.price) || 0;
 
-      promoDiscount: calculation.promoDiscount,
+      const dp =
+        updates.dp !== undefined
+          ? Number(updates.dp) || 0
+          : Number(current.dp) || 0;
 
-      treatmentTime:
-        updates.treatmentTime !== undefined
-          ? updates.treatmentTime
-          : current.treatmentTime,
+      const promoDiscount =
+        updates.promoDiscount !== undefined
+          ? Number(updates.promoDiscount) || 0
+          : Number(current.promo_discount) || 0;
 
-      date: updates.date !== undefined ? updates.date : current.date,
+      const calculation = calculateTransaction({
+        price,
 
-      branch: updates.branch !== undefined ? updates.branch : current.branch,
+        dp,
 
-      serviceId:
-        updates.serviceId !== undefined ? updates.serviceId : current.serviceId,
+        promoDiscount,
+      });
 
-      serviceName:
-        updates.serviceName !== undefined
-          ? updates.serviceName
-          : current.serviceName,
+      // --------------------------------------------------------
+      // CONVERT FRONTEND FIELD → SUPABASE FIELD
+      // --------------------------------------------------------
 
-      notes: updates.notes !== undefined ? updates.notes : current.notes,
+      const payload = {};
 
-      promoId:
-        updates.promoId !== undefined ? updates.promoId : current.promoId,
-    };
+      if (updates.branch !== undefined) {
+        payload.branch = updates.branch;
+      }
 
-    const { data, error } = await supabaseClient
-      .from("transactions")
-      .update(_transactionToDB(updated))
-      .eq("id", id)
-      .select()
-      .single();
+      if (updates.serviceId !== undefined) {
+        payload.service_id = updates.serviceId || null;
+      }
 
-    if (error) {
-      _handleError(error, "memperbarui transaksi");
+      if (updates.serviceName !== undefined) {
+        payload.service_name = updates.serviceName;
+      }
 
-      throw error;
+      if (updates.treatmentTime !== undefined) {
+        payload.treatment_time = updates.treatmentTime || null;
+      }
+
+      if (updates.date !== undefined) {
+        payload.date = updates.date;
+      }
+
+      if (updates.notes !== undefined) {
+        payload.notes = updates.notes || "";
+      }
+
+      if (updates.promoId !== undefined) {
+        payload.promo_id = updates.promoId || null;
+      }
+
+      // --------------------------------------------------------
+      // ALWAYS SAVE CALCULATED VALUES
+      // --------------------------------------------------------
+
+      payload.price = calculation.totalTreatment;
+
+      payload.dp = calculation.dp;
+
+      payload.promo_discount = calculation.promoDiscount;
+
+      const { data, error } = await _client()
+        .from("transactions")
+        .update(payload)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) {
+        _handleError(error, "Update transaction");
+
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      return _handleError(error, "Update transaction");
     }
-
-    const saved = _transactionFromDB(data);
-
-    const idx = transactionsCache.findIndex((t) => t.id === id);
-
-    if (idx !== -1) {
-      transactionsCache[idx] = saved;
-    }
-
-    _saveCache(TRANSACTIONS_CACHE_KEY, transactionsCache);
-
-    return saved;
   }
+
+  /* ============================================================
+       DELETE TRANSACTION
+       ============================================================ */
 
   async function deleteTransaction(id) {
-    _ensureSupabase();
-
-    const { error } = await supabaseClient
-      .from("transactions")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      _handleError(error, "menghapus transaksi");
-
-      throw error;
+    if (!id) {
+      return false;
     }
 
-    transactionsCache = transactionsCache.filter((t) => t.id !== id);
+    try {
+      const { error } = await _client()
+        .from("transactions")
+        .delete()
+        .eq("id", id);
 
-    _saveCache(TRANSACTIONS_CACHE_KEY, transactionsCache);
+      if (error) {
+        _handleError(error, "Delete transaction");
+
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      _handleError(error, "Delete transaction");
+
+      return false;
+    }
   }
 
-  function getTransactionsByDateRange(start, end) {
-    return getTransactions().filter((t) => t.date >= start && t.date <= end);
+  /* ============================================================
+       TRANSACTIONS BY DATE RANGE
+       ============================================================ */
+
+  async function getTransactionsByDateRange(start, end) {
+    try {
+      const { data, error } = await _client()
+        .from("transactions")
+        .select("*")
+        .gte("date", start)
+        .lte("date", end)
+        .order("date", {
+          ascending: false,
+        });
+
+      if (error) {
+        _handleError(error, "Get transactions by date");
+
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      _handleError(error, "Get transactions by date");
+
+      return [];
+    }
   }
 
   /* ============================================================
        PROMOS
        ============================================================ */
 
-  function getPromos() {
-    return [...promosCache];
+  async function getPromos() {
+    try {
+      const { data, error } = await _client()
+        .from("promos")
+        .select("*")
+        .order("start_date", {
+          ascending: false,
+        });
+
+      if (error) {
+        _handleError(error, "Get promos");
+
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      _handleError(error, "Get promos");
+
+      return [];
+    }
   }
 
-  function getActivePromos(dateStr) {
+  async function getActivePromos(dateStr) {
     const d = dateStr || getTodayStr();
 
-    return promosCache.filter((p) => p.startDate <= d && p.endDate >= d);
+    try {
+      const { data, error } = await _client()
+        .from("promos")
+        .select("*")
+        .lte("start_date", d)
+        .gte("end_date", d)
+        .order("discount", {
+          ascending: true,
+        });
+
+      if (error) {
+        _handleError(error, "Get active promos");
+
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      _handleError(error, "Get active promos");
+
+      return [];
+    }
   }
 
-  async function addPromo({ name, startDate, endDate, discount, description }) {
-    _ensureSupabase();
+  async function addPromo({
+    name,
 
-    const promo = {
-      id: _id("promo"),
+    startDate,
 
-      name,
+    endDate,
 
-      startDate,
+    discount,
 
-      endDate,
+    description,
+  }) {
+    try {
+      const promo = {
+        id: _id("promo"),
 
-      discount: Number(discount) || 0,
+        name: String(name || "").trim(),
 
-      description: description || "",
-    };
+        start_date: startDate,
 
-    const { data, error } = await supabaseClient
-      .from("promos")
-      .insert(_promoToDB(promo))
-      .select()
-      .single();
+        end_date: endDate,
 
-    if (error) {
-      _handleError(error, "menambahkan promo");
+        discount: Number(discount) || 0,
 
-      throw error;
+        description: description || "",
+      };
+
+      const { data, error } = await _client()
+        .from("promos")
+        .insert(promo)
+        .select()
+        .single();
+
+      if (error) {
+        _handleError(error, "Add promo");
+
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      return _handleError(error, "Add promo");
     }
-
-    const saved = _promoFromDB(data);
-
-    promosCache.push(saved);
-
-    _saveCache(PROMOS_CACHE_KEY, promosCache);
-
-    return saved;
   }
 
   async function updatePromo(id, updates) {
-    _ensureSupabase();
-
-    const current = promosCache.find((p) => p.id === id);
-
-    if (!current) {
+    if (!id) {
       return null;
     }
 
-    const updated = {
-      ...current,
-      ...updates,
-    };
+    try {
+      const payload = {};
 
-    if (updates.discount !== undefined) {
-      updated.discount = Number(updates.discount) || 0;
+      if (updates.name !== undefined) {
+        payload.name = updates.name;
+      }
+
+      if (updates.startDate !== undefined) {
+        payload.start_date = updates.startDate;
+      }
+
+      if (updates.endDate !== undefined) {
+        payload.end_date = updates.endDate;
+      }
+
+      if (updates.discount !== undefined) {
+        payload.discount = Number(updates.discount) || 0;
+      }
+
+      if (updates.description !== undefined) {
+        payload.description = updates.description || "";
+      }
+
+      const { data, error } = await _client()
+        .from("promos")
+        .update(payload)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) {
+        _handleError(error, "Update promo");
+
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      return _handleError(error, "Update promo");
     }
-
-    const { data, error } = await supabaseClient
-      .from("promos")
-      .update(_promoToDB(updated))
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) {
-      _handleError(error, "memperbarui promo");
-
-      throw error;
-    }
-
-    const saved = _promoFromDB(data);
-
-    const idx = promosCache.findIndex((p) => p.id === id);
-
-    if (idx !== -1) {
-      promosCache[idx] = saved;
-    }
-
-    _saveCache(PROMOS_CACHE_KEY, promosCache);
-
-    return saved;
   }
 
   async function deletePromo(id) {
-    _ensureSupabase();
-
-    const { error } = await supabaseClient.from("promos").delete().eq("id", id);
-
-    if (error) {
-      _handleError(error, "menghapus promo");
-
-      throw error;
+    if (!id) {
+      return false;
     }
 
-    promosCache = promosCache.filter((p) => p.id !== id);
+    try {
+      const { error } = await _client().from("promos").delete().eq("id", id);
 
-    _saveCache(PROMOS_CACHE_KEY, promosCache);
+      if (error) {
+        _handleError(error, "Delete promo");
+
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      _handleError(error, "Delete promo");
+
+      return false;
+    }
   }
 
   /* ============================================================
-       SEED DEFAULT SERVICES
+       INIT
        ============================================================ */
 
-  async function _seedDefaultServices() {
-    const defaults = [
-      {
-        name: "Nails",
-        price: 150000,
-      },
-      {
-        name: "Manicure",
-        price: 100000,
-      },
-      {
-        name: "Pedicure",
-        price: 120000,
-      },
-      {
-        name: "Nail Art",
-        price: 200000,
-      },
-      {
-        name: "Eyelash Extension",
-        price: 250000,
-      },
-      {
-        name: "Eyebrow",
-        price: 75000,
-      },
-      {
-        name: "Tooth Gem",
-        price: 100000,
-      },
-      {
-        name: "Lash Lift",
-        price: 180000,
-      },
-    ];
+  async function init() {
+    try {
+      // Test connection
+      const { error } = await _client().from("services").select("id").limit(1);
 
-    for (const service of defaults) {
-      await addService(service);
+      if (error) {
+        console.error("Supabase connection error:", error);
+
+        showToast("Gagal terhubung ke database Supabase.", "warning");
+
+        return false;
+      }
+
+      console.log("✅ Supabase connected");
+
+      return true;
+    } catch (error) {
+      console.error("Supabase init error:", error);
+
+      showToast("Database tidak dapat diakses.", "warning");
+
+      return false;
     }
   }
 
@@ -892,10 +769,11 @@ const Store = (() => {
   function getTodayStr() {
     const d = new Date();
 
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-      2,
-      "0",
-    )}-${String(d.getDate()).padStart(2, "0")}`;
+    return (
+      `${d.getFullYear()}-` +
+      `${String(d.getMonth() + 1).padStart(2, "0")}-` +
+      `${String(d.getDate()).padStart(2, "0")}`
+    );
   }
 
   function formatDate(dateStr) {
@@ -913,64 +791,39 @@ const Store = (() => {
   }
 
   /* ============================================================
-       REFRESH DATABASE
-       
-       Bisa dipanggil kapan saja kalau mau mengambil
-       data terbaru dari Supabase.
-       ============================================================ */
-
-  async function refresh() {
-    if (!supabaseClient) {
-      return false;
-    }
-
-    try {
-      await _loadFromSupabase();
-
-      return true;
-    } catch (error) {
-      console.error("Refresh Supabase gagal:", error);
-
-      return false;
-    }
-  }
-
-  /* ============================================================
        PUBLIC API
        ============================================================ */
 
   return {
+    // Supabase
     init,
-    refresh,
 
-    /* Services */
+    // Services
     getServices,
     getActiveServices,
     getServiceById,
-
     addService,
     updateService,
     deleteService,
 
-    /* Transactions */
+    // Transactions
     getTransactions,
     addTransaction,
     updateTransaction,
     deleteTransaction,
-
     getTransactionsByDateRange,
 
+    // Calculation
     calculateTransaction,
 
-    /* Promos */
+    // Promos
     getPromos,
     getActivePromos,
-
     addPromo,
     updatePromo,
     deletePromo,
 
-    /* Utility */
+    // Utility
     formatCurrency,
     getTodayStr,
     formatDate,
