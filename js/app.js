@@ -1,9 +1,6 @@
 /* ============================================================
-   Next Level Beauty Bar — App Router & Global Utilities
-   ============================================================ */
-
-/* ============================================================
-   GLOBAL TOAST
+   NEXT LEVEL BEAUTY BAR
+   App Router
    ============================================================ */
 
 function showToast(message, type = "success") {
@@ -22,26 +19,21 @@ function showToast(message, type = "success") {
   }, 3000);
 }
 
-/* ============================================================
-     APP LOADING
-     ============================================================ */
-
 function _setAppLoading(loading) {
   const el = document.getElementById("appLoading");
 
-  if (!el) return;
-
-  el.classList.toggle("hidden", !loading);
+  if (el) {
+    el.classList.toggle("hidden", !loading);
+  }
 }
-
-/* ============================================================
-     DATABASE ERROR
-     ============================================================ */
 
 function _showConfigError(message) {
   const el = document.getElementById("appLoading");
 
-  if (!el) return;
+  if (!el) {
+    console.error(message);
+    return;
+  }
 
   el.innerHTML = `
       <div class="app-loading-error">
@@ -49,131 +41,74 @@ function _showConfigError(message) {
           <strong>Database connection failed</strong>
         </p>
   
-        <p>
-          ${message}
-        </p>
+        <p>${message}</p>
   
         <p class="text-muted">
-          Pastikan:
-          <br>
-          1. js/config.js sudah berisi Supabase URL dan anon key
-          <br>
-          2. Supabase project aktif
-          <br>
-          3. schema.sql sudah dijalankan
-          <br>
-          4. RLS policy sudah dibuat
+          Check Supabase configuration and schema.
         </p>
       </div>
     `;
 }
-
-/* ============================================================
-     APP
-     ============================================================ */
 
 const App = (() => {
   const VIEWS = ["dashboard", "transactions", "services", "promos", "history"];
 
   const PAGE_TITLES = {
     dashboard: "📊 Dashboard",
-
-    transactions: "💰 Add Transaction",
-
-    services: "💅 Services & Pricing",
-
-    promos: "🎉 Promotions",
-
-    history: "📋 Transaction History",
+    transactions: "💰 Tambah Transaksi",
+    services: "💅 Layanan & Harga",
+    promos: "🎉 Promo",
+    history: "📋 Riwayat",
   };
 
-  /* ==========================================================
-       INIT
-       ========================================================== */
+  let initialized = false;
 
   async function init() {
+    if (initialized) return;
+
+    initialized = true;
+
     _setAppLoading(true);
 
     try {
-      /*
-       * Store.init()
-       *
-       * Di versi Supabase:
-       * - cek koneksi
-       * - load services
-       * - load promos
-       * - load transactions
-       * - seed default services jika database kosong
-       */
-
       await Store.init();
+
+      console.log("Supabase connected successfully.");
     } catch (err) {
-      console.error("Supabase initialization error:", err);
+      console.error("Store initialization failed:", err);
 
-      _showConfigError(err?.message || "Could not connect to Supabase.");
+      _showConfigError(err.message || "Tidak dapat terhubung ke Supabase.");
 
-      /*
-       * Jangan lanjutkan aplikasi
-       * kalau database gagal connect.
-       */
+      _setAppLoading(false);
 
       return;
-    } finally {
-      _setAppLoading(false);
     }
 
-    /* ========================================================
-         SETUP APPLICATION
-         ======================================================== */
-
     _setupNav();
-
     _setupMobile();
-
     _setupExport();
-
     _updateDateDisplay();
 
-    /* ========================================================
-         INITIAL ROUTE
-         ======================================================== */
+    window.addEventListener("hashchange", async () => {
+      await navigateTo(window.location.hash.slice(1) || "dashboard");
+    });
 
     const hash = window.location.hash.slice(1);
 
-    navigateTo(VIEWS.includes(hash) ? hash : "dashboard");
+    await navigateTo(VIEWS.includes(hash) ? hash : "dashboard");
 
-    /* ========================================================
-         HASH ROUTING
-         ======================================================== */
-
-    window.addEventListener("hashchange", () => {
-      const currentHash = window.location.hash.slice(1);
-
-      navigateTo(VIEWS.includes(currentHash) ? currentHash : "dashboard");
-    });
+    _setAppLoading(false);
   }
-
-  /* ==========================================================
-       NAVIGATION
-       ========================================================== */
 
   function _setupNav() {
     document.querySelectorAll(".nav-item").forEach((item) => {
       item.addEventListener("click", (e) => {
         e.preventDefault();
 
-        const view = item.dataset.view;
-
-        if (!view) return;
-
-        window.location.hash = view;
+        window.location.hash = item.dataset.view;
       });
     });
   }
-
-  /* ==========================================================
-       MOBILE SIDEBAR
-       ========================================================== */
 
   function _setupMobile() {
     const toggle = document.getElementById("menuToggle");
@@ -194,41 +129,20 @@ const App = (() => {
       overlay.addEventListener("click", () => {
         sidebar?.classList.remove("open");
 
-        overlay?.classList.remove("show");
+        overlay.classList.remove("show");
       });
     }
-
-    document.querySelectorAll(".nav-item").forEach((item) => {
-      item.addEventListener("click", () => {
-        sidebar?.classList.remove("open");
-
-        overlay?.classList.remove("show");
-      });
-    });
   }
-
-  /* ==========================================================
-       CSV EXPORT
-       ========================================================== */
 
   function _setupExport() {
     const btn = document.getElementById("exportCsvBtn");
 
-    if (!btn) return;
-
-    btn.addEventListener("click", () => {
-      if (
-        typeof Transactions !== "undefined" &&
-        typeof Transactions.exportCSV === "function"
-      ) {
+    if (btn) {
+      btn.addEventListener("click", () => {
         Transactions.exportCSV();
-      }
-    });
+      });
+    }
   }
-
-  /* ==========================================================
-       DATE DISPLAY
-       ========================================================== */
 
   function _updateDateDisplay() {
     const el = document.getElementById("dateDisplay");
@@ -245,38 +159,22 @@ const App = (() => {
     });
   }
 
-  /* ==========================================================
-       ROUTER
-       ========================================================== */
-
-  function navigateTo(viewName) {
+  async function navigateTo(viewName) {
     if (!VIEWS.includes(viewName)) {
       viewName = "dashboard";
     }
 
-    /* ========================================================
-         TOGGLE VIEW
-         ======================================================== */
+    VIEWS.forEach((v) => {
+      const el = document.getElementById("view-" + v);
 
-    VIEWS.forEach((view) => {
-      const el = document.getElementById("view-" + view);
-
-      if (!el) return;
-
-      el.classList.toggle("active", view === viewName);
+      if (el) {
+        el.classList.toggle("active", v === viewName);
+      }
     });
-
-    /* ========================================================
-         TOGGLE SIDEBAR ACTIVE
-         ======================================================== */
 
     document.querySelectorAll(".nav-item").forEach((item) => {
       item.classList.toggle("active", item.dataset.view === viewName);
     });
-
-    /* ========================================================
-         PAGE TITLE
-         ======================================================== */
 
     const titleEl = document.getElementById("pageTitle");
 
@@ -284,68 +182,47 @@ const App = (() => {
       titleEl.textContent = PAGE_TITLES[viewName] || "Next Level";
     }
 
-    /* ========================================================
-         RENDER VIEW
-         ======================================================== */
-
     try {
       switch (viewName) {
         case "dashboard":
-          if (typeof Dashboard !== "undefined") {
-            Dashboard.render();
-          }
-
+          await Dashboard.render();
           break;
 
         case "transactions":
-          if (typeof Transactions !== "undefined") {
-            Transactions.render();
-          }
-
+          await Transactions.render();
           break;
 
         case "services":
-          if (typeof Services !== "undefined") {
-            Services.render();
-          }
-
+          await Services.render();
           break;
 
         case "promos":
-          if (typeof Promos !== "undefined") {
-            Promos.render();
-          }
-
+          await Promos.render();
           break;
 
         case "history":
-          if (typeof Transactions !== "undefined") {
-            Transactions.renderHistory();
-          }
-
+          await Transactions.renderHistory();
           break;
       }
     } catch (err) {
-      console.error(`Error rendering ${viewName}:`, err);
+      console.error("Navigation render error:", err);
 
-      showToast("Gagal memuat halaman. Cek console.", "warning");
+      showToast("Gagal memuat halaman. Cek console.", "danger");
     }
-  }
 
-  /* ==========================================================
-       PUBLIC API
-       ========================================================== */
+    const sidebar = document.getElementById("sidebar");
+
+    const overlay = document.getElementById("sidebarOverlay");
+
+    sidebar?.classList.remove("open");
+    overlay?.classList.remove("show");
+  }
 
   return {
     init,
-
     navigateTo,
   };
 })();
-
-/* ============================================================
-     START APPLICATION
-     ============================================================ */
 
 document.addEventListener("DOMContentLoaded", () => {
   App.init();

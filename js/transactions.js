@@ -1,126 +1,115 @@
 /* ============================================================
-   Beauty Bar Dashboard — Transactions & History
+   NEXT LEVEL BEAUTY BAR
+   Transactions
    ============================================================ */
 
 const Transactions = (() => {
-  let _initTxn = false;
-  let _initHist = false;
-  let editingId = null;
-
-  /* ============================================================
-       TRANSACTION FORM
-       ============================================================ */
+  let initialized = false;
 
   async function render() {
-    if (!_initTxn) {
-      _setupTxnForm();
-      _initTxn = true;
+    if (!initialized) {
+      _setup();
+      initialized = true;
     }
 
-    await _populateServiceDropdown();
-    await _updatePromoOptions();
-    await _renderRecent();
+    await loadServices();
+    await loadPromos();
+    await renderRecent();
+    updatePaymentSummary();
   }
 
-  function _setupTxnForm() {
+  function _setup() {
     const form = document.getElementById("txnForm");
 
-    const svcSel = document.getElementById("txnService");
-
-    const dateIn = document.getElementById("txnDate");
-
-    if (!form || !svcSel || !dateIn) {
-      console.error("Transaction form tidak ditemukan.");
-      return;
+    if (form) {
+      form.addEventListener("submit", handleSubmit);
     }
 
-    dateIn.value = Store.getTodayStr();
+    const service = document.getElementById("txnService");
 
-    svcSel.addEventListener("change", async () => {
-      const opt = svcSel.selectedOptions[0];
+    if (service) {
+      service.addEventListener("change", async () => {
+        const id = service.value;
 
-      if (opt && opt.dataset.price) {
-        document.getElementById("txnPrice").value = opt.dataset.price;
-      }
+        if (!id) {
+          document.getElementById("txnPrice").value = "";
 
-      await _updatePromoOptions();
-      _updatePaymentPreview();
-    });
+          updatePaymentSummary();
 
-    dateIn.addEventListener("change", async () => {
-      await _updatePromoOptions();
-    });
+          return;
+        }
 
-    const promoSel = document.getElementById("txnPromo");
+        const svc = await Store.getServiceById(id);
 
-    if (promoSel) {
-      promoSel.addEventListener("change", () => {
-        _updatePaymentPreview();
+        if (svc) {
+          document.getElementById("txnPrice").value = svc.price;
+        }
+
+        updatePaymentSummary();
       });
     }
 
-    const dpIn = document.getElementById("txnDP");
+    ["txnPrice", "txnDP", "txnPromo"].forEach((id) => {
+      document
+        .getElementById(id)
+        ?.addEventListener("input", updatePaymentSummary);
 
-    if (dpIn) {
-      dpIn.addEventListener("input", () => {
-        _updatePaymentPreview();
-      });
-    }
-
-    const priceIn = document.getElementById("txnPrice");
-
-    if (priceIn) {
-      priceIn.addEventListener("input", () => {
-        _updatePaymentPreview();
-      });
-    }
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      await _saveTransaction();
+      document
+        .getElementById(id)
+        ?.addEventListener("change", updatePaymentSummary);
     });
+
+    const date = document.getElementById("txnDate");
+
+    if (date && !date.value) {
+      date.value = Store.getTodayStr();
+    }
+
+    const time = document.getElementById("txnTime");
+
+    if (time && !time.value) {
+      const now = new Date();
+
+      time.value =
+        String(now.getHours()).padStart(2, "0") +
+        ":" +
+        String(now.getMinutes()).padStart(2, "0");
+    }
   }
 
   /* ============================================================
-       SERVICE DROPDOWN
+       SERVICES DROPDOWN
        ============================================================ */
 
-  async function _populateServiceDropdown(selectedId = null) {
-    const sel = document.getElementById("txnService");
+  async function loadServices() {
+    const select = document.getElementById("txnService");
 
-    if (!sel) return;
+    if (!select) return;
 
-    sel.innerHTML = '<option value="">Loading service...</option>';
+    const services = await Store.getActiveServices();
 
-    const svcs = await Store.getActiveServices();
+    const current = select.value;
 
-    if (!svcs.length) {
-      sel.innerHTML = '<option value="">— Tidak ada service aktif —</option>';
+    select.innerHTML = `
+        <option value="">
+          — Pilih Layanan —
+        </option>
+      `;
 
-      console.warn("Tidak ada service aktif di Supabase.");
+    services.forEach((service) => {
+      const option = document.createElement("option");
 
-      return;
-    }
+      option.value = service.id;
 
-    sel.innerHTML =
-      '<option value="">— Choose Service —</option>' +
-      svcs
-        .map(
-          (s) => `
-              <option
-                value="${s.id}"
-                data-price="${s.price}"
-              >
-                ${s.name}
-                (${Store.formatCurrency(s.price)})
-              </option>
-            `,
-        )
-        .join("");
+      option.textContent = `${service.name} — ${Store.formatCurrency(
+        service.price,
+      )}`;
 
-    if (selectedId) {
-      sel.value = selectedId;
+      select.appendChild(option);
+    });
+
+    if (current && services.some((s) => s.id === current)) {
+      select.value = current;
     }
   }
 
@@ -128,167 +117,52 @@ const Transactions = (() => {
        PROMO DROPDOWN
        ============================================================ */
 
-  async function _updatePromoOptions(selectedPromoId = null) {
-    const sel = document.getElementById("txnPromo");
+  async function loadPromos() {
+    const select = document.getElementById("txnPromo");
 
-    const dateEl = document.getElementById("txnDate");
+    if (!select) return;
 
-    if (!sel || !dateEl) {
-      return;
-    }
+    const promos = await Store.getActivePromos();
 
-    const dateVal = dateEl.value || Store.getTodayStr();
+    select.innerHTML = `
+        <option value="">
+          Tanpa Promo
+        </option>
+      `;
 
-    const promos = await Store.getActivePromos(dateVal);
+    promos.forEach((promo) => {
+      const option = document.createElement("option");
 
-    sel.innerHTML =
-      '<option value="">Tanpa Promo</option>' +
-      promos
-        .map(
-          (p) => `
-              <option
-                value="${p.id}"
-                data-discount="${p.discount}"
-              >
-                ${p.name}
-                (−${p.discount}%)
-              </option>
-            `,
-        )
-        .join("");
+      option.value = promo.id;
 
-    if (selectedPromoId) {
-      sel.value = selectedPromoId;
-    }
+      option.dataset.discount = promo.discount;
 
-    _updatePaymentPreview();
-  }
+      option.textContent = `${promo.name} — ${promo.discount}%`;
 
-  /* ============================================================
-       CALCULATION
-       ============================================================ */
-
-  function _getCurrentCalculation() {
-    const priceIn = document.getElementById("txnPrice");
-
-    const dpIn = document.getElementById("txnDP");
-
-    const promoSel = document.getElementById("txnPromo");
-
-    const price = Number(priceIn?.value) || 0;
-
-    const dp = Number(dpIn?.value) || 0;
-
-    let promoDiscount = 0;
-
-    if (promoSel && promoSel.value) {
-      const opt = promoSel.selectedOptions[0];
-
-      promoDiscount = Number(opt?.dataset?.discount) || 0;
-    }
-
-    return Store.calculateTransaction({
-      price,
-      dp,
-      promoDiscount,
+      select.appendChild(option);
     });
   }
 
-  function _updatePaymentPreview() {
-    const calc = _getCurrentCalculation();
-
-    const totalEl = document.getElementById("txnPreviewTotal");
-
-    const dpEl = document.getElementById("txnPreviewDP");
-
-    const beforePromoEl = document.getElementById("txnPreviewBeforePromo");
-
-    const discountEl = document.getElementById("txnPreviewDiscount");
-
-    const remainingEl = document.getElementById("txnPreviewRemaining");
-
-    const finalEl = document.getElementById("txnPreviewFinal");
-
-    if (totalEl) {
-      totalEl.textContent = Store.formatCurrency(calc.totalTreatment);
-    }
-
-    if (dpEl) {
-      dpEl.textContent = Store.formatCurrency(calc.dp);
-    }
-
-    if (beforePromoEl) {
-      beforePromoEl.textContent = Store.formatCurrency(
-        calc.remainingBeforePromo,
-      );
-    }
-
-    if (discountEl) {
-      discountEl.textContent = `−${calc.promoDiscount}% (${Store.formatCurrency(
-        calc.discountAmount,
-      )})`;
-    }
-
-    if (remainingEl) {
-      remainingEl.textContent = Store.formatCurrency(calc.remainingAmount);
-    }
-
-    if (finalEl) {
-      finalEl.textContent = Store.formatCurrency(calc.finalTreatmentAmount);
-    }
-  }
-
   /* ============================================================
-       SAVE TRANSACTION
+       PAYMENT
        ============================================================ */
 
-  async function _saveTransaction() {
-    const branchSel = document.getElementById("txnBranch");
+  function getSelectedPromoDiscount() {
+    const select = document.getElementById("txnPromo");
 
-    const svcSel = document.getElementById("txnService");
+    if (!select) return 0;
 
-    const priceIn = document.getElementById("txnPrice");
+    const option = select.options[select.selectedIndex];
 
-    const dateIn = document.getElementById("txnDate");
+    return Number(option?.dataset?.discount || 0);
+  }
 
-    const timeIn = document.getElementById("txnTreatmentTime");
+  function updatePaymentSummary() {
+    const price = Number(document.getElementById("txnPrice")?.value || 0);
 
-    const notesIn = document.getElementById("txnNotes");
+    const dp = Number(document.getElementById("txnDP")?.value || 0);
 
-    const promoSel = document.getElementById("txnPromo");
-
-    const dpIn = document.getElementById("txnDP");
-
-    if (!svcSel?.value) {
-      showToast("Pilih layanan terlebih dahulu!", "warning");
-      return;
-    }
-
-    if (!priceIn?.value || Number(priceIn.value) <= 0) {
-      showToast("Masukkan harga yang valid!", "warning");
-      return;
-    }
-
-    const service = await Store.getServiceById(svcSel.value);
-
-    if (!service) {
-      showToast("Service tidak ditemukan!", "warning");
-      return;
-    }
-
-    const price = Number(priceIn.value);
-
-    const dp = Number(dpIn?.value) || 0;
-
-    let promoId = promoSel?.value || null;
-
-    let promoDiscount = 0;
-
-    if (promoId) {
-      const opt = promoSel.selectedOptions[0];
-
-      promoDiscount = Number(opt?.dataset?.discount) || 0;
-    }
+    const promoDiscount = getSelectedPromoDiscount();
 
     const calculation = Store.calculateTransaction({
       price,
@@ -296,290 +170,205 @@ const Transactions = (() => {
       promoDiscount,
     });
 
-    const data = {
-      branch: branchSel?.value || "Kemang",
+    _setText(
+      "summaryTreatment",
+      Store.formatCurrency(calculation.totalTreatment),
+    );
 
-      serviceId: svcSel.value,
+    _setText("summaryDP", Store.formatCurrency(calculation.dp));
 
-      serviceName: service.name,
+    _setText(
+      "summaryBeforePromo",
+      Store.formatCurrency(calculation.remainingBeforePromo),
+    );
 
-      price: calculation.totalTreatment,
+    _setText(
+      "summaryDiscount",
+      Store.formatCurrency(calculation.discountAmount),
+    );
 
-      date: dateIn?.value || Store.getTodayStr(),
-
-      treatmentTime: timeIn?.value || null,
-
-      notes: notesIn?.value.trim() || "",
-
-      promoId,
-
-      promoDiscount: calculation.promoDiscount,
-
-      dp: calculation.dp,
-    };
-
-    let result = null;
-
-    if (editingId) {
-      result = await Store.updateTransaction(editingId, data);
-
-      if (!result) return;
-
-      editingId = null;
-
-      document.getElementById("txnSubmitBtn").textContent =
-        "💾 Simpan Transaksi";
-
-      showToast("Transaksi diperbarui!");
-    } else {
-      result = await Store.addTransaction(data);
-
-      if (!result) return;
-
-      showToast("Transaksi berhasil disimpan!");
-    }
-
-    _resetForm();
-
-    await _updatePromoOptions();
-
-    await _renderRecent();
+    _setText(
+      "summaryFinalPayment",
+      Store.formatCurrency(calculation.remainingAmount),
+    );
   }
 
   /* ============================================================
-       RESET FORM
+       SUBMIT
        ============================================================ */
 
-  function _resetForm() {
-    const form = document.getElementById("txnForm");
-
-    if (form) {
-      form.reset();
-    }
-
-    const dateIn = document.getElementById("txnDate");
-
-    if (dateIn) {
-      dateIn.value = Store.getTodayStr();
-    }
-
-    editingId = null;
+  async function handleSubmit(e) {
+    e.preventDefault();
 
     const btn = document.getElementById("txnSubmitBtn");
 
-    if (btn) {
-      btn.textContent = "💾 Simpan Transaksi";
-    }
+    try {
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "⏳ Menyimpan...";
+      }
 
-    _updatePaymentPreview();
+      const branch = document.getElementById("txnBranch").value;
+
+      const serviceId = document.getElementById("txnService").value;
+
+      const service = await Store.getServiceById(serviceId);
+
+      if (!service) {
+        throw new Error("Pilih layanan terlebih dahulu.");
+      }
+
+      const price = Number(document.getElementById("txnPrice").value || 0);
+
+      const treatmentTime = document.getElementById("txnTime").value;
+
+      const date = document.getElementById("txnDate").value;
+
+      const dp = Number(document.getElementById("txnDP").value || 0);
+
+      const promoSelect = document.getElementById("txnPromo");
+
+      const promoId = promoSelect?.value || null;
+
+      const promoDiscount = getSelectedPromoDiscount();
+
+      const notes = document.getElementById("txnNotes").value.trim();
+
+      if (!branch) {
+        throw new Error("Cabang wajib dipilih.");
+      }
+
+      if (!date) {
+        throw new Error("Tanggal wajib diisi.");
+      }
+
+      if (price <= 0) {
+        throw new Error("Harga treatment harus lebih dari 0.");
+      }
+
+      await Store.addTransaction({
+        branch,
+        serviceId: service.id,
+        serviceName: service.name,
+        price,
+        date,
+        treatmentTime,
+        notes,
+        promoId,
+        promoDiscount,
+        dp,
+      });
+
+      showToast("Transaksi berhasil disimpan.");
+
+      document.getElementById("txnForm")?.reset();
+
+      document.getElementById("txnDate").value = Store.getTodayStr();
+
+      updatePaymentSummary();
+
+      await renderRecent();
+    } catch (err) {
+      console.error(err);
+
+      showToast(err.message || "Gagal menyimpan transaksi.", "danger");
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "💾 Simpan Transaksi";
+      }
+    }
   }
 
   /* ============================================================
-       RECENT TRANSACTIONS
+       RECENT
        ============================================================ */
 
-  async function _renderRecent() {
-    const el = document.getElementById("recentTransactions");
+  async function renderRecent() {
+    const container = document.getElementById("recentTransactions");
 
-    if (!el) return;
+    if (!container) return;
 
-    el.innerHTML = '<p class="empty-state">Loading transaksi...</p>';
+    try {
+      const txns = await Store.getTransactions();
 
-    const txns = (await Store.getTransactions()).slice(0, 10);
+      const recent = txns.slice(0, 10);
 
-    if (txns.length === 0) {
-      el.innerHTML =
-        '<p class="empty-state">Belum ada transaksi. Mulai tambahkan transaksi pertama! 💰</p>';
+      if (recent.length === 0) {
+        container.innerHTML = `
+            <p class="empty-state">
+              Belum ada transaksi.
+            </p>
+          `;
 
-      return;
-    }
+        return;
+      }
 
-    el.innerHTML = `
-        <div class="table-responsive">
+      container.innerHTML = recent
+        .map(
+          (t) => `
+                <div
+                  style="
+                    padding:14px 0;
+                    border-bottom:1px solid var(--border);
+                    display:flex;
+                    justify-content:space-between;
+                    gap:16px;
+                    align-items:center;
+                  "
+                >
   
-          <table class="data-table">
+                  <div>
+                    <strong>
+                      ${escapeHtml(t.serviceName)}
+                    </strong>
   
-            <thead>
-              <tr>
-                <th>Tanggal</th>
-                <th>Jam</th>
-                <th>Cabang</th>
-                <th>Layanan</th>
-                <th>Total</th>
-                <th>DP</th>
-                <th>Promo</th>
-                <th>Sisa Bayar</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
+                    <div class="text-muted">
+                      ${escapeHtml(t.branch)}
+                      ·
+                      ${Store.formatDate(t.date)}
+                      ${t.treatmentTime ? " · " + t.treatmentTime : ""}
+                    </div>
+                  </div>
   
-            <tbody>
-              ${txns.map(_txnRow).join("")}
-            </tbody>
+                  <div
+                    style="
+                      text-align:right;
+                    "
+                  >
+                    <strong>
+                      ${Store.formatCurrency(t.price)}
+                    </strong>
   
-          </table>
+                    <br />
   
-        </div>
-      `;
-  }
-
-  function _txnRow(t) {
-    const calc = Store.calculateTransaction({
-      price: Number(t.price) || 0,
-
-      dp: Number(t.dp) || 0,
-
-      promoDiscount: Number(t.promo_discount) || 0,
-    });
-
-    return `
-        <tr>
+                    <button
+                      class="btn btn-sm btn-outline"
+                      data-delete-txn="${t.id}"
+                      style="margin-top:5px"
+                    >
+                      🗑 Hapus
+                    </button>
+                  </div>
   
-          <td data-label="Tanggal">
-            ${Store.formatDate(t.date)}
-          </td>
-  
-          <td data-label="Jam">
-            ${t.treatment_time ? Store.formatTime(t.treatment_time) : "—"}
-          </td>
-  
-          <td data-label="Cabang">
-            <strong>
-              ${t.branch || "Kemang"}
-            </strong>
-          </td>
-  
-          <td data-label="Layanan">
-            <span class="service-tag">
-              ${t.service_name}
-            </span>
-          </td>
-  
-          <td data-label="Total">
-            ${Store.formatCurrency(calc.totalTreatment)}
-          </td>
-  
-          <td data-label="DP">
-            ${Store.formatCurrency(calc.dp)}
-          </td>
-  
-          <td data-label="Promo">
-            ${
-              calc.promoDiscount
-                ? `
-                  <span class="discount-tag">
-                    −${calc.promoDiscount}%
-                  </span>
-                `
-                : "—"
-            }
-          </td>
-  
-          <td data-label="Sisa Bayar">
-            <strong>
-              ${Store.formatCurrency(calc.remainingAmount)}
-            </strong>
-          </td>
-  
-          <td
-            data-label="Aksi"
-            class="actions"
-          >
-  
-            <button
-              class="btn-icon btn-edit"
-              onclick="Transactions.edit('${t.id}')"
-              title="Edit"
-            >
-              ✏️
-            </button>
-  
-            <button
-              class="btn-icon btn-delete"
-              onclick="Transactions.remove('${t.id}')"
-              title="Hapus"
-            >
-              🗑️
-            </button>
-  
-          </td>
-  
-        </tr>
-      `;
-  }
+                </div>
+              `,
+        )
+        .join("");
 
-  /* ============================================================
-       EDIT
-       ============================================================ */
+      container.querySelectorAll("[data-delete-txn]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          await deleteTransaction(btn.dataset.deleteTxn);
+        });
+      });
+    } catch (err) {
+      console.error(err);
 
-  async function edit(id) {
-    const txns = await Store.getTransactions();
-
-    const txn = txns.find((t) => t.id === id);
-
-    if (!txn) return;
-
-    editingId = id;
-
-    await _populateServiceDropdown(txn.service_id);
-
-    document.getElementById("txnBranch").value = txn.branch || "Kemang";
-
-    document.getElementById("txnService").value = txn.service_id || "";
-
-    document.getElementById("txnPrice").value = txn.price || 0;
-
-    document.getElementById("txnDate").value = txn.date;
-
-    const timeIn = document.getElementById("txnTreatmentTime");
-
-    if (timeIn) {
-      timeIn.value = txn.treatment_time
-        ? String(txn.treatment_time).slice(0, 5)
-        : "";
-    }
-
-    const dpIn = document.getElementById("txnDP");
-
-    if (dpIn) {
-      dpIn.value = txn.dp || 0;
-    }
-
-    document.getElementById("txnNotes").value = txn.notes || "";
-
-    await _updatePromoOptions(txn.promo_id);
-
-    document.getElementById("txnSubmitBtn").textContent = "✏️ Update Transaksi";
-
-    _updatePaymentPreview();
-
-    window.location.hash = "transactions";
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  }
-
-  /* ============================================================
-       DELETE
-       ============================================================ */
-
-  async function remove(id, fromHistory = false) {
-    if (!confirm("Hapus transaksi ini?")) {
-      return;
-    }
-
-    const result = await Store.deleteTransaction(id);
-
-    if (!result) return;
-
-    showToast("Transaksi dihapus!");
-
-    if (fromHistory) {
-      await renderHistory();
-    } else {
-      await _renderRecent();
+      container.innerHTML = `
+          <p class="empty-state">
+            Gagal memuat transaksi.
+          </p>
+        `;
     }
   }
 
@@ -588,234 +377,273 @@ const Transactions = (() => {
        ============================================================ */
 
   async function renderHistory() {
-    if (!_initHist) {
-      _setupHistory();
-      _initHist = true;
-    }
+    _setupHistory();
 
-    await _renderHistoryTable();
+    await renderHistoryTable();
   }
+
+  let historyInitialized = false;
 
   function _setupHistory() {
-    const search = document.getElementById("historySearch");
+    if (historyInitialized) return;
 
-    const branchF = document.getElementById("historyFilterBranch");
+    historyInitialized = true;
 
-    const dateF = document.getElementById("historyFilterDate");
+    ["historySearch", "historyFilterBranch", "historyFilterDate"].forEach(
+      (id) => {
+        document
+          .getElementById(id)
+          ?.addEventListener("input", renderHistoryTable);
 
-    const clearBtn = document.getElementById("historyClear");
+        document
+          .getElementById(id)
+          ?.addEventListener("change", renderHistoryTable);
+      },
+    );
 
-    if (search) {
-      search.addEventListener("input", _renderHistoryTable);
-    }
+    document
+      .getElementById("historyClear")
+      ?.addEventListener("click", async () => {
+        document.getElementById("historySearch").value = "";
 
-    if (branchF) {
-      branchF.addEventListener("change", _renderHistoryTable);
-    }
+        document.getElementById("historyFilterBranch").value = "";
 
-    if (dateF) {
-      dateF.addEventListener("change", _renderHistoryTable);
-    }
+        document.getElementById("historyFilterDate").value = "";
 
-    if (clearBtn) {
-      clearBtn.addEventListener("click", async () => {
-        if (search) search.value = "";
-
-        if (branchF) branchF.value = "";
-
-        if (dateF) dateF.value = "";
-
-        await _renderHistoryTable();
+        await renderHistoryTable();
       });
-    }
   }
 
-  async function _renderHistoryTable() {
-    const el = document.getElementById("historyTable");
+  async function renderHistoryTable() {
+    const container = document.getElementById("historyTable");
 
-    if (!el) return;
+    if (!container) return;
 
-    const search = (
-      document.getElementById("historySearch")?.value || ""
-    ).toLowerCase();
+    try {
+      let txns = await Store.getTransactions();
 
-    const branchF = document.getElementById("historyFilterBranch")?.value || "";
+      const search = (document.getElementById("historySearch")?.value || "")
+        .trim()
+        .toLowerCase();
 
-    const dateF = document.getElementById("historyFilterDate")?.value || "";
+      const branch =
+        document.getElementById("historyFilterBranch")?.value || "";
 
-    let txns = await Store.getTransactions();
+      const date = document.getElementById("historyFilterDate")?.value || "";
 
-    if (search) {
-      txns = txns.filter(
-        (t) =>
-          (t.service_name || "").toLowerCase().includes(search) ||
-          (t.notes || "").toLowerCase().includes(search),
-      );
-    }
+      if (search) {
+        txns = txns.filter(
+          (t) =>
+            String(t.serviceName || "")
+              .toLowerCase()
+              .includes(search) ||
+            String(t.notes || "")
+              .toLowerCase()
+              .includes(search),
+        );
+      }
 
-    if (branchF) {
-      txns = txns.filter((t) => t.branch === branchF);
-    }
+      if (branch) {
+        txns = txns.filter((t) => t.branch === branch);
+      }
 
-    if (dateF) {
-      txns = txns.filter((t) => t.date === dateF);
-    }
+      if (date) {
+        txns = txns.filter((t) => t.date === date);
+      }
 
-    const total = txns.reduce((sum, t) => {
-      const calc = Store.calculateTransaction({
-        price: t.price,
+      const total = txns.reduce((sum, t) => sum + Number(t.price || 0), 0);
 
-        dp: t.dp,
+      _setText("historyTotal", Store.formatCurrency(total));
 
-        promoDiscount: t.promo_discount,
-      });
+      _setText("historyCount", txns.length + " transaksi");
 
-      // Revenue treatment setelah promo
-      return sum + calc.finalTreatmentAmount;
-    }, 0);
+      if (txns.length === 0) {
+        container.innerHTML = `
+            <p class="empty-state">
+              Tidak ada transaksi.
+            </p>
+          `;
 
-    const totalEl = document.getElementById("historyTotal");
+        return;
+      }
 
-    const countEl = document.getElementById("historyCount");
-
-    if (totalEl) {
-      totalEl.textContent = Store.formatCurrency(total);
-    }
-
-    if (countEl) {
-      countEl.textContent = txns.length + " transaksi";
-    }
-
-    if (txns.length === 0) {
-      el.innerHTML =
-        '<p class="empty-state">Tidak ada transaksi ditemukan. 🔍</p>';
-
-      return;
-    }
-
-    el.innerHTML = `
-        <div class="table-responsive">
+      container.innerHTML = `
+          <div style="overflow-x:auto">
   
-          <table class="data-table">
+            <table
+              style="
+                width:100%;
+                border-collapse:collapse;
+              "
+            >
   
-            <thead>
-              <tr>
-                <th>Tanggal</th>
-                <th>Jam</th>
-                <th>Cabang</th>
-                <th>Layanan</th>
-                <th>Total Treatment</th>
-                <th>DP</th>
-                <th>Promo</th>
-                <th>Sisa Bayar</th>
-                <th>Catatan</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
+              <thead>
+                <tr>
+                  <th style="text-align:left;padding:12px 8px">
+                    Tanggal
+                  </th>
   
-            <tbody>
+                  <th style="text-align:left;padding:12px 8px">
+                    Cabang
+                  </th>
   
-              ${txns
-                .map((t) => {
-                  const calc = Store.calculateTransaction({
-                    price: t.price,
-
-                    dp: t.dp,
-
-                    promoDiscount: t.promo_discount,
-                  });
-
-                  return `
-                      <tr>
+                  <th style="text-align:left;padding:12px 8px">
+                    Layanan
+                  </th>
   
-                        <td data-label="Tanggal">
+                  <th style="text-align:left;padding:12px 8px">
+                    Jam
+                  </th>
+  
+                  <th style="text-align:right;padding:12px 8px">
+                    Harga
+                  </th>
+  
+                  <th style="text-align:right;padding:12px 8px">
+                    DP
+                  </th>
+  
+                  <th style="text-align:right;padding:12px 8px">
+                    Sisa
+                  </th>
+  
+                  <th style="padding:12px 8px">
+                  </th>
+                </tr>
+              </thead>
+  
+              <tbody>
+                ${txns
+                  .map(
+                    (t) => `
+                      <tr
+                        style="
+                          border-top:1px solid var(--border);
+                        "
+                      >
+  
+                        <td style="padding:12px 8px">
                           ${Store.formatDate(t.date)}
                         </td>
   
-                        <td data-label="Jam">
-                          ${
-                            t.treatment_time
-                              ? Store.formatTime(t.treatment_time)
-                              : "—"
-                          }
+                        <td style="padding:12px 8px">
+                          ${escapeHtml(t.branch)}
                         </td>
   
-                        <td data-label="Cabang">
+                        <td style="padding:12px 8px">
                           <strong>
-                            ${t.branch || "Kemang"}
+                            ${escapeHtml(t.serviceName)}
                           </strong>
-                        </td>
   
-                        <td data-label="Layanan">
-                          <span class="service-tag">
-                            ${t.service_name}
-                          </span>
-                        </td>
-  
-                        <td data-label="Total Treatment">
-                          ${Store.formatCurrency(calc.totalTreatment)}
-                        </td>
-  
-                        <td data-label="DP">
-                          ${Store.formatCurrency(calc.dp)}
-                        </td>
-  
-                        <td data-label="Promo">
                           ${
-                            calc.promoDiscount
+                            t.promoDiscount
                               ? `
-                                <span class="discount-tag">
-                                  −${calc.promoDiscount}%
-                                </span>
+                                <br>
+                                <small
+                                  class="text-muted"
+                                >
+                                  Promo ${t.promoDiscount}%
+                                </small>
                               `
-                              : "—"
+                              : ""
                           }
                         </td>
   
-                        <td data-label="Sisa Bayar">
-                          <strong>
-                            ${Store.formatCurrency(calc.remainingAmount)}
-                          </strong>
-                        </td>
-  
-                        <td data-label="Catatan">
-                          ${t.notes || "—"}
+                        <td style="padding:12px 8px">
+                          ${t.treatmentTime || "-"}
                         </td>
   
                         <td
-                          data-label="Aksi"
-                          class="actions"
+                          style="
+                            padding:12px 8px;
+                            text-align:right;
+                          "
                         >
+                          ${Store.formatCurrency(t.price)}
+                        </td>
   
+                        <td
+                          style="
+                            padding:12px 8px;
+                            text-align:right;
+                          "
+                        >
+                          ${Store.formatCurrency(t.dp)}
+                        </td>
+  
+                        <td
+                          style="
+                            padding:12px 8px;
+                            text-align:right;
+                            font-weight:700;
+                          "
+                        >
+                          ${Store.formatCurrency(t.remainingAmount)}
+                        </td>
+  
+                        <td
+                          style="
+                            padding:12px 8px;
+                            text-align:right;
+                          "
+                        >
                           <button
-                            class="btn-icon btn-edit"
-                            onclick="Transactions.edit('${t.id}')"
-                            title="Edit"
+                            class="btn btn-sm btn-outline"
+                            data-history-delete="${t.id}"
                           >
-                            ✏️
+                            🗑
                           </button>
-  
-                          <button
-                            class="btn-icon btn-delete"
-                            onclick="Transactions.remove('${t.id}', true)"
-                            title="Hapus"
-                          >
-                            🗑️
-                          </button>
-  
                         </td>
   
                       </tr>
-                    `;
-                })
-                .join("")}
+                    `,
+                  )
+                  .join("")}
+              </tbody>
   
-            </tbody>
+            </table>
   
-          </table>
-  
-        </div>
-      `;
+          </div>
+        `;
+
+      container.querySelectorAll("[data-history-delete]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          await deleteTransaction(btn.dataset.historyDelete);
+
+          await renderHistoryTable();
+        });
+      });
+    } catch (err) {
+      console.error(err);
+
+      container.innerHTML = `
+          <p class="empty-state">
+            Gagal memuat riwayat transaksi.
+          </p>
+        `;
+    }
+  }
+
+  /* ============================================================
+       DELETE
+       ============================================================ */
+
+  async function deleteTransaction(id) {
+    try {
+      const ok = confirm("Hapus transaksi ini?");
+
+      if (!ok) return;
+
+      await Store.deleteTransaction(id);
+
+      showToast("Transaksi berhasil dihapus.");
+
+      await renderRecent();
+    } catch (err) {
+      console.error(err);
+
+      showToast(err.message || "Gagal menghapus transaksi.", "danger");
+    }
   }
 
   /* ============================================================
@@ -823,76 +651,112 @@ const Transactions = (() => {
        ============================================================ */
 
   async function exportCSV() {
-    const txns = await Store.getTransactions();
+    try {
+      const txns = await Store.getTransactions();
 
-    if (txns.length === 0) {
-      showToast("Tidak ada data untuk di-export!", "warning");
-      return;
+      if (txns.length === 0) {
+        showToast("Belum ada transaksi untuk diexport.", "danger");
+
+        return;
+      }
+
+      const headers = [
+        "ID",
+        "Tanggal",
+        "Jam Treatment",
+        "Cabang",
+        "Layanan",
+        "Harga",
+        "DP",
+        "Promo",
+        "Diskon %",
+        "Diskon Nominal",
+        "Sisa Sebelum Promo",
+        "Sisa Bayar",
+        "Catatan",
+        "Created At",
+      ];
+
+      const rows = txns.map((t) => [
+        t.id,
+        t.date,
+        t.treatmentTime || "",
+        t.branch,
+        t.serviceName,
+        t.price,
+        t.dp,
+        t.promoId || "",
+        t.promoDiscount,
+        t.discountAmount,
+        t.remainingBeforePromo,
+        t.remainingAmount,
+        t.notes || "",
+        t.createdAt || "",
+      ]);
+
+      const csv = [headers, ...rows]
+        .map((row) => row.map(csvEscape).join(","))
+        .join("\n");
+
+      const blob = new Blob(["\ufeff" + csv], {
+        type: "text/csv;charset=utf-8;",
+      });
+
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+
+      a.href = url;
+
+      a.download = "next-level-transactions-" + Store.getTodayStr() + ".csv";
+
+      document.body.appendChild(a);
+
+      a.click();
+
+      a.remove();
+
+      URL.revokeObjectURL(url);
+
+      showToast("CSV berhasil diexport.");
+    } catch (err) {
+      console.error(err);
+
+      showToast("Gagal export CSV.", "danger");
     }
-
-    const header =
-      "Tanggal,Jam,Cabang,Layanan,Total Treatment,DP,Diskon Promo (%),Sisa Bayar,Catatan\n";
-
-    const rows = txns
-      .map((t) => {
-        const calc = Store.calculateTransaction({
-          price: t.price,
-
-          dp: t.dp,
-
-          promoDiscount: t.promo_discount,
-        });
-
-        return [
-          t.date,
-
-          `"${t.treatment_time || ""}"`,
-
-          `"${t.branch || "Kemang"}"`,
-
-          `"${(t.service_name || "").replace(/"/g, '""')}"`,
-
-          calc.totalTreatment,
-
-          calc.dp,
-
-          calc.promoDiscount,
-
-          calc.remainingAmount,
-
-          `"${(t.notes || "").replace(/"/g, '""')}"`,
-        ].join(",");
-      })
-      .join("\n");
-
-    const blob = new Blob(["\uFEFF" + header + rows], {
-      type: "text/csv;charset=utf-8;",
-    });
-
-    const a = document.createElement("a");
-
-    const url = URL.createObjectURL(blob);
-
-    a.href = url;
-
-    a.download = `beauty-bar-transaksi-${Store.getTodayStr()}.csv`;
-
-    a.click();
-
-    URL.revokeObjectURL(url);
-
-    showToast("Data berhasil di-export! 📄");
   }
 
-  /* ============================================================
-       PUBLIC API
-       ============================================================ */
+  function csvEscape(value) {
+    const text = String(value ?? "");
+
+    if (text.includes(",") || text.includes('"') || text.includes("\n")) {
+      return '"' + text.replace(/"/g, '""') + '"';
+    }
+
+    return text;
+  }
+
+  function _setText(id, value) {
+    const el = document.getElementById(id);
+
+    if (el) {
+      el.textContent = value;
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 
   return {
     render,
     renderHistory,
-    edit,
-    remove,
     exportCSV,
+    updatePaymentSummary,
   };
 })();

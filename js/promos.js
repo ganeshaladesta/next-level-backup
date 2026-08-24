@@ -1,18 +1,18 @@
 /* ============================================================
-   Beauty Bar Dashboard — Promos Management
+   PROMOS
    ============================================================ */
 
 const Promos = (() => {
-  let _initialized = false;
+  let initialized = false;
   let editingId = null;
 
   async function render() {
-    if (!_initialized) {
+    if (!initialized) {
       _setup();
-      _initialized = true;
+      initialized = true;
     }
 
-    await _renderList();
+    await renderList();
   }
 
   function _setup() {
@@ -22,267 +22,267 @@ const Promos = (() => {
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      await _save();
+
+      const name = document.getElementById("promoName").value.trim();
+
+      const discount = Number(document.getElementById("promoDiscount").value);
+
+      const startDate = document.getElementById("promoStart").value;
+
+      const endDate = document.getElementById("promoEnd").value;
+
+      const description = document.getElementById("promoDesc").value.trim();
+
+      try {
+        if (!name) {
+          throw new Error("Nama promo wajib diisi.");
+        }
+
+        if (discount < 0 || discount > 100) {
+          throw new Error("Diskon harus 0-100%.");
+        }
+
+        if (endDate < startDate) {
+          throw new Error("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+        }
+
+        if (editingId) {
+          await Store.updatePromo(editingId, {
+            name,
+            discount,
+            startDate,
+            endDate,
+            description,
+          });
+
+          showToast("Promo berhasil diperbarui.");
+        } else {
+          await Store.addPromo({
+            name,
+            discount,
+            startDate,
+            endDate,
+            description,
+          });
+
+          showToast("Promo berhasil ditambahkan.");
+        }
+
+        _resetForm();
+
+        await renderList();
+      } catch (err) {
+        console.error(err);
+
+        showToast(err.message || "Gagal menyimpan promo.", "danger");
+      }
     });
   }
 
-  async function _save() {
-    const nameIn = document.getElementById("promoName");
+  async function renderList() {
+    const container = document.getElementById("promosList");
 
-    const startIn = document.getElementById("promoStart");
+    if (!container) return;
 
-    const endIn = document.getElementById("promoEnd");
+    try {
+      const promos = await Store.getPromos();
 
-    const discIn = document.getElementById("promoDiscount");
+      if (promos.length === 0) {
+        container.innerHTML = `
+            <p class="empty-state">
+              Belum ada promo.
+            </p>
+          `;
 
-    const descIn = document.getElementById("promoDesc");
+        return;
+      }
 
-    const name = nameIn.value.trim();
+      container.innerHTML = promos
+        .map((p) => {
+          const today = Store.getTodayStr();
 
-    if (!name) {
-      showToast("Nama promo harus diisi!", "warning");
-      return;
-    }
+          let status = "Upcoming";
 
-    if (!startIn.value || !endIn.value) {
-      showToast("Tanggal mulai & selesai wajib diisi!", "warning");
-      return;
-    }
+          if (today >= p.startDate && today <= p.endDate) {
+            status = "Aktif";
+          } else if (today > p.endDate) {
+            status = "Berakhir";
+          }
 
-    if (startIn.value > endIn.value) {
-      showToast("Tanggal mulai harus sebelum tanggal selesai!", "warning");
-      return;
-    }
-
-    const data = {
-      name,
-      startDate: startIn.value,
-      endDate: endIn.value,
-      discount: Number(discIn.value) || 0,
-      description: descIn.value.trim(),
-    };
-
-    if (editingId) {
-      const result = await Store.updatePromo(editingId, data);
-
-      if (!result) return;
-
-      editingId = null;
-
-      document.getElementById("promoSubmitBtn").textContent = "➕ Tambah Promo";
-
-      showToast("Promo diperbarui!");
-    } else {
-      const result = await Store.addPromo(data);
-
-      if (!result) return;
-
-      showToast("Promo berhasil ditambahkan! 🎉");
-    }
-
-    document.getElementById("promoForm").reset();
-
-    await _renderList();
-  }
-
-  async function _renderList() {
-    const el = document.getElementById("promosList");
-
-    if (!el) return;
-
-    el.innerHTML = '<p class="empty-state">Loading promo...</p>';
-
-    const promos = await Store.getPromos();
-
-    const today = Store.getTodayStr();
-
-    if (promos.length === 0) {
-      el.innerHTML =
-        '<p class="empty-state">Belum ada promo. Buat promo pertama! 🎉</p>';
-      return;
-    }
-
-    const sorted = [...promos].sort((a, b) => {
-      const sa = _statusOrder(a, today);
-
-      const sb = _statusOrder(b, today);
-
-      return sa - sb;
-    });
-
-    el.innerHTML = `
-        <div class="table-responsive">
-          <table class="data-table">
+          return `
+                  <div
+                    style="
+                      padding:16px 0;
+                      border-bottom:1px solid var(--border);
+                    "
+                  >
   
-            <thead>
-              <tr>
-                <th>Promo</th>
-                <th>Periode</th>
-                <th>Diskon</th>
-                <th>Status</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
+                    <div
+                      style="
+                        display:flex;
+                        justify-content:space-between;
+                        gap:16px;
+                        align-items:flex-start;
+                      "
+                    >
   
-            <tbody>
+                      <div>
   
-              ${sorted
-                .map((p) => {
-                  const { cls, label } = _statusInfo(p, today);
-
-                  return `
-                    <tr>
+                        <strong>
+                          ${escapeHtml(p.name)}
+                        </strong>
   
-                      <td data-label="Promo">
+                        <div
+                          style="
+                            margin-top:5px;
+                            font-size:18px;
+                            font-weight:700;
+                          "
+                        >
+                          ${p.discount}%
+                        </div>
   
-                        <div>
-                          <strong>
-                            ${p.name}
-                          </strong>
+                        <div class="text-muted">
+                          ${Store.formatDate(p.startDate)}
+                          -
+                          ${Store.formatDate(p.endDate)}
+                          · ${status}
                         </div>
   
                         ${
                           p.description
                             ? `
-                              <div class="text-muted text-sm">
-                                ${p.description}
+                              <div
+                                class="text-muted"
+                                style="margin-top:5px"
+                              >
+                                ${escapeHtml(p.description)}
                               </div>
                             `
                             : ""
                         }
   
-                      </td>
+                      </div>
   
-                      <td data-label="Periode">
-                        ${Store.formatDate(p.start_date)}
-                        —
-                        ${Store.formatDate(p.end_date)}
-                      </td>
-  
-                      <td data-label="Diskon">
-                        <span class="discount-tag">
-                          −${p.discount}%
-                        </span>
-                      </td>
-  
-                      <td data-label="Status">
-                        <span class="status-badge ${cls}">
-                          ${label}
-                        </span>
-                      </td>
-  
-                      <td
-                        data-label="Aksi"
-                        class="actions"
+                      <div
+                        style="
+                          display:flex;
+                          gap:8px;
+                          flex-wrap:wrap;
+                        "
                       >
   
                         <button
-                          class="btn-icon btn-edit"
-                          onclick="Promos.editPromo('${p.id}')"
-                          title="Edit"
+                          class="btn btn-sm btn-outline"
+                          data-action="edit"
+                          data-id="${p.id}"
                         >
-                          ✏️
+                          ✏️ Edit
                         </button>
   
                         <button
-                          class="btn-icon btn-delete"
-                          onclick="Promos.deletePromo('${p.id}')"
-                          title="Hapus"
+                          class="btn btn-sm btn-outline"
+                          data-action="delete"
+                          data-id="${p.id}"
                         >
-                          🗑️
+                          🗑 Hapus
                         </button>
   
-                      </td>
+                      </div>
   
-                    </tr>
-                  `;
-                })
-                .join("")}
+                    </div>
   
-            </tbody>
-  
-          </table>
-        </div>
-      `;
+                  </div>
+                `;
+        })
+        .join("");
+
+      container.querySelectorAll("[data-action]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          await handleAction(btn.dataset.action, btn.dataset.id);
+        });
+      });
+    } catch (err) {
+      console.error(err);
+
+      container.innerHTML = `
+          <p class="empty-state">
+            Gagal memuat promo.
+          </p>
+        `;
+
+      showToast(err.message || "Gagal memuat promo.", "danger");
+    }
   }
 
-  function _statusInfo(p, today) {
-    if (today >= p.start_date && today <= p.end_date) {
-      return {
-        cls: "badge-active",
-        label: "🟢 Aktif",
-      };
-    }
+  async function handleAction(action, id) {
+    try {
+      if (action === "edit") {
+        const promo = (await Store.getPromos()).find((p) => p.id === id);
 
-    if (today < p.start_date) {
-      return {
-        cls: "badge-upcoming",
-        label: "🔵 Akan Datang",
-      };
-    }
+        if (!promo) return;
 
-    return {
-      cls: "badge-expired",
-      label: "⚫ Berakhir",
-    };
+        editingId = id;
+
+        document.getElementById("promoName").value = promo.name;
+
+        document.getElementById("promoDiscount").value = promo.discount;
+
+        document.getElementById("promoStart").value = promo.startDate;
+
+        document.getElementById("promoEnd").value = promo.endDate;
+
+        document.getElementById("promoDesc").value = promo.description || "";
+
+        const btn = document.getElementById("promoSubmitBtn");
+
+        if (btn) {
+          btn.textContent = "💾 Simpan Perubahan";
+        }
+
+        return;
+      }
+
+      if (action === "delete") {
+        const ok = confirm("Hapus promo ini?");
+
+        if (!ok) return;
+
+        await Store.deletePromo(id);
+
+        showToast("Promo berhasil dihapus.");
+
+        await renderList();
+      }
+    } catch (err) {
+      console.error(err);
+
+      showToast(err.message || "Gagal memproses promo.", "danger");
+    }
   }
 
-  function _statusOrder(p, today) {
-    if (today >= p.start_date && today <= p.end_date) {
-      return 0;
-    }
+  function _resetForm() {
+    editingId = null;
 
-    if (today < p.start_date) {
-      return 1;
-    }
+    document.getElementById("promoForm")?.reset();
 
-    return 2;
+    const btn = document.getElementById("promoSubmitBtn");
+
+    if (btn) {
+      btn.textContent = "➕ Tambah Promo";
+    }
   }
 
-  async function editPromo(id) {
-    const promos = await Store.getPromos();
-
-    const p = promos.find((x) => x.id === id);
-
-    if (!p) return;
-
-    editingId = id;
-
-    document.getElementById("promoName").value = p.name;
-
-    document.getElementById("promoStart").value = p.start_date;
-
-    document.getElementById("promoEnd").value = p.end_date;
-
-    document.getElementById("promoDiscount").value = p.discount;
-
-    document.getElementById("promoDesc").value = p.description || "";
-
-    document.getElementById("promoSubmitBtn").textContent = "✏️ Update Promo";
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  }
-
-  async function deletePromo(id) {
-    if (!confirm("Hapus promo ini?")) {
-      return;
-    }
-
-    const result = await Store.deletePromo(id);
-
-    if (!result) return;
-
-    await _renderList();
-
-    showToast("Promo dihapus!");
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
   return {
     render,
-    editPromo,
-    deletePromo,
   };
 })();

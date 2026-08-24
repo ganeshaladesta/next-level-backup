@@ -1,6 +1,6 @@
 /* ============================================================
-   Next Level Beauty Bar
-   Dashboard View — Supabase / Online Version
+   NEXT LEVEL BEAUTY BAR
+   Dashboard
    ============================================================ */
 
 const Dashboard = (() => {
@@ -12,32 +12,24 @@ const Dashboard = (() => {
   let currentBranch = "all";
   let currentChartType = "line";
 
-  let _initialized = false;
+  let initialized = false;
 
-  /* ============================================================
-       RENDER
-       ============================================================ */
+  const BRANCHES = ["Kemang", "LCC", "Bintaro", "Bandung"];
 
-  function render() {
-    if (!_initialized) {
+  async function render() {
+    if (!initialized) {
       _setup();
-      _initialized = true;
+      initialized = true;
     }
 
-    renderPromoBanner();
-    renderSummaryCards();
-    renderCharts();
+    await renderPromoBanner();
+    await renderSummaryCards();
+    await renderCharts();
   }
 
-  /* ============================================================
-       SETUP
-       ============================================================ */
-
   function _setup() {
-    /* ---------- Period Filter ---------- */
-
     document.querySelectorAll(".filter-btn[data-filter]").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", async () => {
         document
           .querySelectorAll(".filter-btn[data-filter]")
           .forEach((b) => b.classList.remove("active"));
@@ -46,15 +38,13 @@ const Dashboard = (() => {
 
         currentFilter = btn.dataset.filter;
 
-        renderSummaryCards();
-        renderCharts();
+        await renderCharts();
+        await renderSummaryCards();
       });
     });
 
-    /* ---------- Chart Type ---------- */
-
     document.querySelectorAll(".chart-type-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", async () => {
         document
           .querySelectorAll(".chart-type-btn")
           .forEach((b) => b.classList.remove("active"));
@@ -63,212 +53,128 @@ const Dashboard = (() => {
 
         currentChartType = btn.dataset.chartType;
 
-        renderCharts();
+        await renderCharts();
       });
     });
-
-    /* ---------- Branch ---------- */
 
     const branchFilter = document.getElementById("dashBranchFilter");
 
     if (branchFilter) {
-      branchFilter.addEventListener("change", (e) => {
+      // Pastikan Bandung ada
+      if (![...branchFilter.options].some((o) => o.value === "Bandung")) {
+        const option = document.createElement("option");
+
+        option.value = "Bandung";
+        option.textContent = "Bandung";
+
+        branchFilter.appendChild(option);
+      }
+
+      branchFilter.addEventListener("change", async (e) => {
         currentBranch = e.target.value;
 
-        renderSummaryCards();
-        renderCharts();
+        await renderSummaryCards();
+        await renderCharts();
       });
-    }
-
-    /* ---------- PDF ---------- */
-
-    const exportBtn = document.getElementById("exportPdfBtn");
-
-    if (exportBtn) {
-      exportBtn.addEventListener("click", exportPDF);
     }
   }
 
   /* ============================================================
-       PROMO BANNER
+       PROMO
        ============================================================ */
 
-  function renderPromoBanner() {
+  async function renderPromoBanner() {
     const banner = document.getElementById("promoBanner");
 
     if (!banner) return;
 
-    const active = Store.getActivePromos();
+    const active = await Store.getActivePromos();
 
-    if (active.length > 0) {
-      banner.innerHTML = active
-        .map(
-          (p) => `
-              <div class="promo-badge-item">
-                <span class="promo-badge-icon">🎉</span>
-  
-                <span>
-                  <strong>${_escapeHtml(p.name)}</strong>
-                  — ${Number(p.discount) || 0}% Off
-                  ${p.description ? " · " + _escapeHtml(p.description) : ""}
-                </span>
-              </div>
-            `,
-        )
-        .join("");
-
-      banner.style.display = "block";
-    } else {
+    if (active.length === 0) {
       banner.innerHTML = "";
       banner.style.display = "none";
+      return;
     }
+
+    banner.innerHTML = active
+      .map(
+        (p) => `
+            <div class="promo-badge-item">
+              <span class="promo-badge-icon">
+                🎉
+              </span>
+  
+              <span>
+                <strong>
+                  ${escapeHtml(p.name)}
+                </strong>
+  
+                — ${p.discount}% Off
+  
+                ${p.description ? " · " + escapeHtml(p.description) : ""}
+              </span>
+            </div>
+          `,
+      )
+      .join("");
+
+    banner.style.display = "block";
   }
 
   /* ============================================================
-       SUMMARY CARDS
+       SUMMARY
        ============================================================ */
 
-  function renderSummaryCards() {
+  async function renderSummaryCards() {
+    let all = await Store.getTransactions();
+
+    all = filterBranch(all);
+
     const today = Store.getTodayStr();
 
-    let all = Store.getTransactions();
+    const monthStart = today.substring(0, 7) + "-01";
 
-    if (currentBranch !== "all") {
-      all = all.filter((t) => t.branch === currentBranch);
-    }
-
-    /* ---------- Today ---------- */
+    const yearStart = today.substring(0, 4) + "-01-01";
 
     const todayTxns = all.filter((t) => t.date === today);
-
-    /* ---------- Month ---------- */
-
-    const monthStart = today.substring(0, 7) + "-01";
 
     const monthTxns = all.filter(
       (t) => t.date >= monthStart && t.date <= today,
     );
 
-    /* ---------- Year ---------- */
-
-    const yearStart = today.substring(0, 4) + "-01-01";
-
     const yearTxns = all.filter((t) => t.date >= yearStart && t.date <= today);
 
-    /* ---------- Revenue ---------- */
+    const sum = (arr) =>
+      arr.reduce((total, t) => total + Number(t.price || 0), 0);
 
-    const sumRevenue = (arr) => {
-      return arr.reduce((sum, t) => {
-        return sum + _getRevenueValue(t);
-      }, 0);
-    };
+    _setText("todayRevenue", Store.formatCurrency(sum(todayTxns)));
 
-    const todayRevenue = sumRevenue(todayTxns);
-    const monthRevenue = sumRevenue(monthTxns);
-    const yearRevenue = sumRevenue(yearTxns);
+    _setText("todayCount", todayTxns.length + " transaksi");
 
-    /* ---------- Cards ---------- */
+    _setText("monthRevenue", Store.formatCurrency(sum(monthTxns)));
 
-    _setText("todayRevenue", Store.formatCurrency(todayRevenue));
+    _setText("monthCount", monthTxns.length + " transaksi");
 
-    _setText("todayCount", todayTxns.length + " Transaksi");
+    _setText("yearRevenue", Store.formatCurrency(sum(yearTxns)));
 
-    _setText("monthRevenue", Store.formatCurrency(monthRevenue));
-
-    _setText("monthCount", monthTxns.length + " Transaksi");
-
-    _setText("yearRevenue", Store.formatCurrency(yearRevenue));
-
-    _setText("yearCount", yearTxns.length + " Transaksi");
+    _setText("yearCount", yearTxns.length + " transaksi");
 
     _setText("totalTransactions", all.length);
 
-    _setText(
-      "totalServices",
-      Store.getActiveServices().length + " Layanan Aktif",
-    );
-  }
+    const services = await Store.getActiveServices();
 
-  /* ============================================================
-       REVENUE VALUE
-       ============================================================ */
-
-  /*
-   * Revenue dashboard menggunakan nilai transaksi
-   * setelah DP + promo.
-   *
-   * Contoh:
-   *
-   * Treatment       200.000
-   * DP              100.000
-   * Sisa            100.000
-   * Diskon 50%       50.000
-   * Sisa Bayar       50.000
-   *
-   * Total revenue treatment:
-   *
-   * 100.000 DP
-   * + 50.000 sisa
-   * = 150.000
-   *
-   * Prioritas:
-   *
-   * 1. finalTreatmentAmount
-   * 2. hitung ulang dari price + dp + promo
-   * 3. fallback price
-   */
-
-  function _getRevenueValue(t) {
-    if (
-      t.finalTreatmentAmount !== undefined &&
-      t.finalTreatmentAmount !== null
-    ) {
-      return Number(t.finalTreatmentAmount) || 0;
-    }
-
-    if (t.price !== undefined && t.price !== null) {
-      const price = Number(t.price) || 0;
-      const dp = Math.min(Math.max(Number(t.dp) || 0, 0), price);
-
-      const discount = Math.max(0, Math.min(Number(t.promoDiscount) || 0, 100));
-
-      const remaining = price - dp;
-
-      const discountAmount = Math.round(remaining * (discount / 100));
-
-      const finalAmount = dp + Math.max(0, remaining - discountAmount);
-
-      return finalAmount;
-    }
-
-    return 0;
-  }
-
-  /* ============================================================
-       TEXT HELPER
-       ============================================================ */
-
-  function _setText(id, value) {
-    const el = document.getElementById(id);
-
-    if (el) {
-      el.textContent = value;
-    }
+    _setText("totalServices", services.length + " layanan aktif");
   }
 
   /* ============================================================
        CHARTS
        ============================================================ */
 
-  function renderCharts() {
-    _renderRevenueChart();
-    _renderServiceChart();
-    _renderBarChart();
+  async function renderCharts() {
+    await _renderRevenueChart();
+    await _renderServiceChart();
+    await _renderBarChart();
   }
-
-  /* ============================================================
-       CHART COLORS
-       ============================================================ */
 
   function _chartColors() {
     return [
@@ -287,20 +193,15 @@ const Dashboard = (() => {
     ];
   }
 
-  /* ============================================================
-       REVENUE CHART
-       ============================================================ */
-
-  function _renderRevenueChart() {
+  async function _renderRevenueChart() {
     const canvas = document.getElementById("revenueChart");
 
     if (!canvas) return;
 
-    const { labels, data } = _getRevenueData();
+    const { labels, data } = await _getRevenueData();
 
     if (revenueChart) {
       revenueChart.destroy();
-      revenueChart = null;
     }
 
     const isLine = currentChartType === "line";
@@ -314,7 +215,6 @@ const Dashboard = (() => {
         datasets: [
           {
             label: "Revenue",
-
             data,
 
             ...(isLine
@@ -324,7 +224,6 @@ const Dashboard = (() => {
                   backgroundColor: _gradient(canvas, "#e30022"),
 
                   fill: true,
-
                   tension: 0.4,
 
                   pointBackgroundColor: "#e30022",
@@ -332,9 +231,7 @@ const Dashboard = (() => {
                   pointBorderColor: "#fff",
 
                   pointBorderWidth: 2,
-
                   pointRadius: 3,
-
                   pointHoverRadius: 6,
                 }
               : {
@@ -354,20 +251,15 @@ const Dashboard = (() => {
     });
   }
 
-  /* ============================================================
-       SERVICE DOUGHNUT
-       ============================================================ */
-
-  function _renderServiceChart() {
+  async function _renderServiceChart() {
     const canvas = document.getElementById("serviceChart");
 
     if (!canvas) return;
 
-    const { labels, data, colors } = _getServiceData();
+    const { labels, data, colors } = await _getServiceData();
 
     if (serviceChart) {
       serviceChart.destroy();
-      serviceChart = null;
     }
 
     serviceChart = new Chart(canvas, {
@@ -391,7 +283,6 @@ const Dashboard = (() => {
 
       options: {
         responsive: true,
-
         maintainAspectRatio: false,
 
         cutout: "65%",
@@ -425,20 +316,15 @@ const Dashboard = (() => {
     });
   }
 
-  /* ============================================================
-       SERVICE COMPARISON
-       ============================================================ */
-
-  function _renderBarChart() {
+  async function _renderBarChart() {
     const canvas = document.getElementById("barChart");
 
     if (!canvas) return;
 
-    const { labels, data, colors } = _getServiceData();
+    const { labels, data, colors } = await _getServiceData();
 
     if (barChart) {
       barChart.destroy();
-      barChart = null;
     }
 
     const isLine = currentChartType === "line";
@@ -452,7 +338,6 @@ const Dashboard = (() => {
         datasets: [
           {
             label: "Revenue",
-
             data,
 
             ...(isLine
@@ -462,7 +347,6 @@ const Dashboard = (() => {
                   backgroundColor: _gradient(canvas, "#e30022"),
 
                   fill: true,
-
                   tension: 0.4,
 
                   pointBackgroundColor: colors,
@@ -492,10 +376,6 @@ const Dashboard = (() => {
     });
   }
 
-  /* ============================================================
-       AXIS OPTIONS
-       ============================================================ */
-
   function _axisChartOptions() {
     return {
       responsive: true,
@@ -509,11 +389,7 @@ const Dashboard = (() => {
 
         tooltip: {
           callbacks: {
-            label: (c) => {
-              const value = c.parsed.y !== undefined ? c.parsed.y : c.parsed;
-
-              return Store.formatCurrency(value);
-            },
+            label: (c) => Store.formatCurrency(c.parsed.y),
           },
         },
       },
@@ -547,20 +423,17 @@ const Dashboard = (() => {
   }
 
   /* ============================================================
-       REVENUE DATA
+       DATA
        ============================================================ */
 
-  function _getRevenueData() {
-    let all = Store.getTransactions();
+  async function _getRevenueData() {
+    let all = await Store.getTransactions();
 
-    if (currentBranch !== "all") {
-      all = all.filter((t) => t.branch === currentBranch);
-    }
+    all = filterBranch(all);
 
     const today = new Date();
 
     const labels = [];
-
     const map = {};
 
     const monthNames = [
@@ -578,8 +451,6 @@ const Dashboard = (() => {
       "Dec",
     ];
 
-    /* ---------- DAILY ---------- */
-
     if (currentFilter === "daily") {
       for (let i = 29; i >= 0; i--) {
         const d = new Date(today);
@@ -595,18 +466,17 @@ const Dashboard = (() => {
 
       all.forEach((t) => {
         if (map[t.date] !== undefined) {
-          map[t.date] += _getRevenueValue(t);
+          map[t.date] += Number(t.price || 0);
         }
       });
     } else if (currentFilter === "monthly") {
-
-    /* ---------- MONTHLY ---------- */
       for (let i = 11; i >= 0; i--) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
 
-        const key =
-          `${d.getFullYear()}-` +
-          `${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+          2,
+          "0",
+        )}`;
 
         labels.push(`${monthNames[d.getMonth()]} ${d.getFullYear()}`);
 
@@ -614,30 +484,26 @@ const Dashboard = (() => {
       }
 
       all.forEach((t) => {
-        const key = t.date?.substring(0, 7);
+        const key = String(t.date).substring(0, 7);
 
         if (map[key] !== undefined) {
-          map[key] += _getRevenueValue(t);
+          map[key] += Number(t.price || 0);
         }
       });
     } else {
-
-    /* ---------- YEARLY ---------- */
       for (let i = 4; i >= 0; i--) {
         const year = today.getFullYear() - i;
 
-        const key = String(year);
+        labels.push(String(year));
 
-        labels.push(key);
-
-        map[key] = 0;
+        map[String(year)] = 0;
       }
 
       all.forEach((t) => {
-        const key = t.date?.substring(0, 4);
+        const key = String(t.date).substring(0, 4);
 
         if (map[key] !== undefined) {
-          map[key] += _getRevenueValue(t);
+          map[key] += Number(t.price || 0);
         }
       });
     }
@@ -648,26 +514,38 @@ const Dashboard = (() => {
     };
   }
 
-  /* ============================================================
-       SERVICE DATA
-       ============================================================ */
+  async function _getServiceData() {
+    let txns = await Store.getTransactions();
 
-  function _getServiceData() {
-    const txns = _filteredTransactions();
+    txns = filterBranch(txns);
 
-    const serviceMap = {};
+    const today = Store.getTodayStr();
+
+    if (currentFilter === "daily") {
+      txns = txns.filter((t) => t.date === today);
+    }
+
+    if (currentFilter === "monthly") {
+      const start = today.substring(0, 7) + "-01";
+
+      txns = txns.filter((t) => t.date >= start && t.date <= today);
+    }
+
+    if (currentFilter === "yearly") {
+      const start = today.substring(0, 4) + "-01-01";
+
+      txns = txns.filter((t) => t.date >= start && t.date <= today);
+    }
+
+    const map = {};
 
     txns.forEach((t) => {
-      const serviceName = t.serviceName || "Unknown";
+      const name = t.serviceName || t.service_name || "Layanan";
 
-      if (!serviceMap[serviceName]) {
-        serviceMap[serviceName] = 0;
-      }
-
-      serviceMap[serviceName] += _getRevenueValue(t);
+      map[name] = (map[name] || 0) + Number(t.price || 0);
     });
 
-    const entries = Object.entries(serviceMap).sort((a, b) => b[1] - a[1]);
+    const entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
 
     const colors = _chartColors();
 
@@ -676,47 +554,29 @@ const Dashboard = (() => {
 
       data: entries.map(([, value]) => value),
 
-      colors: entries.map((_, index) => colors[index % colors.length]),
+      colors: entries.map((_, i) => colors[i % colors.length]),
     };
   }
 
-  /* ============================================================
-       FILTERED TRANSACTIONS
-       ============================================================ */
-
-  function _filteredTransactions() {
-    let all = Store.getTransactions();
-
-    if (currentBranch !== "all") {
-      all = all.filter((t) => t.branch === currentBranch);
+  function filterBranch(data) {
+    if (currentBranch === "all") {
+      return data;
     }
 
-    const today = Store.getTodayStr();
-
-    /* ---------- DAILY ---------- */
-
-    if (currentFilter === "daily") {
-      return all.filter((t) => t.date === today);
-    }
-
-    /* ---------- MONTHLY ---------- */
-
-    if (currentFilter === "monthly") {
-      const start = today.substring(0, 7) + "-01";
-
-      return all.filter((t) => t.date >= start && t.date <= today);
-    }
-
-    /* ---------- YEARLY ---------- */
-
-    const start = today.substring(0, 4) + "-01-01";
-
-    return all.filter((t) => t.date >= start && t.date <= today);
+    return data.filter((t) => t.branch === currentBranch);
   }
 
   /* ============================================================
-       GRADIENT
+       HELPERS
        ============================================================ */
+
+  function _setText(id, value) {
+    const el = document.getElementById(id);
+
+    if (el) {
+      el.textContent = value;
+    }
+  }
 
   function _gradient(canvas, color) {
     try {
@@ -734,25 +594,19 @@ const Dashboard = (() => {
     }
   }
 
-  /* ============================================================
-       SHORT CURRENCY
-       ============================================================ */
+  function _shortCurrency(value) {
+    value = Number(value || 0);
 
-  function _shortCurrency(v) {
-    if (v >= 1_000_000) {
-      return "Rp " + (v / 1_000_000).toFixed(1) + "M";
+    if (value >= 1000000) {
+      return "Rp " + (value / 1000000).toFixed(1) + "M";
     }
 
-    if (v >= 1_000) {
-      return "Rp " + (v / 1_000).toFixed(0) + "K";
+    if (value >= 1000) {
+      return "Rp " + (value / 1000).toFixed(0) + "K";
     }
 
-    return "Rp " + v;
+    return "Rp " + value;
   }
-
-  /* ============================================================
-       DATE STRING
-       ============================================================ */
 
   function _dateStr(d) {
     return (
@@ -764,165 +618,8 @@ const Dashboard = (() => {
     );
   }
 
-  /* ============================================================
-       PDF EXPORT
-       ============================================================ */
-
-  async function exportPDF() {
-    const btn = document.getElementById("exportPdfBtn");
-
-    const target = document.getElementById("dashboardExport");
-
-    if (!target || typeof html2canvas === "undefined" || !window.jspdf) {
-      showToast("PDF export libraries not loaded", "danger");
-
-      return;
-    }
-
-    const originalLabel = btn?.textContent;
-
-    if (btn) {
-      btn.disabled = true;
-
-      btn.textContent = "Exporting...";
-    }
-
-    try {
-      const snapshot = await html2canvas(target, {
-        backgroundColor: "#09090a",
-
-        scale: 2,
-
-        useCORS: true,
-
-        logging: false,
-
-        onclone: (doc) => {
-          doc.querySelectorAll("canvas").forEach((canvas) => {
-            const chart = Chart.getChart(canvas);
-
-            if (!chart) return;
-
-            const img = doc.createElement("img");
-
-            img.src = chart.toBase64Image("image/png", 1);
-
-            img.style.width = "100%";
-
-            img.style.height = "100%";
-
-            img.style.display = "block";
-
-            canvas.replaceWith(img);
-          });
-        },
-      });
-
-      const { jsPDF } = window.jspdf;
-
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      const margin = 10;
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      const contentWidth = pageWidth - margin * 2;
-
-      const imgHeight = (snapshot.height * contentWidth) / snapshot.width;
-
-      const imgData = snapshot.toDataURL("image/png");
-
-      pdf.setFontSize(14);
-
-      pdf.text("Next Level Beauty Bar — Dashboard", margin, 14);
-
-      pdf.setFontSize(9);
-
-      pdf.setTextColor(120);
-
-      pdf.text(_exportMetaLine(), margin, 20);
-
-      pdf.setTextColor(0);
-
-      let heightLeft = imgHeight;
-
-      let y = 26;
-
-      pdf.addImage(imgData, "PNG", margin, y, contentWidth, imgHeight);
-
-      heightLeft -= pageHeight - y;
-
-      while (heightLeft > 0) {
-        pdf.addPage();
-
-        y = heightLeft - imgHeight + margin;
-
-        pdf.addImage(imgData, "PNG", margin, y, contentWidth, imgHeight);
-
-        heightLeft -= pageHeight;
-      }
-
-      const dateStamp = Store.getTodayStr();
-
-      pdf.save(`next-level-dashboard-${dateStamp}.pdf`);
-
-      showToast("Dashboard exported to PDF");
-    } catch (err) {
-      console.error(err);
-
-      showToast("Failed to export PDF", "danger");
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-
-        btn.textContent = originalLabel;
-      }
-    }
-  }
-
-  /* ============================================================
-       PDF META
-       ============================================================ */
-
-  function _exportMetaLine() {
-    const periodLabels = {
-      daily: "Daily",
-      monthly: "Monthly",
-      yearly: "Yearly",
-    };
-
-    const branchEl = document.getElementById("dashBranchFilter");
-
-    const branch = branchEl?.selectedOptions?.[0]?.textContent || currentBranch;
-
-    const period = periodLabels[currentFilter] || currentFilter;
-
-    const chartType = currentChartType === "bar" ? "Bar" : "Line";
-
-    const generated = new Date().toLocaleString("en-US", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    return (
-      `Generated ${generated}` +
-      ` · Branch: ${branch}` +
-      ` · Period: ${period}` +
-      ` · Chart: ${chartType}`
-    );
-  }
-
-  /* ============================================================
-       HTML ESCAPE
-       ============================================================ */
-
-  function _escapeHtml(value) {
-    return String(value ?? "")
+  function escapeHtml(value) {
+    return String(value || "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
@@ -930,12 +627,7 @@ const Dashboard = (() => {
       .replace(/'/g, "&#039;");
   }
 
-  /* ============================================================
-       PUBLIC API
-       ============================================================ */
-
   return {
     render,
-    exportPDF,
   };
 })();

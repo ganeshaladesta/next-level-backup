@@ -1,226 +1,247 @@
 /* ============================================================
-   Beauty Bar Dashboard — Services Management
+   SERVICES
    ============================================================ */
 
 const Services = (() => {
-  let _initialized = false;
+  let initialized = false;
   let editingId = null;
 
   async function render() {
-    if (!_initialized) {
+    if (!initialized) {
       _setup();
-      _initialized = true;
+      initialized = true;
     }
 
-    await _renderList();
+    await renderList();
   }
 
   function _setup() {
     const form = document.getElementById("serviceForm");
 
-    if (!form) return;
+    if (form) {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      await _save();
-    });
+        const name = document.getElementById("svcName").value.trim();
+
+        const price = Number(document.getElementById("svcPrice").value);
+
+        try {
+          if (!name) {
+            throw new Error("Nama layanan wajib diisi.");
+          }
+
+          if (price < 0) {
+            throw new Error("Harga tidak valid.");
+          }
+
+          if (editingId) {
+            await Store.updateService(editingId, {
+              name,
+              price,
+            });
+
+            showToast("Layanan berhasil diperbarui.");
+          } else {
+            await Store.addService({
+              name,
+              price,
+            });
+
+            showToast("Layanan berhasil ditambahkan.");
+          }
+
+          _resetForm();
+
+          await renderList();
+        } catch (err) {
+          console.error(err);
+
+          showToast(err.message || "Gagal menyimpan layanan.", "danger");
+        }
+      });
+    }
   }
 
-  async function _save() {
-    const nameIn = document.getElementById("svcName");
+  async function renderList() {
+    const container = document.getElementById("servicesList");
 
-    const priceIn = document.getElementById("svcPrice");
+    if (!container) return;
 
-    const name = nameIn.value.trim();
+    try {
+      const services = await Store.getServices();
 
-    const price = Number(priceIn.value);
+      if (services.length === 0) {
+        container.innerHTML = `
+            <p class="empty-state">
+              Belum ada layanan.
+            </p>
+          `;
 
-    if (!name) {
-      showToast("Nama layanan harus diisi!", "warning");
-      return;
-    }
+        return;
+      }
 
-    if (!price || price <= 0) {
-      showToast("Masukkan harga yang valid!", "warning");
-      return;
-    }
-
-    if (editingId) {
-      const result = await Store.updateService(editingId, {
-        name,
-        price,
-      });
-
-      if (!result) return;
-
-      editingId = null;
-
-      document.getElementById("svcSubmitBtn").textContent = "➕ Tambah Layanan";
-
-      showToast("Layanan diperbarui!");
-    } else {
-      const result = await Store.addService({
-        name,
-        price,
-      });
-
-      if (!result) return;
-
-      showToast("Layanan berhasil ditambahkan!");
-    }
-
-    nameIn.value = "";
-    priceIn.value = "";
-
-    await _renderList();
-  }
-
-  async function _renderList() {
-    const el = document.getElementById("servicesList");
-
-    if (!el) return;
-
-    el.innerHTML = '<p class="empty-state">Loading layanan...</p>';
-
-    const svcs = await Store.getServices();
-
-    if (svcs.length === 0) {
-      el.innerHTML =
-        '<p class="empty-state">Belum ada layanan. Tambahkan layanan pertama! 💅</p>';
-      return;
-    }
-
-    el.innerHTML = `
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Layanan</th>
-                <th>Harga</th>
-                <th>Status</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
+      container.innerHTML = services
+        .map(
+          (s) => `
+                <div class="service-list-item"
+                     style="
+                       display:flex;
+                       justify-content:space-between;
+                       align-items:center;
+                       gap:16px;
+                       padding:14px 0;
+                       border-bottom:1px solid var(--border);
+                     ">
   
-            <tbody>
-              ${svcs
-                .map(
-                  (s) => `
-                  <tr class="${s.active ? "" : "row-inactive"}">
+                  <div>
+                    <strong>
+                      ${escapeHtml(s.name)}
+                    </strong>
   
-                    <td data-label="Layanan">
-                      <strong>
-                        ${s.name}
-                      </strong>
-                    </td>
-  
-                    <td data-label="Harga">
+                    <div class="text-muted">
                       ${Store.formatCurrency(s.price)}
-                    </td>
   
-                    <td data-label="Status">
-                      <span class="status-badge ${
-                        s.active ? "badge-active" : "badge-inactive"
-                      }">
-                        ${s.active ? "✅ Aktif" : "⛔ Nonaktif"}
-                      </span>
-                    </td>
+                      ${s.active ? " · Aktif" : " · Nonaktif"}
+                    </div>
+                  </div>
   
-                    <td
-                      data-label="Aksi"
-                      class="actions"
+                  <div style="
+                    display:flex;
+                    gap:8px;
+                    flex-wrap:wrap;
+                  ">
+  
+                    <button
+                      class="btn btn-sm btn-outline"
+                      data-action="edit"
+                      data-id="${s.id}"
                     >
+                      ✏️ Edit
+                    </button>
   
-                      <button
-                        class="btn-icon btn-edit"
-                        onclick="Services.editSvc('${s.id}')"
-                        title="Edit"
-                      >
-                        ✏️
-                      </button>
+                    <button
+                      class="btn btn-sm btn-outline"
+                      data-action="toggle"
+                      data-id="${s.id}"
+                    >
+                      ${s.active ? "⏸ Nonaktifkan" : "▶ Aktifkan"}
+                    </button>
   
-                      <button
-                        class="btn-icon"
-                        onclick="Services.toggleSvc('${s.id}')"
-                        title="${s.active ? "Nonaktifkan" : "Aktifkan"}"
-                      >
-                        ${s.active ? "🚫" : "✅"}
-                      </button>
+                    <button
+                      class="btn btn-sm btn-outline"
+                      data-action="delete"
+                      data-id="${s.id}"
+                    >
+                      🗑 Hapus
+                    </button>
   
-                      <button
-                        class="btn-icon btn-delete"
-                        onclick="Services.deleteSvc('${s.id}')"
-                        title="Hapus"
-                      >
-                        🗑️
-                      </button>
-  
-                    </td>
-                  </tr>
-                `,
-                )
-                .join("")}
-            </tbody>
-          </table>
-        </div>
-      `;
-  }
+                  </div>
+                </div>
+              `,
+        )
+        .join("");
 
-  async function editSvc(id) {
-    const s = await Store.getServiceById(id);
+      container.querySelectorAll("[data-action]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.dataset.id;
 
-    if (!s) return;
+          const action = btn.dataset.action;
 
-    editingId = id;
+          await handleAction(action, id);
+        });
+      });
+    } catch (err) {
+      console.error(err);
 
-    document.getElementById("svcName").value = s.name;
+      container.innerHTML = `
+          <p class="empty-state">
+            Gagal memuat layanan.
+          </p>
+        `;
 
-    document.getElementById("svcPrice").value = s.price;
-
-    document.getElementById("svcSubmitBtn").textContent = "✏️ Update Layanan";
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  }
-
-  async function toggleSvc(id) {
-    const s = await Store.getServiceById(id);
-
-    if (!s) return;
-
-    const result = await Store.updateService(id, {
-      active: !s.active,
-    });
-
-    if (!result) return;
-
-    await _renderList();
-
-    showToast(s.active ? "Layanan dinonaktifkan" : "Layanan diaktifkan");
-  }
-
-  async function deleteSvc(id) {
-    if (
-      !confirm("Hapus layanan ini? Transaksi yang sudah ada tidak terpengaruh.")
-    ) {
-      return;
+      showToast(err.message || "Gagal memuat layanan.", "danger");
     }
+  }
 
-    const result = await Store.deleteService(id);
+  async function handleAction(action, id) {
+    try {
+      if (action === "edit") {
+        const service = await Store.getServiceById(id);
 
-    if (!result) return;
+        if (!service) return;
 
-    await _renderList();
+        editingId = id;
 
-    showToast("Layanan dihapus!");
+        document.getElementById("svcName").value = service.name;
+
+        document.getElementById("svcPrice").value = service.price;
+
+        const btn = document.getElementById("svcSubmitBtn");
+
+        if (btn) {
+          btn.textContent = "💾 Simpan Perubahan";
+        }
+
+        return;
+      }
+
+      if (action === "toggle") {
+        const service = await Store.getServiceById(id);
+
+        if (!service) return;
+
+        await Store.updateService(id, {
+          active: !service.active,
+        });
+
+        showToast("Status layanan diperbarui.");
+
+        await renderList();
+
+        return;
+      }
+
+      if (action === "delete") {
+        const ok = confirm("Hapus layanan ini?");
+
+        if (!ok) return;
+
+        await Store.deleteService(id);
+
+        showToast("Layanan berhasil dihapus.");
+
+        await renderList();
+      }
+    } catch (err) {
+      console.error(err);
+
+      showToast(err.message || "Gagal memproses layanan.", "danger");
+    }
+  }
+
+  function _resetForm() {
+    editingId = null;
+
+    document.getElementById("serviceForm")?.reset();
+
+    const btn = document.getElementById("svcSubmitBtn");
+
+    if (btn) {
+      btn.textContent = "➕ Tambah Layanan";
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
   return {
     render,
-    editSvc,
-    toggleSvc,
-    deleteSvc,
   };
 })();
