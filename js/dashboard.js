@@ -7,6 +7,7 @@ const Dashboard = (() => {
   let barChart = null;
   let currentFilter = 'monthly';
   let currentBranch = 'all';
+  let currentChartType = 'line';
   let _initialized = false;
 
   function render() {
@@ -20,11 +21,20 @@ const Dashboard = (() => {
   }
 
   function _setup() {
-    document.querySelectorAll('.filter-btn').forEach(btn => {
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentFilter = btn.dataset.filter;
+        renderCharts();
+      });
+    });
+
+    document.querySelectorAll('.chart-type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentChartType = btn.dataset.chartType;
         renderCharts();
       });
     });
@@ -103,7 +113,7 @@ const Dashboard = (() => {
     ];
   }
 
-  /* — Revenue Line Chart — */
+  /* — Revenue Chart (line / column) — */
   function _renderRevenueChart() {
     const ctx = document.getElementById('revenueChart');
     if (!ctx) return;
@@ -111,36 +121,33 @@ const Dashboard = (() => {
 
     if (revenueChart) revenueChart.destroy();
 
+    const isLine = currentChartType === 'line';
     revenueChart = new Chart(ctx, {
-      type: 'line',
+      type: currentChartType,
       data: {
         labels,
         datasets: [{
           label: 'Pendapatan',
           data,
-          borderColor: '#e30022',
-          backgroundColor: _gradient(ctx, '#e30022'),
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: '#e30022',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          pointRadius: 3,
-          pointHoverRadius: 6
+          ...(isLine ? {
+            borderColor: '#e30022',
+            backgroundColor: _gradient(ctx, '#e30022'),
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#e30022',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 3,
+            pointHoverRadius: 6
+          } : {
+            backgroundColor: '#e30022',
+            borderRadius: 8,
+            borderSkipped: false,
+            maxBarThickness: 48
+          })
         }]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: c => Store.formatCurrency(c.parsed.y) } }
-        },
-        scales: {
-          y: { beginAtZero: true, ticks: { color: '#a1a1aa', callback: v => _shortCurrency(v) }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          x: { ticks: { color: '#a1a1aa' }, grid: { display: false } }
-        }
-      }
+      options: _axisChartOptions()
     });
   }
 
@@ -170,7 +177,7 @@ const Dashboard = (() => {
     });
   }
 
-  /* — Service Bar Chart — */
+  /* — Service Comparison Chart (line / column) — */
   function _renderBarChart() {
     const ctx = document.getElementById('barChart');
     if (!ctx) return;
@@ -178,32 +185,49 @@ const Dashboard = (() => {
 
     if (barChart) barChart.destroy();
 
+    const isLine = currentChartType === 'line';
     barChart = new Chart(ctx, {
-      type: 'bar',
+      type: currentChartType,
       data: {
         labels,
         datasets: [{
           label: 'Pendapatan',
           data,
-          backgroundColor: colors,
-          borderRadius: 8,
-          borderSkipped: false,
-          maxBarThickness: 48
+          ...(isLine ? {
+            borderColor: '#e30022',
+            backgroundColor: _gradient(ctx, '#e30022'),
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: colors,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 7
+          } : {
+            backgroundColor: colors,
+            borderRadius: 8,
+            borderSkipped: false,
+            maxBarThickness: 48
+          })
         }]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: c => Store.formatCurrency(c.parsed.y) } }
-        },
-        scales: {
-          y: { beginAtZero: true, ticks: { color: '#a1a1aa', callback: v => _shortCurrency(v) }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          x: { ticks: { color: '#a1a1aa' }, grid: { display: false } }
-        }
-      }
+      options: _axisChartOptions()
     });
+  }
+
+  function _axisChartOptions() {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => Store.formatCurrency(c.parsed.y) } }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { color: '#a1a1aa', callback: v => _shortCurrency(v) }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        x: { ticks: { color: '#a1a1aa' }, grid: { display: false } }
+      }
+    };
   }
 
   /* ---------- Data Helpers ---------- */
