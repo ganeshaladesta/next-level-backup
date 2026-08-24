@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="css/style.css" />
     <link rel="icon" href="assets/logo.png" />
   </head>
+
   <body>
     <!-- ==================== Sidebar ==================== -->
     <aside class="sidebar" id="sidebar">
@@ -21,28 +22,34 @@
         <img src="assets/logo.png" alt="Next Level Logo" class="logo" />
         <h1>Next Level</h1>
       </div>
+
       <nav class="sidebar-nav">
         <a href="#dashboard" class="nav-item active" data-view="dashboard">
           <span class="nav-icon">📊</span>
           <span class="nav-text">Dashboard</span>
         </a>
+
         <a href="#transactions" class="nav-item" data-view="transactions">
           <span class="nav-icon">💰</span>
-          <span class="nav-text">Tambah Transaksi</span>
+          <span class="nav-text">Add Transaction</span>
         </a>
+
         <a href="#services" class="nav-item" data-view="services">
           <span class="nav-icon">💅</span>
-          <span class="nav-text">Layanan & Harga</span>
+          <span class="nav-text">Services & Pricing</span>
         </a>
+
         <a href="#promos" class="nav-item" data-view="promos">
           <span class="nav-icon">🎉</span>
-          <span class="nav-text">Promo</span>
+          <span class="nav-text">Promotions</span>
         </a>
+
         <a href="#history" class="nav-item" data-view="history">
           <span class="nav-icon">📋</span>
-          <span class="nav-text">Riwayat</span>
+          <span class="nav-text">Transaction History</span>
         </a>
       </nav>
+
       <div class="sidebar-footer">
         <p>
           Next Level - Beauty Bar © 2026 <br />
@@ -61,7 +68,9 @@
         <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
           ☰
         </button>
+
         <h2 class="page-title" id="pageTitle">📊 Dashboard</h2>
+
         <div class="date-display" id="dateDisplay"></div>
       </header>
 
@@ -75,55 +84,69 @@
           <div class="card summary-card card-pink">
             <div class="card-icon">💰</div>
             <div class="card-info">
-              <span class="card-label">Hari Ini</span>
+              <span class="card-label">Today</span>
               <span class="card-value" id="todayRevenue">Rp 0</span>
-              <span class="card-sub" id="todayCount">0 transaksi</span>
+              <span class="card-sub" id="todayCount">0 transactions</span>
             </div>
           </div>
+
           <div class="card summary-card card-purple">
             <div class="card-icon">📅</div>
             <div class="card-info">
-              <span class="card-label">Bulan Ini</span>
+              <span class="card-label">This Month</span>
               <span class="card-value" id="monthRevenue">Rp 0</span>
-              <span class="card-sub" id="monthCount">0 transaksi</span>
+              <span class="card-sub" id="monthCount">0 transactions</span>
             </div>
           </div>
+
           <div class="card summary-card card-blue">
             <div class="card-icon">📆</div>
             <div class="card-info">
-              <span class="card-label">Tahun Ini</span>
+              <span class="card-label">This Year</span>
               <span class="card-value" id="yearRevenue">Rp 0</span>
-              <span class="card-sub" id="yearCount">0 transaksi</span>
+              <span class="card-sub" id="yearCount">0 transactions</span>
             </div>
           </div>
+
           <div class="card summary-card card-teal">
             <div class="card-icon">📊</div>
             <div class="card-info">
-              <span class="card-label">Total Transaksi</span>
+              <span class="card-label">Total Transactions</span>
               <span class="card-value" id="totalTransactions">0</span>
-              <span class="card-sub" id="totalServices">0 layanan aktif</span>
+              <span class="card-sub" id="totalServices">
+                0 active services
+              </span>
             </div>
           </div>
         </div>
 
         <!-- Chart Filter -->
         <div class="chart-filter">
-          <span class="filter-label">Waktu:</span>
-          <button class="filter-btn" data-filter="daily">Harian</button>
-          <button class="filter-btn active" data-filter="monthly">
-            Bulanan
-          </button>
-          <button class="filter-btn" data-filter="yearly">Tahunan</button>
+          <span class="filter-label">Period:</span>
 
-          <span class="filter-label" style="margin-left: 16px">Tipe:</span>
-          <button class="filter-btn chart-type-btn active" data-chart-type="line">
+          <button class="filter-btn" data-filter="daily">Daily</button>
+
+          <button class="filter-btn active" data-filter="monthly">
+            Monthly
+          </button>
+
+          <button class="filter-btn" data-filter="yearly">Yearly</button>
+
+          <span class="filter-label" style="margin-left: 16px"> Type: </span>
+
+          <button
+            class="filter-btn chart-type-btn active"
+            data-chart-type="line"
+          >
             Line
           </button>
+
           <button class="filter-btn chart-type-btn" data-chart-type="bar">
-            Kolom
+            Bar
           </button>
 
-          <span class="filter-label" style="margin-left: 16px">Cabang:</span>
+          <span class="filter-label" style="margin-left: 16px"> Branch: </span>
+
           <select
             id="dashBranchFilter"
             style="
@@ -134,7 +157,7 @@
               color: var(--text);
             "
           >
-            <option value="all">Semua Cabang</option>
+            <option value="all">All Branches</option>
             <option value="Kemang">Kemang</option>
             <option value="LCC">LCC</option>
             <option value="Bintaro">Bintaro</option>
@@ -144,13 +167,16 @@
         <!-- Charts Row -->
         <div class="charts-grid">
           <div class="card chart-card">
-            <h3>📈 Grafik Pendapatan</h3>
+            <h3>📈 Revenue Overview</h3>
+
             <div class="chart-container">
               <canvas id="revenueChart"></canvas>
             </div>
           </div>
+
           <div class="card chart-card">
-            <h3>🍩 Pendapatan per Layanan</h3>
+            <h3>🍩 Revenue by Service</h3>
+
             <div class="chart-container chart-container-doughnut">
               <canvas id="serviceChart"></canvas>
             </div>
@@ -159,7 +185,8 @@
 
         <!-- Bar Chart Full Width -->
         <div class="card chart-card">
-          <h3>📊 Perbandingan Layanan</h3>
+          <h3>📊 Service Comparison</h3>
+
           <div class="chart-container">
             <canvas id="barChart"></canvas>
           </div>
@@ -169,33 +196,39 @@
       <!-- ========== Transactions View ========== -->
       <div class="view" id="view-transactions">
         <div class="card">
-          <h3>💰 Tambah Transaksi Baru</h3>
+          <h3>💰 Add New Transaction</h3>
+
           <form id="txnForm" class="form" autocomplete="off">
             <div class="form-row">
               <div class="form-group">
-                <label for="txnBranch"
-                  >Cabang <span class="required">*</span></label
-                >
+                <label for="txnBranch">
+                  Branch <span class="required">*</span>
+                </label>
+
                 <select id="txnBranch" required>
                   <option value="Kemang">Kemang</option>
                   <option value="LCC">LCC</option>
                   <option value="Bintaro">Bintaro</option>
                 </select>
               </div>
+
               <div class="form-group">
-                <label for="txnService"
-                  >Layanan <span class="required">*</span></label
-                >
+                <label for="txnService">
+                  Service <span class="required">*</span>
+                </label>
+
                 <select id="txnService" required>
-                  <option value="">— Pilih Layanan —</option>
+                  <option value="">— Select Service —</option>
                 </select>
               </div>
             </div>
+
             <div class="form-row">
               <div class="form-group">
-                <label for="txnPrice"
-                  >Harga (Rp) <span class="required">*</span></label
-                >
+                <label for="txnPrice">
+                  Price (Rp) <span class="required">*</span>
+                </label>
+
                 <input
                   type="number"
                   id="txnPrice"
@@ -206,40 +239,48 @@
                 />
               </div>
             </div>
+
             <div class="form-row">
               <div class="form-group">
-                <label for="txnDate"
-                  >Tanggal <span class="required">*</span></label
-                >
+                <label for="txnDate">
+                  Date <span class="required">*</span>
+                </label>
+
                 <input type="date" id="txnDate" required />
               </div>
+
               <div class="form-group">
-                <label for="txnPromo">Promo (Opsional)</label>
+                <label for="txnPromo"> Promotion (Optional) </label>
+
                 <select id="txnPromo">
-                  <option value="">Tanpa Promo</option>
+                  <option value="">No Promotion</option>
                 </select>
               </div>
             </div>
+
             <div class="form-group">
-              <label for="txnNotes">Catatan</label>
+              <label for="txnNotes">Notes</label>
+
               <textarea
                 id="txnNotes"
                 rows="2"
-                placeholder="Catatan tambahan (opsional)..."
+                placeholder="Additional notes (optional)..."
               ></textarea>
             </div>
+
             <div class="form-actions">
               <button type="submit" class="btn btn-primary" id="txnSubmitBtn">
-                💾 Simpan Transaksi
+                💾 Save Transaction
               </button>
             </div>
           </form>
         </div>
 
         <div class="card">
-          <h3>🕐 10 Transaksi Terbaru</h3>
+          <h3>🕐 10 Most Recent Transactions</h3>
+
           <div id="recentTransactions">
-            <p class="empty-state">Belum ada transaksi.</p>
+            <p class="empty-state">No transactions yet.</p>
           </div>
         </div>
       </div>
@@ -247,24 +288,28 @@
       <!-- ========== Services View ========== -->
       <div class="view" id="view-services">
         <div class="card">
-          <h3>💅 Tambah / Edit Layanan</h3>
+          <h3>💅 Add / Edit Service</h3>
+
           <form id="serviceForm" class="form" autocomplete="off">
             <div class="form-row form-row-inline">
               <div class="form-group">
-                <label for="svcName"
-                  >Nama Layanan <span class="required">*</span></label
-                >
+                <label for="svcName">
+                  Service Name <span class="required">*</span>
+                </label>
+
                 <input
                   type="text"
                   id="svcName"
                   required
-                  placeholder="Contoh: Gel Nails"
+                  placeholder="Example: Gel Nails"
                 />
               </div>
+
               <div class="form-group">
-                <label for="svcPrice"
-                  >Harga (Rp) <span class="required">*</span></label
-                >
+                <label for="svcPrice">
+                  Price (Rp) <span class="required">*</span>
+                </label>
+
                 <input
                   type="number"
                   id="svcPrice"
@@ -274,10 +319,12 @@
                   placeholder="150000"
                 />
               </div>
+
               <div class="form-group form-group-btn">
                 <label>&nbsp;</label>
+
                 <button type="submit" class="btn btn-primary" id="svcSubmitBtn">
-                  ➕ Tambah Layanan
+                  ➕ Add Service
                 </button>
               </div>
             </div>
@@ -285,9 +332,10 @@
         </div>
 
         <div class="card">
-          <h3>📋 Daftar Layanan</h3>
+          <h3>📋 Service List</h3>
+
           <div id="servicesList">
-            <p class="empty-state">Memuat...</p>
+            <p class="empty-state">Loading...</p>
           </div>
         </div>
       </div>
@@ -295,24 +343,28 @@
       <!-- ========== Promos View ========== -->
       <div class="view" id="view-promos">
         <div class="card">
-          <h3>🎉 Tambah / Edit Promo</h3>
+          <h3>🎉 Add / Edit Promotion</h3>
+
           <form id="promoForm" class="form" autocomplete="off">
             <div class="form-row">
               <div class="form-group">
-                <label for="promoName"
-                  >Nama Promo <span class="required">*</span></label
-                >
+                <label for="promoName">
+                  Promotion Name <span class="required">*</span>
+                </label>
+
                 <input
                   type="text"
                   id="promoName"
                   required
-                  placeholder="Contoh: Grand Opening"
+                  placeholder="Example: Grand Opening"
                 />
               </div>
+
               <div class="form-group">
-                <label for="promoDiscount"
-                  >Diskon (%) <span class="required">*</span></label
-                >
+                <label for="promoDiscount">
+                  Discount (%) <span class="required">*</span>
+                </label>
+
                 <input
                   type="number"
                   id="promoDiscount"
@@ -323,40 +375,48 @@
                 />
               </div>
             </div>
+
             <div class="form-row">
               <div class="form-group">
-                <label for="promoStart"
-                  >Tanggal Mulai <span class="required">*</span></label
-                >
+                <label for="promoStart">
+                  Start Date <span class="required">*</span>
+                </label>
+
                 <input type="date" id="promoStart" required />
               </div>
+
               <div class="form-group">
-                <label for="promoEnd"
-                  >Tanggal Selesai <span class="required">*</span></label
-                >
+                <label for="promoEnd">
+                  End Date <span class="required">*</span>
+                </label>
+
                 <input type="date" id="promoEnd" required />
               </div>
             </div>
+
             <div class="form-group">
-              <label for="promoDesc">Deskripsi</label>
+              <label for="promoDesc">Description</label>
+
               <textarea
                 id="promoDesc"
                 rows="2"
-                placeholder="Deskripsi promo (opsional)..."
+                placeholder="Promotion description (optional)..."
               ></textarea>
             </div>
+
             <div class="form-actions">
               <button type="submit" class="btn btn-primary" id="promoSubmitBtn">
-                ➕ Tambah Promo
+                ➕ Add Promotion
               </button>
             </div>
           </form>
         </div>
 
         <div class="card">
-          <h3>📋 Daftar Promo</h3>
+          <h3>📋 Promotion List</h3>
+
           <div id="promosList">
-            <p class="empty-state">Memuat...</p>
+            <p class="empty-state">Loading...</p>
           </div>
         </div>
       </div>
@@ -365,40 +425,48 @@
       <div class="view" id="view-history">
         <div class="card">
           <div class="history-header">
-            <h3>📋 Riwayat Transaksi</h3>
+            <h3>📋 Transaction History</h3>
+
             <button class="btn btn-outline" id="exportCsvBtn">
               📥 Export CSV
             </button>
           </div>
+
           <div class="history-filters">
             <div class="form-group">
               <input
                 type="text"
                 id="historySearch"
-                placeholder="🔍 Cari layanan atau catatan..."
+                placeholder="🔍 Search service or notes..."
               />
             </div>
+
             <div class="form-group">
               <select id="historyFilterBranch">
-                <option value="">Semua Cabang</option>
+                <option value="">All Branches</option>
                 <option value="Kemang">Kemang</option>
                 <option value="LCC">LCC</option>
                 <option value="Bintaro">Bintaro</option>
               </select>
             </div>
+
             <div class="form-group">
               <input type="date" id="historyFilterDate" />
             </div>
+
             <button class="btn btn-sm btn-outline" id="historyClear">
-              Hapus Filter
+              Clear Filters
             </button>
           </div>
+
           <div class="history-summary">
-            <span>Total: <strong id="historyTotal">Rp 0</strong></span>
-            <span class="text-muted" id="historyCount">0 transaksi</span>
+            <span> Total: <strong id="historyTotal">Rp 0</strong> </span>
+
+            <span class="text-muted" id="historyCount"> 0 transactions </span>
           </div>
+
           <div id="historyTable">
-            <p class="empty-state">Memuat...</p>
+            <p class="empty-state">Loading...</p>
           </div>
         </div>
       </div>
