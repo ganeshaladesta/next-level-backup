@@ -1,32 +1,35 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>Next Level Beauty Bar - Dashboard</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+
     <link rel="stylesheet" href="css/style.css" />
+
     <link rel="icon" href="assets/logo.png" />
   </head>
 
   <body>
-    <div id="appLoading" class="app-loading">
-      <div class="app-loading-spinner"></div>
-      <p>Connecting to database...</p>
-    </div>
+    <!-- =========================================================
+         SIDEBAR
+         ========================================================= -->
 
-    <!-- ==================== Sidebar ==================== -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <img src="assets/logo.png" alt="Next Level Logo" class="logo" />
+
         <h1>Next Level</h1>
       </div>
 
@@ -38,39 +41,47 @@
 
         <a href="#transactions" class="nav-item" data-view="transactions">
           <span class="nav-icon">💰</span>
-          <span class="nav-text">Add Transaction</span>
+          <span class="nav-text">Tambah Transaksi</span>
         </a>
 
         <a href="#services" class="nav-item" data-view="services">
           <span class="nav-icon">💅</span>
-          <span class="nav-text">Services & Pricing</span>
+          <span class="nav-text">Layanan & Harga</span>
         </a>
 
         <a href="#promos" class="nav-item" data-view="promos">
           <span class="nav-icon">🎉</span>
-          <span class="nav-text">Promotions</span>
+          <span class="nav-text">Promo</span>
         </a>
 
         <a href="#history" class="nav-item" data-view="history">
           <span class="nav-icon">📋</span>
-          <span class="nav-text">Transaction History</span>
+          <span class="nav-text">Riwayat</span>
         </a>
       </nav>
 
       <div class="sidebar-footer">
         <p>
-          Next Level - Beauty Bar © 2026 <br />
+          Next Level - Beauty Bar © 2026
+          <br />
           Made with Love by Ganesha
         </p>
       </div>
     </aside>
 
-    <!-- Overlay (mobile) -->
+    <!-- =========================================================
+         MOBILE OVERLAY
+         ========================================================= -->
+
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- ==================== Main Content ==================== -->
+    <!-- =========================================================
+         MAIN CONTENT
+         ========================================================= -->
+
     <main class="main-content">
-      <!-- Top Bar -->
+      <!-- TOP BAR -->
+
       <header class="top-bar">
         <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
           ☰
@@ -81,72 +92,83 @@
         <div class="date-display" id="dateDisplay"></div>
       </header>
 
-      <!-- Promo Banner (shown when active promos exist) -->
+      <!-- =======================================================
+           PROMO BANNER
+           ======================================================= -->
+
       <div class="promo-banner" id="promoBanner" style="display: none"></div>
 
-      <!-- ========== Dashboard View ========== -->
-      <div class="view active" id="view-dashboard">
-        <div class="dashboard-toolbar">
-          <button class="btn btn-outline" id="exportPdfBtn" type="button">
-            📄 Export PDF
-          </button>
-        </div>
+      <!-- =======================================================
+           DASHBOARD VIEW
+           ======================================================= -->
 
-        <div id="dashboardExport">
-        <!-- Summary Cards -->
+      <div class="view active" id="view-dashboard">
+        <!-- SUMMARY CARDS -->
+
         <div class="summary-cards">
           <div class="card summary-card card-pink">
             <div class="card-icon">💰</div>
+
             <div class="card-info">
-              <span class="card-label">Today</span>
-              <span class="card-value" id="todayRevenue">Rp 0</span>
-              <span class="card-sub" id="todayCount">0 transactions</span>
+              <span class="card-label"> Hari Ini </span>
+
+              <span class="card-value" id="todayRevenue"> Rp 0 </span>
+
+              <span class="card-sub" id="todayCount"> 0 transaksi </span>
             </div>
           </div>
 
           <div class="card summary-card card-purple">
             <div class="card-icon">📅</div>
+
             <div class="card-info">
-              <span class="card-label">This Month</span>
-              <span class="card-value" id="monthRevenue">Rp 0</span>
-              <span class="card-sub" id="monthCount">0 transactions</span>
+              <span class="card-label"> Bulan Ini </span>
+
+              <span class="card-value" id="monthRevenue"> Rp 0 </span>
+
+              <span class="card-sub" id="monthCount"> 0 transaksi </span>
             </div>
           </div>
 
           <div class="card summary-card card-blue">
             <div class="card-icon">📆</div>
+
             <div class="card-info">
-              <span class="card-label">This Year</span>
-              <span class="card-value" id="yearRevenue">Rp 0</span>
-              <span class="card-sub" id="yearCount">0 transactions</span>
+              <span class="card-label"> Tahun Ini </span>
+
+              <span class="card-value" id="yearRevenue"> Rp 0 </span>
+
+              <span class="card-sub" id="yearCount"> 0 transaksi </span>
             </div>
           </div>
 
           <div class="card summary-card card-teal">
             <div class="card-icon">📊</div>
+
             <div class="card-info">
-              <span class="card-label">Total Transactions</span>
-              <span class="card-value" id="totalTransactions">0</span>
-              <span class="card-sub" id="totalServices">
-                0 active services
-              </span>
+              <span class="card-label"> Total Transaksi </span>
+
+              <span class="card-value" id="totalTransactions"> 0 </span>
+
+              <span class="card-sub" id="totalServices"> 0 layanan aktif </span>
             </div>
           </div>
         </div>
 
-        <!-- Chart Filter -->
-        <div class="chart-filter">
-          <span class="filter-label">Period:</span>
+        <!-- CHART FILTER -->
 
-          <button class="filter-btn" data-filter="daily">Daily</button>
+        <div class="chart-filter">
+          <span class="filter-label"> Waktu: </span>
+
+          <button class="filter-btn" data-filter="daily">Harian</button>
 
           <button class="filter-btn active" data-filter="monthly">
-            Monthly
+            Bulanan
           </button>
 
-          <button class="filter-btn" data-filter="yearly">Yearly</button>
+          <button class="filter-btn" data-filter="yearly">Tahunan</button>
 
-          <span class="filter-label" style="margin-left: 16px"> Type: </span>
+          <span class="filter-label" style="margin-left: 16px"> Tipe: </span>
 
           <button
             class="filter-btn chart-type-btn active"
@@ -156,10 +178,10 @@
           </button>
 
           <button class="filter-btn chart-type-btn" data-chart-type="bar">
-            Bar
+            Kolom
           </button>
 
-          <span class="filter-label" style="margin-left: 16px"> Branch: </span>
+          <span class="filter-label" style="margin-left: 16px"> Cabang: </span>
 
           <select
             id="dashBranchFilter"
@@ -171,18 +193,21 @@
               color: var(--text);
             "
           >
-            <option value="all">All Branches</option>
+            <option value="all">Semua Cabang</option>
+
             <option value="Kemang">Kemang</option>
+
             <option value="LCC">LCC</option>
+
             <option value="Bintaro">Bintaro</option>
-            <option value="Bandung">Bandung</option>
           </select>
         </div>
 
-        <!-- Charts Row -->
+        <!-- CHARTS -->
+
         <div class="charts-grid">
           <div class="card chart-card">
-            <h3>📈 Revenue Overview</h3>
+            <h3>📈 Grafik Pendapatan</h3>
 
             <div class="chart-container">
               <canvas id="revenueChart"></canvas>
@@ -190,7 +215,7 @@
           </div>
 
           <div class="card chart-card">
-            <h3>🍩 Revenue by Service</h3>
+            <h3>🍩 Pendapatan per Layanan</h3>
 
             <div class="chart-container chart-container-doughnut">
               <canvas id="serviceChart"></canvas>
@@ -198,52 +223,70 @@
           </div>
         </div>
 
-        <!-- Bar Chart Full Width -->
+        <!-- BAR CHART -->
+
         <div class="card chart-card">
-          <h3>📊 Service Comparison</h3>
+          <h3>📊 Perbandingan Layanan</h3>
 
           <div class="chart-container">
             <canvas id="barChart"></canvas>
           </div>
         </div>
-        </div>
       </div>
 
-      <!-- ========== Transactions View ========== -->
+      <!-- =======================================================
+           TRANSACTIONS VIEW
+           ======================================================= -->
+
       <div class="view" id="view-transactions">
         <div class="card">
-          <h3>💰 Add New Transaction</h3>
+          <h3>💰 Tambah Transaksi Baru</h3>
 
           <form id="txnForm" class="form" autocomplete="off">
+            <!-- ================================================
+                 CABANG + LAYANAN
+                 ================================================ -->
+
             <div class="form-row">
               <div class="form-group">
                 <label for="txnBranch">
-                  Branch <span class="required">*</span>
+                  Cabang
+
+                  <span class="required"> * </span>
                 </label>
 
                 <select id="txnBranch" required>
                   <option value="Kemang">Kemang</option>
+
                   <option value="LCC">LCC</option>
+
                   <option value="Bintaro">Bintaro</option>
-                  <option value="Bandung">Bandung</option>
                 </select>
               </div>
 
               <div class="form-group">
                 <label for="txnService">
-                  Service <span class="required">*</span>
+                  Layanan
+
+                  <span class="required"> * </span>
                 </label>
 
                 <select id="txnService" required>
-                  <option value="">— Select Service —</option>
+                  <option value="">— Pilih Layanan —</option>
                 </select>
               </div>
             </div>
 
+            <!-- ================================================
+                 HARGA + JAM TREATMENT
+                 ================================================ -->
+
             <div class="form-row">
               <div class="form-group">
                 <label for="txnPrice">
-                  Price (Rp) <span class="required">*</span>
+                  Total Treatment (Rp)
+
+                  <span class="required"> * </span>
                 </label>
 
                 <input
@@ -252,79 +295,250 @@
                   min="0"
                   step="1000"
                   required
-                  placeholder="150000"
+                  placeholder="200000"
                 />
               </div>
+
+              <div class="form-group">
+                <label for="txnTime">
+                  Jam Treatment
+
+                  <span class="required"> * </span>
+                </label>
+
+                <input type="time" id="txnTime" required />
+              </div>
             </div>
+
+            <!-- ================================================
+                 TANGGAL + DP
+                 ================================================ -->
 
             <div class="form-row">
               <div class="form-group">
                 <label for="txnDate">
-                  Date <span class="required">*</span>
+                  Tanggal
+
+                  <span class="required"> * </span>
                 </label>
 
                 <input type="date" id="txnDate" required />
               </div>
 
               <div class="form-group">
-                <label for="txnPromo"> Promotion (Optional) </label>
+                <label for="txnDP">
+                  DP / Uang Muka
+
+                  <span class="text-muted" style="font-weight: 400">
+                    (Opsional)
+                  </span>
+                </label>
+
+                <input
+                  type="number"
+                  id="txnDP"
+                  min="0"
+                  step="1000"
+                  value="0"
+                  placeholder="100000"
+                />
+              </div>
+            </div>
+
+            <!-- ================================================
+                 PROMO
+                 ================================================ -->
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="txnPromo">
+                  Promo
+
+                  <span class="text-muted" style="font-weight: 400">
+                    (Opsional)
+                  </span>
+                </label>
 
                 <select id="txnPromo">
-                  <option value="">No Promotion</option>
+                  <option value="">Tanpa Promo</option>
                 </select>
               </div>
             </div>
 
+            <!-- ================================================
+                 PAYMENT CALCULATION
+                 ================================================ -->
+
+            <div
+              id="txnPaymentSummary"
+              class="card"
+              style="
+                margin-top: 8px;
+                background: rgba(255, 255, 255, 0.025);
+                border: 1px solid var(--border);
+              "
+            >
+              <h4 style="margin: 0 0 16px; font-size: 15px">
+                🧮 Ringkasan Pembayaran
+              </h4>
+
+              <div style="display: flex; flex-direction: column; gap: 10px">
+                <!-- TOTAL TREATMENT -->
+
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 16px;
+                  "
+                >
+                  <span> Total Treatment </span>
+
+                  <strong id="summaryTreatment"> Rp 0 </strong>
+                </div>
+
+                <!-- DP -->
+
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 16px;
+                  "
+                >
+                  <span> DP yang sudah dibayar </span>
+
+                  <strong id="summaryDP"> Rp 0 </strong>
+                </div>
+
+                <!-- SISA SEBELUM PROMO -->
+
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 16px;
+                  "
+                >
+                  <span> Sisa sebelum promo </span>
+
+                  <strong id="summaryBeforePromo"> Rp 0 </strong>
+                </div>
+
+                <!-- DISCOUNT -->
+
+                <div
+                  id="summaryDiscountRow"
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 16px;
+                  "
+                >
+                  <span> Diskon </span>
+
+                  <strong id="summaryDiscount"> Rp 0 </strong>
+                </div>
+
+                <!-- DIVIDER -->
+
+                <div
+                  style="height: 1px; background: var(--border); margin: 4px 0"
+                ></div>
+
+                <!-- FINAL PAYMENT -->
+
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 16px;
+                    font-size: 17px;
+                  "
+                >
+                  <span>
+                    <strong> Sisa yang harus dibayar </strong>
+                  </span>
+
+                  <strong
+                    id="summaryFinalPayment"
+                    style="color: var(--primary)"
+                  >
+                    Rp 0
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================================================
+                 CATATAN
+                 ================================================ -->
+
             <div class="form-group">
-              <label for="txnNotes">Notes</label>
+              <label for="txnNotes"> Catatan </label>
 
               <textarea
                 id="txnNotes"
                 rows="2"
-                placeholder="Additional notes (optional)..."
+                placeholder="Catatan tambahan (opsional)..."
               ></textarea>
             </div>
 
+            <!-- ================================================
+                 SUBMIT
+                 ================================================ -->
+
             <div class="form-actions">
               <button type="submit" class="btn btn-primary" id="txnSubmitBtn">
-                💾 Save Transaction
+                💾 Simpan Transaksi
               </button>
             </div>
           </form>
         </div>
 
+        <!-- ================================================
+             RECENT TRANSACTIONS
+             ================================================ -->
+
         <div class="card">
-          <h3>🕐 10 Most Recent Transactions</h3>
+          <h3>🕐 10 Transaksi Terbaru</h3>
 
           <div id="recentTransactions">
-            <p class="empty-state">No transactions yet.</p>
+            <p class="empty-state">Belum ada transaksi.</p>
           </div>
         </div>
       </div>
 
-      <!-- ========== Services View ========== -->
+      <!-- =======================================================
+           SERVICES VIEW
+           ======================================================= -->
+
       <div class="view" id="view-services">
         <div class="card">
-          <h3>💅 Add / Edit Service</h3>
+          <h3>💅 Tambah / Edit Layanan</h3>
 
           <form id="serviceForm" class="form" autocomplete="off">
             <div class="form-row form-row-inline">
               <div class="form-group">
                 <label for="svcName">
-                  Service Name <span class="required">*</span>
+                  Nama Layanan
+
+                  <span class="required"> * </span>
                 </label>
 
                 <input
                   type="text"
                   id="svcName"
                   required
-                  placeholder="Example: Gel Nails"
+                  placeholder="Contoh: Gel Nails"
                 />
               </div>
 
               <div class="form-group">
                 <label for="svcPrice">
-                  Price (Rp) <span class="required">*</span>
+                  Harga (Rp)
+
+                  <span class="required"> * </span>
                 </label>
 
                 <input
@@ -338,10 +552,10 @@
               </div>
 
               <div class="form-group form-group-btn">
-                <label>&nbsp;</label>
+                <label> &nbsp; </label>
 
                 <button type="submit" class="btn btn-primary" id="svcSubmitBtn">
-                  ➕ Add Service
+                  ➕ Tambah Layanan
                 </button>
               </div>
             </div>
@@ -349,37 +563,44 @@
         </div>
 
         <div class="card">
-          <h3>📋 Service List</h3>
+          <h3>📋 Daftar Layanan</h3>
 
           <div id="servicesList">
-            <p class="empty-state">Loading...</p>
+            <p class="empty-state">Memuat...</p>
           </div>
         </div>
       </div>
 
-      <!-- ========== Promos View ========== -->
+      <!-- =======================================================
+           PROMOS VIEW
+           ======================================================= -->
+
       <div class="view" id="view-promos">
         <div class="card">
-          <h3>🎉 Add / Edit Promotion</h3>
+          <h3>🎉 Tambah / Edit Promo</h3>
 
           <form id="promoForm" class="form" autocomplete="off">
             <div class="form-row">
               <div class="form-group">
                 <label for="promoName">
-                  Promotion Name <span class="required">*</span>
+                  Nama Promo
+
+                  <span class="required"> * </span>
                 </label>
 
                 <input
                   type="text"
                   id="promoName"
                   required
-                  placeholder="Example: Grand Opening"
+                  placeholder="Contoh: Grand Opening"
                 />
               </div>
 
               <div class="form-group">
                 <label for="promoDiscount">
-                  Discount (%) <span class="required">*</span>
+                  Diskon (%)
+
+                  <span class="required"> * </span>
                 </label>
 
                 <input
@@ -396,7 +617,9 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="promoStart">
-                  Start Date <span class="required">*</span>
+                  Tanggal Mulai
+
+                  <span class="required"> * </span>
                 </label>
 
                 <input type="date" id="promoStart" required />
@@ -404,7 +627,9 @@
 
               <div class="form-group">
                 <label for="promoEnd">
-                  End Date <span class="required">*</span>
+                  Tanggal Selesai
+
+                  <span class="required"> * </span>
                 </label>
 
                 <input type="date" id="promoEnd" required />
@@ -412,59 +637,66 @@
             </div>
 
             <div class="form-group">
-              <label for="promoDesc">Description</label>
+              <label for="promoDesc"> Deskripsi </label>
 
               <textarea
                 id="promoDesc"
                 rows="2"
-                placeholder="Promotion description (optional)..."
+                placeholder="Deskripsi promo (opsional)..."
               ></textarea>
             </div>
 
             <div class="form-actions">
               <button type="submit" class="btn btn-primary" id="promoSubmitBtn">
-                ➕ Add Promotion
+                ➕ Tambah Promo
               </button>
             </div>
           </form>
         </div>
 
         <div class="card">
-          <h3>📋 Promotion List</h3>
+          <h3>📋 Daftar Promo</h3>
 
           <div id="promosList">
-            <p class="empty-state">Loading...</p>
+            <p class="empty-state">Memuat...</p>
           </div>
         </div>
       </div>
 
-      <!-- ========== History View ========== -->
+      <!-- =======================================================
+           HISTORY VIEW
+           ======================================================= -->
+
       <div class="view" id="view-history">
         <div class="card">
           <div class="history-header">
-            <h3>📋 Transaction History</h3>
+            <h3>📋 Riwayat Transaksi</h3>
 
             <button class="btn btn-outline" id="exportCsvBtn">
               📥 Export CSV
             </button>
           </div>
 
+          <!-- HISTORY FILTERS -->
+
           <div class="history-filters">
             <div class="form-group">
               <input
                 type="text"
                 id="historySearch"
-                placeholder="🔍 Search service or notes..."
+                placeholder="🔍 Cari layanan atau catatan..."
               />
             </div>
 
             <div class="form-group">
               <select id="historyFilterBranch">
-                <option value="">All Branches</option>
+                <option value="">Semua Cabang</option>
+
                 <option value="Kemang">Kemang</option>
+
                 <option value="LCC">LCC</option>
+
                 <option value="Bintaro">Bintaro</option>
-                <option value="Bandung">Bandung</option>
               </select>
             </div>
 
@@ -473,34 +705,49 @@
             </div>
 
             <button class="btn btn-sm btn-outline" id="historyClear">
-              Clear Filters
+              Hapus Filter
             </button>
           </div>
 
-          <div class="history-summary">
-            <span> Total: <strong id="historyTotal">Rp 0</strong> </span>
+          <!-- HISTORY SUMMARY -->
 
-            <span class="text-muted" id="historyCount"> 0 transactions </span>
+          <div class="history-summary">
+            <span>
+              Total:
+
+              <strong id="historyTotal"> Rp 0 </strong>
+            </span>
+
+            <span class="text-muted" id="historyCount"> 0 transaksi </span>
           </div>
 
           <div id="historyTable">
-            <p class="empty-state">Loading...</p>
+            <p class="empty-state">Memuat...</p>
           </div>
         </div>
       </div>
     </main>
 
-    <!-- Toast Notification -->
+    <!-- =========================================================
+         TOAST
+         ========================================================= -->
+
     <div class="toast" id="toast"></div>
 
-    <!-- Scripts (order matters: config → supabase → store → views → app) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/config.js"></script>
+    <!-- =========================================================
+         SCRIPTS
+         ========================================================= -->
+
     <script src="js/store.js"></script>
+
     <script src="js/dashboard.js"></script>
+
     <script src="js/transactions.js"></script>
+
     <script src="js/services.js"></script>
+
     <script src="js/promos.js"></script>
+
     <script src="js/app.js"></script>
   </body>
 </html>
