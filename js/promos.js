@@ -35,15 +35,15 @@ const Promos = (() => {
 
       try {
         if (!name) {
-          throw new Error("Nama promo wajib diisi.");
+          throw new Error("Promotion name is required.");
         }
 
         if (discount < 0 || discount > 100) {
-          throw new Error("Diskon harus 0-100%.");
+          throw new Error("Discount must be between 0% and 100%.");
         }
 
         if (endDate < startDate) {
-          throw new Error("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+          throw new Error("End date cannot be before start date.");
         }
 
         if (editingId) {
@@ -55,7 +55,7 @@ const Promos = (() => {
             description,
           });
 
-          showToast("Promo berhasil diperbarui.");
+          showToast("Promotion updated successfully.");
         } else {
           await Store.addPromo({
             name,
@@ -65,7 +65,7 @@ const Promos = (() => {
             description,
           });
 
-          showToast("Promo berhasil ditambahkan.");
+          showToast("Promotion added successfully.");
         }
 
         _resetForm();
@@ -74,7 +74,7 @@ const Promos = (() => {
       } catch (err) {
         console.error(err);
 
-        showToast(err.message || "Gagal menyimpan promo.", "danger");
+        showToast(err.message || "Failed to save promotion.", "danger");
       }
     });
   }
@@ -90,7 +90,7 @@ const Promos = (() => {
       if (promos.length === 0) {
         container.innerHTML = `
             <p class="empty-state">
-              Belum ada promo.
+              No promotions yet.
             </p>
           `;
 
@@ -104,9 +104,9 @@ const Promos = (() => {
           let status = "Upcoming";
 
           if (today >= p.startDate && today <= p.endDate) {
-            status = "Aktif";
+            status = "Active";
           } else if (today > p.endDate) {
-            status = "Berakhir";
+            status = "Expired";
           }
 
           return `
@@ -185,7 +185,7 @@ const Promos = (() => {
                           data-action="delete"
                           data-id="${p.id}"
                         >
-                          🗑 Hapus
+                          🗑 Delete
                         </button>
   
                       </div>
@@ -207,11 +207,11 @@ const Promos = (() => {
 
       container.innerHTML = `
           <p class="empty-state">
-            Gagal memuat promo.
+            Failed to load promotions.
           </p>
         `;
 
-      showToast(err.message || "Gagal memuat promo.", "danger");
+      showToast(err.message || "Failed to load promotions.", "danger");
     }
   }
 
@@ -237,27 +237,27 @@ const Promos = (() => {
         const btn = document.getElementById("promoSubmitBtn");
 
         if (btn) {
-          btn.textContent = "💾 Simpan Perubahan";
+          btn.textContent = "💾 Save Changes";
         }
 
         return;
       }
 
       if (action === "delete") {
-        const ok = confirm("Hapus promo ini?");
+        const ok = confirm("Are you sure you want to delete this promotion?");
 
         if (!ok) return;
 
         await Store.deletePromo(id);
 
-        showToast("Promo berhasil dihapus.");
+        showToast("Promotion deleted successfully.");
 
         await renderList();
       }
     } catch (err) {
       console.error(err);
 
-      showToast(err.message || "Gagal memproses promo.", "danger");
+      showToast(err.message || "Failed to process promotion.", "danger");
     }
   }
 
@@ -269,7 +269,7 @@ const Promos = (() => {
     const btn = document.getElementById("promoSubmitBtn");
 
     if (btn) {
-      btn.textContent = "➕ Tambah Promo";
+      btn.textContent = "➕ Add Promotion";
     }
   }
 

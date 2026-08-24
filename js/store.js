@@ -7,24 +7,24 @@ const Store = (() => {
   let supabase = null;
 
   /* ============================================================
-       INIT
-       ============================================================ */
+     INIT
+     ============================================================ */
 
   function initClient() {
     if (supabase) return supabase;
 
     if (!window.APP_CONFIG) {
-      throw new Error("APP_CONFIG tidak ditemukan.");
+      throw new Error("APP_CONFIG configuration not found.");
     }
 
     if (!window.supabase) {
-      throw new Error("Supabase JS library belum diload.");
+      throw new Error("Supabase JS library is not loaded.");
     }
 
     const { supabaseUrl, supabaseAnonKey } = window.APP_CONFIG;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error("Supabase URL atau Anon Key belum diisi.");
+      throw new Error("Supabase URL or Anon Key is missing.");
     }
 
     supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
@@ -43,7 +43,7 @@ const Store = (() => {
       throw new Error(error.message);
     }
 
-    // Seed service jika tabel masih kosong
+    // Seed services if table is empty
     const { count, error: countError } = await supabase
       .from("services")
       .select("id", { count: "exact", head: true });
@@ -60,8 +60,8 @@ const Store = (() => {
   }
 
   /* ============================================================
-       HELPERS
-       ============================================================ */
+     HELPERS
+     ============================================================ */
 
   function generateId(prefix) {
     return (
@@ -94,9 +94,9 @@ const Store = (() => {
 
     const d = new Date(dateStr + "T00:00:00");
 
-    return d.toLocaleDateString("id-ID", {
-      day: "numeric",
+    return d.toLocaleDateString("en-US", {
       month: "short",
+      day: "numeric",
       year: "numeric",
     });
   }
@@ -131,7 +131,7 @@ const Store = (() => {
       remainingAmount,
       finalTreatmentAmount,
 
-      // Support camelCase untuk JS lama
+      // Support camelCase for legacy compatibility
       serviceId: row.service_id,
       serviceName: row.service_name,
       treatmentTime: row.treatment_time,
@@ -169,8 +169,8 @@ const Store = (() => {
   }
 
   /* ============================================================
-       SERVICES
-       ============================================================ */
+     SERVICES
+     ============================================================ */
 
   async function getServices() {
     const { data, error } = await supabase
@@ -218,7 +218,7 @@ const Store = (() => {
     };
 
     if (!service.name) {
-      throw new Error("Nama layanan wajib diisi.");
+      throw new Error("Service name is required.");
     }
 
     const { data, error } = await supabase
@@ -327,8 +327,8 @@ const Store = (() => {
   }
 
   /* ============================================================
-       PROMOS
-       ============================================================ */
+     PROMOS
+     ============================================================ */
 
   async function getPromos() {
     const { data, error } = await supabase
@@ -367,15 +367,15 @@ const Store = (() => {
     };
 
     if (!promo.name) {
-      throw new Error("Nama promo wajib diisi.");
+      throw new Error("Promotion name is required.");
     }
 
     if (!promo.start_date || !promo.end_date) {
-      throw new Error("Tanggal promo wajib diisi.");
+      throw new Error("Promotion dates are required.");
     }
 
     if (promo.end_date < promo.start_date) {
-      throw new Error("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+      throw new Error("End date cannot be before start date.");
     }
 
     const { data, error } = await supabase
@@ -433,8 +433,8 @@ const Store = (() => {
   }
 
   /* ============================================================
-       TRANSACTION CALCULATION
-       ============================================================ */
+     TRANSACTION CALCULATION
+     ============================================================ */
 
   function calculateTransaction({ price, dp = 0, promoDiscount = 0 }) {
     const totalTreatment = Math.max(0, Number(price) || 0);
@@ -470,8 +470,8 @@ const Store = (() => {
   }
 
   /* ============================================================
-       TRANSACTIONS
-       ============================================================ */
+     TRANSACTIONS
+     ============================================================ */
 
   async function getTransactions() {
     const { data, error } = await supabase
@@ -523,7 +523,7 @@ const Store = (() => {
 
       service_id: serviceId || null,
 
-      service_name: serviceName || "Layanan",
+      service_name: serviceName || "Service",
 
       price: calculation.totalTreatment,
 
@@ -555,7 +555,7 @@ const Store = (() => {
     const current = await getTransactionById(id);
 
     if (!current) {
-      throw new Error("Transaksi tidak ditemukan.");
+      throw new Error("Transaction not found.");
     }
 
     const price =
@@ -650,8 +650,8 @@ const Store = (() => {
   }
 
   /* ============================================================
-       PUBLIC API
-       ============================================================ */
+     PUBLIC API
+     ============================================================ */
 
   return {
     init,

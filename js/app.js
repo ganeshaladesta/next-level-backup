@@ -44,7 +44,7 @@ function _showConfigError(message) {
         <p>${message}</p>
   
         <p class="text-muted">
-          Check Supabase configuration and schema.
+          Please check Supabase configuration and schema.
         </p>
       </div>
     `;
@@ -55,10 +55,10 @@ const App = (() => {
 
   const PAGE_TITLES = {
     dashboard: "📊 Dashboard",
-    transactions: "💰 Tambah Transaksi",
-    services: "💅 Layanan & Harga",
-    promos: "🎉 Promo",
-    history: "📋 Riwayat",
+    transactions: "💰 Add Transaction",
+    services: "💅 Services & Pricing",
+    promos: "🎉 Promotions",
+    history: "📋 History",
   };
 
   let initialized = false;
@@ -77,7 +77,7 @@ const App = (() => {
     } catch (err) {
       console.error("Store initialization failed:", err);
 
-      _showConfigError(err.message || "Tidak dapat terhubung ke Supabase.");
+      _showConfigError(err.message || "Unable to connect to Supabase database.");
 
       _setAppLoading(false);
 
@@ -151,7 +151,7 @@ const App = (() => {
 
     const now = new Date();
 
-    el.textContent = now.toLocaleDateString("id-ID", {
+    el.textContent = now.toLocaleDateString("en-US", {
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -207,7 +207,7 @@ const App = (() => {
     } catch (err) {
       console.error("Navigation render error:", err);
 
-      showToast("Gagal memuat halaman. Cek console.", "danger");
+      showToast("Failed to load page. Check console for details.", "danger");
     }
 
     const sidebar = document.getElementById("sidebar");

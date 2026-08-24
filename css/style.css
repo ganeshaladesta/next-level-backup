@@ -343,6 +343,7 @@ input, select, textarea { font-family: inherit; font-size: 0.93rem; }
 .chart-filter {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 20px;
 }
@@ -363,6 +364,27 @@ input, select, textarea { font-family: inherit; font-size: 0.93rem; }
   color: #fff;
   border-color: var(--primary);
   box-shadow: 0 0 15px rgba(227,0,34,0.4);
+}
+
+.chart-filter select {
+  padding: 7px 14px;
+  border-radius: 50px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition);
+}
+.chart-filter select:hover {
+  border-color: rgba(227, 0, 34, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+}
+.chart-filter select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(227, 0, 34, 0.2);
 }
 
 /* ---------- Charts ---------- */

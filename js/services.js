@@ -28,11 +28,11 @@ const Services = (() => {
 
         try {
           if (!name) {
-            throw new Error("Nama layanan wajib diisi.");
+            throw new Error("Service name is required.");
           }
 
           if (price < 0) {
-            throw new Error("Harga tidak valid.");
+            throw new Error("Price cannot be negative.");
           }
 
           if (editingId) {
@@ -41,14 +41,14 @@ const Services = (() => {
               price,
             });
 
-            showToast("Layanan berhasil diperbarui.");
+            showToast("Service updated successfully.");
           } else {
             await Store.addService({
               name,
               price,
             });
 
-            showToast("Layanan berhasil ditambahkan.");
+            showToast("Service added successfully.");
           }
 
           _resetForm();
@@ -57,7 +57,7 @@ const Services = (() => {
         } catch (err) {
           console.error(err);
 
-          showToast(err.message || "Gagal menyimpan layanan.", "danger");
+          showToast(err.message || "Failed to save service.", "danger");
         }
       });
     }
@@ -74,7 +74,7 @@ const Services = (() => {
       if (services.length === 0) {
         container.innerHTML = `
             <p class="empty-state">
-              Belum ada layanan.
+              No services yet.
             </p>
           `;
 
@@ -102,7 +102,7 @@ const Services = (() => {
                     <div class="text-muted">
                       ${Store.formatCurrency(s.price)}
   
-                      ${s.active ? " · Aktif" : " · Nonaktif"}
+                      ${s.active ? " · Active" : " · Inactive"}
                     </div>
                   </div>
   
@@ -125,7 +125,7 @@ const Services = (() => {
                       data-action="toggle"
                       data-id="${s.id}"
                     >
-                      ${s.active ? "⏸ Nonaktifkan" : "▶ Aktifkan"}
+                      ${s.active ? "⏸ Deactivate" : "▶ Activate"}
                     </button>
   
                     <button
@@ -133,7 +133,7 @@ const Services = (() => {
                       data-action="delete"
                       data-id="${s.id}"
                     >
-                      🗑 Hapus
+                      🗑 Delete
                     </button>
   
                   </div>
@@ -156,11 +156,11 @@ const Services = (() => {
 
       container.innerHTML = `
           <p class="empty-state">
-            Gagal memuat layanan.
+            Failed to load services.
           </p>
         `;
 
-      showToast(err.message || "Gagal memuat layanan.", "danger");
+      showToast(err.message || "Failed to load services.", "danger");
     }
   }
 
@@ -180,7 +180,7 @@ const Services = (() => {
         const btn = document.getElementById("svcSubmitBtn");
 
         if (btn) {
-          btn.textContent = "💾 Simpan Perubahan";
+          btn.textContent = "💾 Save Changes";
         }
 
         return;
@@ -195,7 +195,7 @@ const Services = (() => {
           active: !service.active,
         });
 
-        showToast("Status layanan diperbarui.");
+        showToast("Service status updated.");
 
         await renderList();
 
@@ -203,20 +203,20 @@ const Services = (() => {
       }
 
       if (action === "delete") {
-        const ok = confirm("Hapus layanan ini?");
+        const ok = confirm("Are you sure you want to delete this service?");
 
         if (!ok) return;
 
         await Store.deleteService(id);
 
-        showToast("Layanan berhasil dihapus.");
+        showToast("Service deleted successfully.");
 
         await renderList();
       }
     } catch (err) {
       console.error(err);
 
-      showToast(err.message || "Gagal memproses layanan.", "danger");
+      showToast(err.message || "Failed to process service.", "danger");
     }
   }
 
@@ -228,7 +228,7 @@ const Services = (() => {
     const btn = document.getElementById("svcSubmitBtn");
 
     if (btn) {
-      btn.textContent = "➕ Tambah Layanan";
+      btn.textContent = "➕ Add Service";
     }
   }
 

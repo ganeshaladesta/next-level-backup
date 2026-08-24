@@ -33,9 +33,7 @@ const Transactions = (() => {
 
         if (!id) {
           document.getElementById("txnPrice").value = "";
-
           updatePaymentSummary();
-
           return;
         }
 
@@ -78,8 +76,8 @@ const Transactions = (() => {
   }
 
   /* ============================================================
-       SERVICES DROPDOWN
-       ============================================================ */
+     SERVICES DROPDOWN
+     ============================================================ */
 
   async function loadServices() {
     const select = document.getElementById("txnService");
@@ -92,7 +90,7 @@ const Transactions = (() => {
 
     select.innerHTML = `
         <option value="">
-          — Pilih Layanan —
+          — Select Service —
         </option>
       `;
 
@@ -114,8 +112,8 @@ const Transactions = (() => {
   }
 
   /* ============================================================
-       PROMO DROPDOWN
-       ============================================================ */
+     PROMO DROPDOWN
+     ============================================================ */
 
   async function loadPromos() {
     const select = document.getElementById("txnPromo");
@@ -126,7 +124,7 @@ const Transactions = (() => {
 
     select.innerHTML = `
         <option value="">
-          Tanpa Promo
+          No Promotion
         </option>
       `;
 
@@ -144,8 +142,8 @@ const Transactions = (() => {
   }
 
   /* ============================================================
-       PAYMENT
-       ============================================================ */
+     PAYMENT
+     ============================================================ */
 
   function getSelectedPromoDiscount() {
     const select = document.getElementById("txnPromo");
@@ -194,8 +192,8 @@ const Transactions = (() => {
   }
 
   /* ============================================================
-       SUBMIT
-       ============================================================ */
+     SUBMIT
+     ============================================================ */
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -205,7 +203,7 @@ const Transactions = (() => {
     try {
       if (btn) {
         btn.disabled = true;
-        btn.textContent = "⏳ Menyimpan...";
+        btn.textContent = "⏳ Saving...";
       }
 
       const branch = document.getElementById("txnBranch").value;
@@ -215,7 +213,7 @@ const Transactions = (() => {
       const service = await Store.getServiceById(serviceId);
 
       if (!service) {
-        throw new Error("Pilih layanan terlebih dahulu.");
+        throw new Error("Please select a service first.");
       }
 
       const price = Number(document.getElementById("txnPrice").value || 0);
@@ -235,15 +233,15 @@ const Transactions = (() => {
       const notes = document.getElementById("txnNotes").value.trim();
 
       if (!branch) {
-        throw new Error("Cabang wajib dipilih.");
+        throw new Error("Branch is required.");
       }
 
       if (!date) {
-        throw new Error("Tanggal wajib diisi.");
+        throw new Error("Date is required.");
       }
 
       if (price <= 0) {
-        throw new Error("Harga treatment harus lebih dari 0.");
+        throw new Error("Treatment price must be greater than 0.");
       }
 
       await Store.addTransaction({
@@ -259,7 +257,7 @@ const Transactions = (() => {
         dp,
       });
 
-      showToast("Transaksi berhasil disimpan.");
+      showToast("Transaction saved successfully.");
 
       document.getElementById("txnForm")?.reset();
 
@@ -271,18 +269,18 @@ const Transactions = (() => {
     } catch (err) {
       console.error(err);
 
-      showToast(err.message || "Gagal menyimpan transaksi.", "danger");
+      showToast(err.message || "Failed to save transaction.", "danger");
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = "💾 Simpan Transaksi";
+        btn.textContent = "💾 Save Transaction";
       }
     }
   }
 
   /* ============================================================
-       RECENT
-       ============================================================ */
+     RECENT
+     ============================================================ */
 
   async function renderRecent() {
     const container = document.getElementById("recentTransactions");
@@ -297,7 +295,7 @@ const Transactions = (() => {
       if (recent.length === 0) {
         container.innerHTML = `
             <p class="empty-state">
-              Belum ada transaksi.
+              No transactions yet.
             </p>
           `;
 
@@ -347,7 +345,7 @@ const Transactions = (() => {
                       data-delete-txn="${t.id}"
                       style="margin-top:5px"
                     >
-                      🗑 Hapus
+                      🗑 Delete
                     </button>
                   </div>
   
@@ -366,15 +364,15 @@ const Transactions = (() => {
 
       container.innerHTML = `
           <p class="empty-state">
-            Gagal memuat transaksi.
+            Failed to load transactions.
           </p>
         `;
     }
   }
 
   /* ============================================================
-       HISTORY
-       ============================================================ */
+     HISTORY
+     ============================================================ */
 
   async function renderHistory() {
     _setupHistory();
@@ -455,12 +453,12 @@ const Transactions = (() => {
 
       _setText("historyTotal", Store.formatCurrency(total));
 
-      _setText("historyCount", txns.length + " transaksi");
+      _setText("historyCount", `${txns.length} transactions`);
 
       if (txns.length === 0) {
         container.innerHTML = `
             <p class="empty-state">
-              Tidak ada transaksi.
+              No transactions found.
             </p>
           `;
 
@@ -480,23 +478,23 @@ const Transactions = (() => {
               <thead>
                 <tr>
                   <th style="text-align:left;padding:12px 8px">
-                    Tanggal
+                    Date
                   </th>
   
                   <th style="text-align:left;padding:12px 8px">
-                    Cabang
+                    Branch
                   </th>
   
                   <th style="text-align:left;padding:12px 8px">
-                    Layanan
+                    Service
                   </th>
   
                   <th style="text-align:left;padding:12px 8px">
-                    Jam
+                    Time
                   </th>
   
                   <th style="text-align:right;padding:12px 8px">
-                    Harga
+                    Price
                   </th>
   
                   <th style="text-align:right;padding:12px 8px">
@@ -504,10 +502,11 @@ const Transactions = (() => {
                   </th>
   
                   <th style="text-align:right;padding:12px 8px">
-                    Sisa
+                    Balance Due
                   </th>
   
                   <th style="padding:12px 8px">
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -590,6 +589,7 @@ const Transactions = (() => {
                           <button
                             class="btn btn-sm btn-outline"
                             data-history-delete="${t.id}"
+                            title="Delete transaction"
                           >
                             🗑
                           </button>
@@ -618,62 +618,62 @@ const Transactions = (() => {
 
       container.innerHTML = `
           <p class="empty-state">
-            Gagal memuat riwayat transaksi.
+            Failed to load transaction history.
           </p>
         `;
     }
   }
 
   /* ============================================================
-       DELETE
-       ============================================================ */
+     DELETE
+     ============================================================ */
 
   async function deleteTransaction(id) {
     try {
-      const ok = confirm("Hapus transaksi ini?");
+      const ok = confirm("Are you sure you want to delete this transaction?");
 
       if (!ok) return;
 
       await Store.deleteTransaction(id);
 
-      showToast("Transaksi berhasil dihapus.");
+      showToast("Transaction deleted successfully.");
 
       await renderRecent();
     } catch (err) {
       console.error(err);
 
-      showToast(err.message || "Gagal menghapus transaksi.", "danger");
+      showToast(err.message || "Failed to delete transaction.", "danger");
     }
   }
 
   /* ============================================================
-       EXPORT CSV
-       ============================================================ */
+     EXPORT CSV
+     ============================================================ */
 
   async function exportCSV() {
     try {
       const txns = await Store.getTransactions();
 
       if (txns.length === 0) {
-        showToast("Belum ada transaksi untuk diexport.", "danger");
+        showToast("No transactions to export.", "danger");
 
         return;
       }
 
       const headers = [
         "ID",
-        "Tanggal",
-        "Jam Treatment",
-        "Cabang",
-        "Layanan",
-        "Harga",
+        "Date",
+        "Treatment Time",
+        "Branch",
+        "Service",
+        "Price",
         "DP",
         "Promo",
-        "Diskon %",
-        "Diskon Nominal",
-        "Sisa Sebelum Promo",
-        "Sisa Bayar",
-        "Catatan",
+        "Discount %",
+        "Discount Amount",
+        "Subtotal Before Promo",
+        "Balance Due",
+        "Notes",
         "Created At",
       ];
 
@@ -718,11 +718,11 @@ const Transactions = (() => {
 
       URL.revokeObjectURL(url);
 
-      showToast("CSV berhasil diexport.");
+      showToast("CSV exported successfully.");
     } catch (err) {
       console.error(err);
 
-      showToast("Gagal export CSV.", "danger");
+      showToast("Failed to export CSV.", "danger");
     }
   }
 
