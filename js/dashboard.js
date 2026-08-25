@@ -958,187 +958,91 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     AXIS OPTIONS
-  ============================================================ */
+   AXIS OPTIONS
+   ============================================================ */
 
-  function _axisChartOptions(
-    isRevenue = true,
-    rawDates = []
-  ) {
-
-    const isWeekly =
-      currentFilter === "weekly";
-
-
+  function _axisChartOptions(isRevenue = true) {
     return {
-
       responsive: true,
 
-      maintainAspectRatio:
-        false,
-
+      maintainAspectRatio: false,
 
       interaction: {
-
         mode: "index",
-
         intersect: false,
-
       },
-
 
       plugins: {
-
         legend: {
-
           display: false,
-
         },
-
 
         tooltip: {
+          enabled: true,
 
           callbacks: {
-
-            title: (items) => {
-
-              if (
-                isWeekly &&
-                items &&
-                items.length > 0 &&
-                rawDates.length
-              ) {
-
-                const index =
-                  items[0].dataIndex;
-
-                const date =
-                  rawDates[index];
-
-                if (date) {
-
-                  return _formatLongDate(
-                    date
-                  );
-
-                }
-
-              }
-
-
-              return items[0]?.label || "";
-
-            },
-
-
-            label: (c) => {
-
-              if (isRevenue) {
-
-                return (
-                  " " +
-                  Store.formatCurrency(
-                    c.parsed.y
-                  )
-                );
-
-              }
-
-
-              return (
-                " " +
-                c.parsed.y +
-                " transactions"
-              );
-
-            },
-
+            label: (c) =>
+              isRevenue
+                ? Store.formatCurrency(c.parsed.y)
+                : `${c.parsed.y} transactions`,
           },
-
         },
-
       },
-
 
       scales: {
-
         y: {
-
-          beginAtZero:
-            true,
-
+          beginAtZero: true,
 
           ticks: {
+            color: "#a1a1aa",
 
-            color:
-              "#a1a1aa",
+            padding: 8,
 
-
-            callback: (v) => {
-
-              if (isRevenue) {
-
-                return _shortCurrency(v);
-
-              }
-
-
-              return Number.isInteger(v)
-                ? `${v}`
-                : null;
-
-            },
-
+            callback: (v) =>
+              isRevenue
+                ? _shortCurrency(v)
+                : Number.isInteger(v)
+                  ? `${v}`
+                  : null,
           },
-
 
           grid: {
-
-            color:
-              "rgba(255,255,255,0.05)",
-
+            color: "rgba(255,255,255,0.05)",
           },
-
         },
-
 
         x: {
+          offset: false,
 
           ticks: {
+            color: "#a1a1aa",
 
-            color:
-              "#a1a1aa",
+            padding: 8,
 
-            autoSkip:
-              true,
+            /* ================================
+               PENTING:
+               Jangan tampilkan semua tanggal
+               ================================ */
 
-            maxTicksLimit:
-              isWeekly
-                ? 14
-                : 12,
+            autoSkip: true,
 
-            maxRotation:
-              0,
+            maxTicksLimit: 8,
 
-            minRotation:
-              0,
+            maxRotation: 0,
 
+            minRotation: 0,
+
+            font: {
+              size: 11,
+            },
           },
-
 
           grid: {
-
-            display:
-              false,
-
+            display: false,
           },
-
         },
-
       },
-
     };
-
   }
 
 
