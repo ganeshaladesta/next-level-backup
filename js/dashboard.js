@@ -17,8 +17,23 @@ const Dashboard = (() => {
 
   const BRANCHES = ["Kemang", "LCC", "Bintaro", "Bandung"];
 
+  const MONTH_NAMES = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
   /* ============================================================
-     PUBLIC RENDER
+     PUBLIC
      ============================================================ */
 
   async function render() {
@@ -160,6 +175,7 @@ const Dashboard = (() => {
             <span>
               <strong>${escapeHtml(p.name)}</strong>
               — ${Number(p.discount || 0)}% Off
+
               ${p.description
             ? " · " + escapeHtml(p.description)
             : ""
@@ -182,7 +198,11 @@ const Dashboard = (() => {
 
     all = filterBranch(all);
 
-    const filtered = getPeriodTransactions(all);
+    /*
+     * IMPORTANT:
+     * KPI sekarang mengikuti timeframe aktif.
+     */
+    const filtered = getKPITransactions(all);
 
     const revenue = sumRevenue(filtered);
     const count = filtered.length;
@@ -190,113 +210,131 @@ const Dashboard = (() => {
     const averageTicket = count > 0 ? revenue / count : 0;
 
     const discount = filtered.reduce(
-      (total, t) => total + Number(t.discountAmount || 0),
+      (total, t) =>
+        total + Number(t.discountAmount || 0),
       0,
     );
 
-    const promoTransactions = filtered.filter(isPromoTransaction);
+    const promoTransactions =
+      filtered.filter(isPromoTransaction);
 
-    const promoRevenue = sumRevenue(promoTransactions);
+    const promoRevenue =
+      sumRevenue(promoTransactions);
 
-    const promoDiscount = promoTransactions.reduce(
-      (total, t) => total + Number(t.discountAmount || 0),
-      0,
-    );
+    const promoDiscount =
+      promoTransactions.reduce(
+        (total, t) =>
+          total + Number(t.discountAmount || 0),
+        0,
+      );
 
     /* ----------------------------------------------------------
-       EXISTING KPI CARDS
+       DYNAMIC KPI
        ---------------------------------------------------------- */
 
-    const today = Store.getTodayStr();
+    const periodLabel = getPeriodLabel();
 
-    const todayTxns = all.filter((t) => t.date === today);
-
-    const monthStart = today.substring(0, 7) + "-01";
-
-    const monthTxns = all.filter(
-      (t) => t.date >= monthStart && t.date <= today,
+    _setText(
+      "todayCardLabel",
+      periodLabel,
     );
 
-    const yearStart = today.substring(0, 4) + "-01-01";
-
-    const yearTxns = all.filter(
-      (t) => t.date >= yearStart && t.date <= today,
+    _setText(
+      "monthCardLabel",
+      currentFilter === "daily"
+        ? "Previous Period"
+        : currentFilter === "weekly"
+          ? "12 Week Total"
+          : currentFilter === "monthly"
+            ? "12 Month Total"
+            : "5 Year Total",
     );
 
-    const todayRevenue = sumRevenue(todayTxns);
-    const monthRevenue = sumRevenue(monthTxns);
-    const yearRevenue = sumRevenue(yearTxns);
+    _setText(
+      "yearCardLabel",
+      "Transactions",
+    );
 
-    const isRevenue = currentMetric === "revenue";
+    const isRevenue =
+      currentMetric === "revenue";
 
     if (isRevenue) {
       _setText(
         "todayRevenue",
-        Store.formatCurrency(todayRevenue),
+        Store.formatCurrency(revenue),
       );
 
       _setText(
         "todayCount",
-        `${todayTxns.length} transactions`,
+        `${count.toLocaleString("id-ID")} transactions`,
       );
 
       _setText(
         "monthRevenue",
-        Store.formatCurrency(monthRevenue),
+        Store.formatCurrency(averageTicket),
       );
 
       _setText(
         "monthCount",
-        `${monthTxns.length} transactions`,
+        "Average Ticket",
       );
 
       _setText(
         "yearRevenue",
-        Store.formatCurrency(yearRevenue),
+        Store.formatCurrency(discount),
       );
 
       _setText(
         "yearCount",
-        `${yearTxns.length} transactions`,
+        "Total Discount",
       );
     } else {
       _setText(
         "todayRevenue",
-        `${todayTxns.length} Transactions`,
+        `${count.toLocaleString("id-ID")} Transactions`,
       );
 
       _setText(
         "todayCount",
-        `Revenue: ${Store.formatCurrency(todayRevenue)}`,
+        `Revenue: ${Store.formatCurrency(revenue)}`,
       );
 
       _setText(
         "monthRevenue",
-        `${monthTxns.length} Transactions`,
+        Store.formatCurrency(averageTicket),
       );
 
       _setText(
         "monthCount",
-        `Revenue: ${Store.formatCurrency(monthRevenue)}`,
+        "Average Ticket",
       );
 
       _setText(
         "yearRevenue",
-        `${yearTxns.length} Transactions`,
+        `${promoTransactions.length.toLocaleString(
+          "id-ID",
+        )} Promo Transactions`,
       );
 
       _setText(
         "yearCount",
-        `Revenue: ${Store.formatCurrency(yearRevenue)}`,
+        `Promo Revenue: ${Store.formatCurrency(
+          promoRevenue,
+        )}`,
       );
     }
 
+    /* ----------------------------------------------------------
+       EXISTING TOTALS
+       ---------------------------------------------------------- */
+
     _setText(
       "totalTransactions",
-      filtered.length,
+      count.toLocaleString("id-ID"),
     );
 
-    const services = await Store.getActiveServices();
+    const services =
+      await Store.getActiveServices();
 
     _setText(
       "totalServices",
@@ -304,7 +342,7 @@ const Dashboard = (() => {
     );
 
     /* ----------------------------------------------------------
-       DASHBOARD KPI
+       NEW KPI IDs
        ---------------------------------------------------------- */
 
     _setText(
@@ -329,7 +367,9 @@ const Dashboard = (() => {
 
     _setText(
       "dashPromoTransactions",
-      promoTransactions.length.toLocaleString("id-ID"),
+      promoTransactions.length.toLocaleString(
+        "id-ID",
+      ),
     );
 
     _setText(
@@ -342,31 +382,104 @@ const Dashboard = (() => {
       Store.formatCurrency(promoDiscount),
     );
 
-    /* ----------------------------------------------------------
-       DYNAMIC LABELS
-       ---------------------------------------------------------- */
-
-    const periodLabel = getPeriodLabel();
-
     _setText(
       "dashPeriodLabel",
       periodLabel,
     );
+  }
 
-    _setText(
-      "todayCardLabel",
-      "Today",
-    );
+  /* ============================================================
+     KPI PERIOD
+     ============================================================ */
 
-    _setText(
-      "monthCardLabel",
-      "This Month",
-    );
+  function getKPITransactions(data) {
+    const today = new Date();
 
-    _setText(
-      "yearCardLabel",
-      "This Year",
-    );
+    /* ----------------------------------------------------------
+       DAILY
+       Current day
+       ---------------------------------------------------------- */
+
+    if (currentFilter === "daily") {
+      const todayStr =
+        Store.getTodayStr();
+
+      return data.filter(
+        (t) => t.date === todayStr,
+      );
+    }
+
+    /* ----------------------------------------------------------
+       WEEKLY
+       LAST 12 WEEKS
+       ---------------------------------------------------------- */
+
+    if (currentFilter === "weekly") {
+      const range =
+        getWeeklyRange();
+
+      return data.filter((t) => {
+        const d =
+          new Date(`${t.date}T00:00:00`);
+
+        return (
+          d >= range.start &&
+          d <= range.end
+        );
+      });
+    }
+
+    /* ----------------------------------------------------------
+       MONTHLY
+       LAST 12 MONTHS
+       ---------------------------------------------------------- */
+
+    if (currentFilter === "monthly") {
+      const start = new Date(
+        today.getFullYear(),
+        today.getMonth() - 11,
+        1,
+      );
+
+      start.setHours(0, 0, 0, 0);
+
+      const end = new Date(today);
+      end.setHours(23, 59, 59, 999);
+
+      return data.filter((t) => {
+        const d =
+          new Date(`${t.date}T00:00:00`);
+
+        return d >= start && d <= end;
+      });
+    }
+
+    /* ----------------------------------------------------------
+       YEARLY
+       LAST 5 YEARS
+       ---------------------------------------------------------- */
+
+    if (currentFilter === "yearly") {
+      const start = new Date(
+        today.getFullYear() - 4,
+        0,
+        1,
+      );
+
+      start.setHours(0, 0, 0, 0);
+
+      const end = new Date(today);
+      end.setHours(23, 59, 59, 999);
+
+      return data.filter((t) => {
+        const d =
+          new Date(`${t.date}T00:00:00`);
+
+        return d >= start && d <= end;
+      });
+    }
+
+    return data;
   }
 
   /* ============================================================
@@ -384,15 +497,17 @@ const Dashboard = (() => {
   }
 
   /* ============================================================
-     CHART TITLES
+     TITLES
      ============================================================ */
 
   function _updateChartTitles() {
-    const isRevenue = currentMetric === "revenue";
+    const isRevenue =
+      currentMetric === "revenue";
 
-    const revTitle = document.getElementById(
-      "dashRevenueChartTitle",
-    );
+    const revTitle =
+      document.getElementById(
+        "dashRevenueChartTitle",
+      );
 
     if (revTitle) {
       revTitle.textContent = isRevenue
@@ -400,9 +515,10 @@ const Dashboard = (() => {
         : "📈 Transaction Count Trend";
     }
 
-    const svcTitle = document.getElementById(
-      "dashServiceChartTitle",
-    );
+    const svcTitle =
+      document.getElementById(
+        "dashServiceChartTitle",
+      );
 
     if (svcTitle) {
       svcTitle.textContent = isRevenue
@@ -410,9 +526,10 @@ const Dashboard = (() => {
         : "🍩 Transactions by Service";
     }
 
-    const barTitle = document.getElementById(
-      "dashBarChartTitle",
-    );
+    const barTitle =
+      document.getElementById(
+        "dashBarChartTitle",
+      );
 
     if (barTitle) {
       barTitle.textContent = isRevenue
@@ -422,26 +539,36 @@ const Dashboard = (() => {
   }
 
   /* ============================================================
-     REVENUE / TRANSACTION TREND
+     REVENUE TREND
      ============================================================ */
 
   async function _renderRevenueChart() {
-    const canvas = document.getElementById("revenueChart");
+    const canvas =
+      document.getElementById(
+        "revenueChart",
+      );
 
     if (!canvas) return;
 
-    const { labels, data } = await _getRevenueData();
+    const {
+      labels,
+      data,
+    } = await _getRevenueData();
 
     if (revenueChart) {
       revenueChart.destroy();
     }
 
-    const isLine = currentChartType === "line";
-    const isRevenue = currentMetric === "revenue";
+    const isLine =
+      currentChartType === "line";
 
-    const datasetLabel = isRevenue
-      ? "Revenue"
-      : "Transactions";
+    const isRevenue =
+      currentMetric === "revenue";
+
+    const datasetLabel =
+      isRevenue
+        ? "Revenue"
+        : "Transactions";
 
     revenueChart = new Chart(canvas, {
       type: currentChartType,
@@ -455,62 +582,40 @@ const Dashboard = (() => {
 
             data,
 
-            spanGaps: false,
-
             ...(isLine
               ? {
-                borderColor: "#e30022",
-
-                backgroundColor: _gradient(
-                  canvas,
+                borderColor:
                   "#e30022",
-                ),
+
+                backgroundColor:
+                  _gradient(
+                    canvas,
+                    "#e30022",
+                  ),
 
                 fill: true,
 
-                tension: 0.4,
+                tension: 0.35,
 
-                pointBackgroundColor: "#e30022",
+                pointBackgroundColor:
+                  "#e30022",
 
-                pointBorderColor: "#ffffff",
+                pointBorderColor:
+                  "#ffffff",
 
                 pointBorderWidth: 2,
 
-                /*
-                 * ONLY SHOW POINT IF THERE IS DATA
-                 */
-                pointRadius: (context) => {
-                  const value = context.raw;
+                pointRadius:
+                  currentFilter ===
+                    "weekly"
+                    ? 0
+                    : 3,
 
-                  if (
-                    value === null ||
-                    value === undefined ||
-                    Number(value) <= 0
-                  ) {
-                    return 0;
-                  }
-
-                  return 4;
-                },
-
-                pointHoverRadius: (context) => {
-                  const value = context.raw;
-
-                  if (
-                    value === null ||
-                    value === undefined ||
-                    Number(value) <= 0
-                  ) {
-                    return 0;
-                  }
-
-                  return 7;
-                },
-
-                pointHitRadius: 12,
+                pointHoverRadius: 6,
               }
               : {
-                backgroundColor: "#e30022",
+                backgroundColor:
+                  "#e30022",
 
                 borderRadius: 8,
 
@@ -522,7 +627,10 @@ const Dashboard = (() => {
         ],
       },
 
-      options: _axisChartOptions(isRevenue),
+      options:
+        _axisChartOptions(
+          isRevenue,
+        ),
     });
   }
 
@@ -531,7 +639,10 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function _renderServiceChart() {
-    const canvas = document.getElementById("serviceChart");
+    const canvas =
+      document.getElementById(
+        "serviceChart",
+      );
 
     if (!canvas) return;
 
@@ -545,7 +656,8 @@ const Dashboard = (() => {
       serviceChart.destroy();
     }
 
-    const isRevenue = currentMetric === "revenue";
+    const isRevenue =
+      currentMetric === "revenue";
 
     serviceChart = new Chart(canvas, {
       type: "doughnut",
@@ -608,11 +720,14 @@ const Dashboard = (() => {
   }
 
   /* ============================================================
-     SERVICE BAR / LINE
+     SERVICE BAR
      ============================================================ */
 
   async function _renderBarChart() {
-    const canvas = document.getElementById("barChart");
+    const canvas =
+      document.getElementById(
+        "barChart",
+      );
 
     if (!canvas) return;
 
@@ -626,12 +741,16 @@ const Dashboard = (() => {
       barChart.destroy();
     }
 
-    const isLine = currentChartType === "line";
-    const isRevenue = currentMetric === "revenue";
+    const isLine =
+      currentChartType === "line";
 
-    const datasetLabel = isRevenue
-      ? "Revenue"
-      : "Transactions";
+    const isRevenue =
+      currentMetric === "revenue";
+
+    const datasetLabel =
+      isRevenue
+        ? "Revenue"
+        : "Transactions";
 
     barChart = new Chart(canvas, {
       type: currentChartType,
@@ -647,20 +766,24 @@ const Dashboard = (() => {
 
             ...(isLine
               ? {
-                borderColor: "#e30022",
-
-                backgroundColor: _gradient(
-                  canvas,
+                borderColor:
                   "#e30022",
-                ),
+
+                backgroundColor:
+                  _gradient(
+                    canvas,
+                    "#e30022",
+                  ),
 
                 fill: true,
 
                 tension: 0.4,
 
-                pointBackgroundColor: colors,
+                pointBackgroundColor:
+                  colors,
 
-                pointBorderColor: "#ffffff",
+                pointBorderColor:
+                  "#ffffff",
 
                 pointBorderWidth: 2,
 
@@ -669,7 +792,8 @@ const Dashboard = (() => {
                 pointHoverRadius: 7,
               }
               : {
-                backgroundColor: colors,
+                backgroundColor:
+                  colors,
 
                 borderRadius: 8,
 
@@ -681,7 +805,10 @@ const Dashboard = (() => {
         ],
       },
 
-      options: _axisChartOptions(isRevenue),
+      options:
+        _axisChartOptions(
+          isRevenue,
+        ),
     });
   }
 
@@ -689,17 +816,13 @@ const Dashboard = (() => {
      AXIS OPTIONS
      ============================================================ */
 
-  function _axisChartOptions(isRevenue = true) {
+  function _axisChartOptions(
+    isRevenue = true,
+  ) {
     return {
       responsive: true,
 
       maintainAspectRatio: false,
-
-      interaction: {
-        mode: "index",
-
-        intersect: false,
-      },
 
       plugins: {
         legend: {
@@ -708,23 +831,12 @@ const Dashboard = (() => {
 
         tooltip: {
           callbacks: {
-            label: (c) => {
-              const value = c.parsed.y;
-
-              /*
-               * Don't show ugly "null" tooltip
-               */
-              if (
-                value === null ||
-                value === undefined
-              ) {
-                return "";
-              }
-
-              return isRevenue
-                ? Store.formatCurrency(value)
-                : `${value} transactions`;
-            },
+            label: (c) =>
+              isRevenue
+                ? Store.formatCurrency(
+                  c.parsed.y,
+                )
+                : `${c.parsed.y} transactions`,
           },
         },
       },
@@ -736,8 +848,6 @@ const Dashboard = (() => {
           ticks: {
             color: "#a1a1aa",
 
-            padding: 8,
-
             callback: (v) =>
               isRevenue
                 ? _shortCurrency(v)
@@ -747,32 +857,23 @@ const Dashboard = (() => {
           },
 
           grid: {
-            color: "rgba(255,255,255,0.05)",
+            color:
+              "rgba(255,255,255,0.05)",
           },
         },
 
         x: {
-          offset: false,
-
           ticks: {
             color: "#a1a1aa",
-
-            padding: 8,
 
             autoSkip: true,
 
             maxTicksLimit:
-              currentFilter === "weekly"
-                ? 12
-                : 10,
-
-            maxRotation: 0,
-
-            minRotation: 0,
-
-            font: {
-              size: 11,
-            },
+              currentFilter === "daily"
+                ? 10
+                : currentFilter === "weekly"
+                  ? 12
+                  : 12,
           },
 
           grid: {
@@ -788,40 +889,23 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function _getRevenueData() {
-    let all = await Store.getTransactions();
+    let all =
+      await Store.getTransactions();
 
     all = filterBranch(all);
 
     const today = new Date();
 
-    const isRevenue = currentMetric === "revenue";
+    const isRevenue =
+      currentMetric === "revenue";
 
     const labels = [];
     const data = [];
 
-    const monthNames = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-
-    /* ==========================================================
+    /* ----------------------------------------------------------
        DAILY
        30 DAYS
-
-       SETIAP HARI TETAP ADA DI ARRAY,
-       TAPI HANYA HARI YANG ADA TRANSAKSI
-       YANG MEMILIKI TITIK MERAH.
-       ========================================================== */
+       ---------------------------------------------------------- */
 
     if (currentFilter === "daily") {
       const map = {};
@@ -829,19 +913,23 @@ const Dashboard = (() => {
       for (let i = 29; i >= 0; i--) {
         const d = new Date(today);
 
-        d.setDate(d.getDate() - i);
+        d.setDate(
+          d.getDate() - i,
+        );
 
         const key = _dateStr(d);
 
         labels.push(
-          `${d.getDate()} ${monthNames[d.getMonth()]}`,
+          `${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`,
         );
 
         map[key] = 0;
       }
 
       all.forEach((t) => {
-        if (map[t.date] !== undefined) {
+        if (
+          map[t.date] !== undefined
+        ) {
           map[t.date] += isRevenue
             ? Number(t.price || 0)
             : 1;
@@ -850,102 +938,58 @@ const Dashboard = (() => {
 
       return {
         labels,
-
-        data: Object.values(map).map((value) =>
-          value > 0 ? value : null,
-        ),
+        data: Object.values(map),
       };
     }
 
-    /* ==========================================================
+    /* ----------------------------------------------------------
        WEEKLY
        12 WEEKS
-
-       1 DATA POINT = 1 WEEK
-
-       WEEK KOSONG
-       -> null
-       -> TIDAK ADA TITIK MERAH
-
-       WEEK ADA TRANSAKSI
-       -> nilai transaksi
-       -> MUNCUL TITIK MERAH
-
-       ========================================================== */
+       ---------------------------------------------------------- */
 
     if (currentFilter === "weekly") {
-      const weeklyData = [];
+      const weeks =
+        buildWeeklyBuckets();
 
-      for (let i = 11; i >= 0; i--) {
-        const end = new Date(today);
-
-        end.setHours(23, 59, 59, 999);
-
-        end.setDate(
-          end.getDate() - i * 7,
+      weeks.forEach((week) => {
+        labels.push(
+          `${week.start.getDate()} ${MONTH_NAMES[week.start.getMonth()]}`,
         );
+      });
 
-        const start = new Date(end);
+      const data =
+        weeks.map(() => 0);
 
-        start.setHours(0, 0, 0, 0);
+      all.forEach((t) => {
+        const date =
+          new Date(
+            `${t.date}T00:00:00`,
+          );
 
-        start.setDate(
-          start.getDate() - 6,
-        );
+        const index =
+          weeks.findIndex(
+            (week) =>
+              date >= week.start &&
+              date <= week.end,
+          );
 
-        let total = 0;
-
-        all.forEach((t) => {
-          if (!t.date) return;
-
-          const transactionDate =
-            new Date(`${t.date}T00:00:00`);
-
-          if (
-            transactionDate >= start &&
-            transactionDate <= end
-          ) {
-            total += isRevenue
-              ? Number(t.price || 0)
-              : 1;
-          }
-        });
-
-        weeklyData.push({
-          start,
-          end,
-          value: total,
-        });
-      }
+        if (index !== -1) {
+          data[index] += isRevenue
+            ? Number(t.price || 0)
+            : 1;
+        }
+      });
 
       return {
-        labels: weeklyData.map((week) => {
-          return `${week.start.getDate()} ${monthNames[
-            week.start.getMonth()
-            ]
-            }`;
-        }),
-
-        /*
-         * IMPORTANT:
-         *
-         * 0 transaksi = null
-         *
-         * Chart.js tidak akan membuat
-         * titik merah untuk null.
-         */
-        data: weeklyData.map((week) => {
-          return week.value > 0
-            ? week.value
-            : null;
-        }),
+        labels,
+        data,
       };
     }
 
-    /* ==========================================================
+    /* ----------------------------------------------------------
        MONTHLY
        12 MONTHS
-       ========================================================== */
+       ---------------------------------------------------------- */
 
     if (currentFilter === "monthly") {
       const map = {};
@@ -958,25 +1002,24 @@ const Dashboard = (() => {
         );
 
         const key =
-          `${d.getFullYear()}-` +
-          `${String(
+          `${d.getFullYear()}-${String(
             d.getMonth() + 1,
           ).padStart(2, "0")}`;
 
         labels.push(
-          `${monthNames[d.getMonth()]} ${d.getFullYear()}`,
+          `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`,
         );
 
         map[key] = 0;
       }
 
       all.forEach((t) => {
-        const key = String(t.date).substring(
-          0,
-          7,
-        );
+        const key =
+          String(t.date).substring(0, 7);
 
-        if (map[key] !== undefined) {
+        if (
+          map[key] !== undefined
+        ) {
           map[key] += isRevenue
             ? Number(t.price || 0)
             : 1;
@@ -985,15 +1028,14 @@ const Dashboard = (() => {
 
       return {
         labels,
-
         data: Object.values(map),
       };
     }
 
-    /* ==========================================================
+    /* ----------------------------------------------------------
        YEARLY
        5 YEARS
-       ========================================================== */
+       ---------------------------------------------------------- */
 
     const map = {};
 
@@ -1007,12 +1049,12 @@ const Dashboard = (() => {
     }
 
     all.forEach((t) => {
-      const key = String(t.date).substring(
-        0,
-        4,
-      );
+      const key =
+        String(t.date).substring(0, 4);
 
-      if (map[key] !== undefined) {
+      if (
+        map[key] !== undefined
+      ) {
         map[key] += isRevenue
           ? Number(t.price || 0)
           : 1;
@@ -1021,9 +1063,97 @@ const Dashboard = (() => {
 
     return {
       labels,
-
       data: Object.values(map),
     };
+  }
+
+  /* ============================================================
+     WEEK BUCKET BUILDER
+     ============================================================ */
+
+  function buildWeeklyBuckets() {
+    const today = new Date();
+
+    today.setHours(
+      23,
+      59,
+      59,
+      999,
+    );
+
+    /*
+     * Senin = awal minggu.
+     */
+    const day =
+      today.getDay();
+
+    const diff =
+      day === 0
+        ? -6
+        : 1 - day;
+
+    const currentMonday =
+      new Date(today);
+
+    currentMonday.setDate(
+      today.getDate() + diff,
+    );
+
+    currentMonday.setHours(
+      0,
+      0,
+      0,
+      0,
+    );
+
+    const weeks = [];
+
+    /*
+     * 12 minggu.
+     */
+    for (
+      let i = 11;
+      i >= 0;
+      i--
+    ) {
+      const start =
+        new Date(
+          currentMonday,
+        );
+
+      start.setDate(
+        currentMonday.getDate() -
+        i * 7,
+      );
+
+      start.setHours(
+        0,
+        0,
+        0,
+        0,
+      );
+
+      const end =
+        new Date(start);
+
+      end.setDate(
+        start.getDate() + 6,
+      );
+
+      end.setHours(
+        23,
+        59,
+        59,
+        999,
+      );
+
+      weeks.push({
+        start,
+        end,
+      });
+    }
+
+    return weeks;
   }
 
   /* ============================================================
@@ -1031,11 +1161,13 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function _getServiceData() {
-    let txns = await Store.getTransactions();
+    let txns =
+      await Store.getTransactions();
 
     txns = filterBranch(txns);
 
-    txns = getPeriodTransactions(txns);
+    txns =
+      getKPITransactions(txns);
 
     const map = {};
 
@@ -1054,24 +1186,31 @@ const Dashboard = (() => {
           : 1;
     });
 
-    const entries = Object.entries(map).sort(
-      (a, b) => b[1] - a[1],
-    );
+    const entries =
+      Object.entries(map).sort(
+        (a, b) =>
+          b[1] - a[1],
+      );
 
-    const labels = entries.map(
-      (x) => x[0],
-    );
+    const labels =
+      entries.map(
+        (x) => x[0],
+      );
 
-    const data = entries.map(
-      (x) => x[1],
-    );
+    const data =
+      entries.map(
+        (x) => x[1],
+      );
 
-    const palette = _chartColors();
-
-    const colors = labels.map(
-      (_, i) =>
-        palette[i % palette.length],
-    );
+    const colors =
+      labels.map(
+        (_, i) =>
+          _chartColors()[
+          i %
+          _chartColors()
+            .length
+          ],
+      );
 
     return {
       labels,
@@ -1085,18 +1224,23 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderPromoPerformance() {
-    let txns = await Store.getTransactions();
+    let txns =
+      await Store.getTransactions();
 
     txns = filterBranch(txns);
 
-    txns = getPeriodTransactions(txns);
+    txns =
+      getKPITransactions(txns);
 
     const promoTxns =
-      txns.filter(isPromoTransaction);
+      txns.filter(
+        isPromoTransaction,
+      );
 
     const normalTxns =
       txns.filter(
-        (t) => !isPromoTransaction(t),
+        (t) =>
+          !isPromoTransaction(t),
       );
 
     const promoRevenue =
@@ -1126,10 +1270,6 @@ const Dashboard = (() => {
         ? promoRevenue /
         promoTxns.length
         : 0;
-
-    /* ----------------------------------------------------------
-       KPI
-       ---------------------------------------------------------- */
 
     _setText(
       "promoRevenue",
@@ -1176,10 +1316,6 @@ const Dashboard = (() => {
       ),
     );
 
-    /* ----------------------------------------------------------
-       PROMO TABLE
-       ---------------------------------------------------------- */
-
     const container =
       document.getElementById(
         "promoPerformance",
@@ -1202,7 +1338,8 @@ const Dashboard = (() => {
     const promoMap = {};
 
     promoTxns.forEach((t) => {
-      const promoId = t.promoId;
+      const promoId =
+        t.promoId;
 
       if (!promoId) return;
 
@@ -1228,7 +1365,8 @@ const Dashboard = (() => {
 
     const rows = promos
       .filter(
-        (p) => promoMap[p.id],
+        (p) =>
+          promoMap[p.id],
       )
       .map((p) => {
         const item =
@@ -1302,11 +1440,13 @@ const Dashboard = (() => {
   }
 
   /* ============================================================
-     FILTER HELPERS
+     BRANCH
      ============================================================ */
 
   function filterBranch(data) {
-    if (currentBranch === "all") {
+    if (
+      currentBranch === "all"
+    ) {
       return data;
     }
 
@@ -1322,108 +1462,39 @@ const Dashboard = (() => {
   }
 
   /* ============================================================
-     PERIOD TRANSACTIONS
+     PERIOD LABEL
      ============================================================ */
 
-  function getPeriodTransactions(data) {
-    const today =
-      Store.getTodayStr();
-
-    /* ----------------------------------------------------------
-       DAILY
-       ---------------------------------------------------------- */
-
-    if (currentFilter === "daily") {
-      return data.filter(
-        (t) => t.date === today,
-      );
+  function getPeriodLabel() {
+    if (
+      currentFilter === "daily"
+    ) {
+      return "Today";
     }
 
-    /* ----------------------------------------------------------
-       WEEKLY
-       ---------------------------------------------------------- */
-
-    if (currentFilter === "weekly") {
-      const now = new Date();
-
-      const day =
-        now.getDay();
-
-      const diff =
-        day === 0
-          ? -6
-          : 1 - day;
-
-      const start =
-        new Date(now);
-
-      start.setDate(
-        now.getDate() + diff,
-      );
-
-      start.setHours(
-        0,
-        0,
-        0,
-        0,
-      );
-
-      return data.filter(
-        (t) => {
-          if (!t.date) {
-            return false;
-          }
-
-          const d =
-            new Date(
-              `${t.date}T00:00:00`,
-            );
-
-          return (
-            d >= start &&
-            d <= now
-          );
-        },
-      );
+    if (
+      currentFilter === "weekly"
+    ) {
+      return "Last 12 Weeks";
     }
 
-    /* ----------------------------------------------------------
-       MONTHLY
-       ---------------------------------------------------------- */
-
-    if (currentFilter === "monthly") {
-      const start =
-        today.substring(0, 7) +
-        "-01";
-
-      return data.filter(
-        (t) =>
-          t.date >= start &&
-          t.date <= today,
-      );
+    if (
+      currentFilter === "monthly"
+    ) {
+      return "Last 12 Months";
     }
 
-    /* ----------------------------------------------------------
-       YEARLY
-       ---------------------------------------------------------- */
-
-    if (currentFilter === "yearly") {
-      const start =
-        today.substring(0, 4) +
-        "-01-01";
-
-      return data.filter(
-        (t) =>
-          t.date >= start &&
-          t.date <= today,
-      );
+    if (
+      currentFilter === "yearly"
+    ) {
+      return "Last 5 Years";
     }
 
-    return data;
+    return "Selected Period";
   }
 
   /* ============================================================
-     PROMO HELPER
+     PROMO
      ============================================================ */
 
   function isPromoTransaction(t) {
@@ -1439,10 +1510,12 @@ const Dashboard = (() => {
   }
 
   /* ============================================================
-     REVENUE HELPER
+     REVENUE
      ============================================================ */
 
-  function sumRevenue(transactions) {
+  function sumRevenue(
+    transactions,
+  ) {
     return transactions.reduce(
       (total, t) =>
         total +
@@ -1452,31 +1525,7 @@ const Dashboard = (() => {
   }
 
   /* ============================================================
-     PERIOD LABEL
-     ============================================================ */
-
-  function getPeriodLabel() {
-    if (currentFilter === "daily") {
-      return "Today";
-    }
-
-    if (currentFilter === "weekly") {
-      return "This Week";
-    }
-
-    if (currentFilter === "monthly") {
-      return "This Month";
-    }
-
-    if (currentFilter === "yearly") {
-      return "This Year";
-    }
-
-    return "Selected Period";
-  }
-
-  /* ============================================================
-     CHART COLORS
+     COLORS
      ============================================================ */
 
   function _chartColors() {
@@ -1532,7 +1581,9 @@ const Dashboard = (() => {
      SHORT CURRENCY
      ============================================================ */
 
-  function _shortCurrency(value) {
+  function _shortCurrency(
+    value,
+  ) {
     const n =
       Number(value || 0);
 
@@ -1563,8 +1614,7 @@ const Dashboard = (() => {
     if (n >= 1000) {
       return (
         "Rp " +
-        (n / 1000)
-          .toFixed(0) +
+        (n / 1000).toFixed(0) +
         "K"
       );
     }
