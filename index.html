@@ -2,10 +2,15 @@
 <html lang="en">
 
 <head>
+
   <meta charset="UTF-8" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Next Level Beauty Bar - Dashboard</title>
+  <title>
+    Next Level Beauty Bar - Dashboard
+  </title>
+
 
   <!-- =========================================================
        FONT
@@ -46,13 +51,15 @@
        CSS
        ========================================================= -->
 
-  <link rel="stylesheet" href="css/style.css?v=20260825-2007" />
+  <link rel="stylesheet" href="css/style.css?v=20260825-2020" />
 
   <link rel="icon" href="assets/logo.png" />
+
 </head>
 
 
 <body>
+
 
   <!-- =========================================================
        APP LOADING
@@ -213,11 +220,11 @@
          PROMO BANNER
          ======================================================= -->
 
-    <div class="promo-banner" id="promoBanner" style="display: none"></div>
+    <div class="promo-banner" id="promoBanner" style="display:none"></div>
 
 
     <!-- =======================================================
-         DASHBOARD
+         DASHBOARD VIEW
          ======================================================= -->
 
     <section class="view active" id="view-dashboard">
@@ -226,7 +233,7 @@
 
 
         <!-- ===================================================
-             MANAGEMENT FILTER CONTROL
+             MANAGEMENT FILTER
              =================================================== -->
 
         <div class="dashboard-control-card">
@@ -239,9 +246,11 @@
                 MANAGEMENT ANALYSIS
               </div>
 
+
               <h3>
                 Sales Performance
               </h3>
+
 
               <p>
                 Compare revenue, transactions,
@@ -261,9 +270,7 @@
           <div class="dashboard-control-grid">
 
 
-            <!-- =================================================
-                 QUICK PERIOD
-                 ================================================= -->
+            <!-- QUICK PERIOD -->
 
             <div class="control-group control-group-wide">
 
@@ -298,9 +305,7 @@
             </div>
 
 
-            <!-- =================================================
-                 DATE RANGE
-                 ================================================= -->
+            <!-- DATE RANGE -->
 
             <div class="control-group control-group-range">
 
@@ -317,7 +322,7 @@
                     From
                   </span>
 
-                  <input type="date" id="dashDateStart" aria-label="Analysis start date" />
+                  <input type="date" id="dashDateStart" />
 
                 </div>
 
@@ -333,7 +338,7 @@
                     To
                   </span>
 
-                  <input type="date" id="dashDateEnd" aria-label="Analysis end date" />
+                  <input type="date" id="dashDateEnd" />
 
                 </div>
 
@@ -355,9 +360,7 @@
             </div>
 
 
-            <!-- =================================================
-                 METRIC
-                 ================================================= -->
+            <!-- METRIC -->
 
             <div class="control-group">
 
@@ -381,9 +384,7 @@
             </div>
 
 
-            <!-- =================================================
-                 BRANCH
-                 ================================================= -->
+            <!-- BRANCH -->
 
             <div class="control-group">
 
@@ -419,9 +420,7 @@
             </div>
 
 
-            <!-- =================================================
-                 COMPARE
-                 ================================================= -->
+            <!-- COMPARE -->
 
             <div class="control-group">
 
@@ -449,9 +448,7 @@
             </div>
 
 
-            <!-- =================================================
-                 VISUALIZATION
-                 ================================================= -->
+            <!-- CHART TYPE -->
 
             <div class="control-group">
 
@@ -487,9 +484,7 @@
         <div class="summary-cards">
 
 
-          <!-- =================================================
-               TODAY
-               ================================================= -->
+          <!-- TODAY -->
 
           <div class="card summary-card card-pink">
 
@@ -524,9 +519,7 @@
           </div>
 
 
-          <!-- =================================================
-               THIS WEEK
-               ================================================= -->
+          <!-- THIS WEEK -->
 
           <div class="card summary-card card-purple">
 
@@ -561,9 +554,7 @@
           </div>
 
 
-          <!-- =================================================
-               THIS MONTH
-               ================================================= -->
+          <!-- THIS MONTH -->
 
           <div class="card summary-card card-blue">
 
@@ -598,9 +589,7 @@
           </div>
 
 
-          <!-- =================================================
-               THIS YEAR
-               ================================================= -->
+          <!-- THIS YEAR -->
 
           <div class="card summary-card card-teal">
 
@@ -747,7 +736,7 @@
 
 
         <!-- ===================================================
-             TREND CHART
+             REVENUE TREND
              =================================================== -->
 
         <div class="card chart-card">
@@ -830,7 +819,7 @@
           </div>
 
 
-          <!-- SERVICE DONUT -->
+          <!-- SERVICE CONTRIBUTION -->
 
           <div class="card chart-card">
 
@@ -1090,7 +1079,6 @@
 
         <form id="txnForm" class="form" autocomplete="off">
 
-
           <div class="form-row">
 
             <div class="form-group">
@@ -1194,11 +1182,9 @@
 
               <label for="txnDP">
                 Down Payment / DP
-
                 <span class="text-muted">
                   (Optional)
                 </span>
-
               </label>
 
 
@@ -1215,11 +1201,9 @@
 
               <label for="txnPromo">
                 Promotion
-
                 <span class="text-muted">
                   (Optional)
                 </span>
-
               </label>
 
 
@@ -1235,8 +1219,6 @@
 
           </div>
 
-
-          <!-- PAYMENT SUMMARY -->
 
           <div id="txnPaymentSummary" class="card payment-summary">
 
@@ -1346,8 +1328,6 @@
 
       </div>
 
-
-      <!-- RECENT -->
 
       <div class="card">
 
@@ -1594,8 +1574,6 @@
         </div>
 
 
-        <!-- FILTERS -->
-
         <div class="history-filters">
 
           <div class="form-group">
@@ -1648,8 +1626,6 @@
         </div>
 
 
-        <!-- SUMMARY -->
-
         <div class="history-summary">
 
           <span>
@@ -1669,8 +1645,6 @@
 
         </div>
 
-
-        <!-- TABLE -->
 
         <div id="historyTable">
 
@@ -1698,19 +1672,19 @@
        SCRIPTS
        ========================================================= -->
 
-  <script src="js/config.js?v=20260825-2007"></script>
+  <script src="js/config.js?v=20260825-2020"></script>
 
-  <script src="js/store.js?v=20260825-2007"></script>
+  <script src="js/store.js?v=20260825-2020"></script>
 
-  <script src="js/dashboard.js?v=20260825-2007"></script>
+  <script src="js/dashboard.js?v=20260825-2020"></script>
 
-  <script src="js/transactions.js?v=20260825-2007"></script>
+  <script src="js/transactions.js?v=20260825-2020"></script>
 
-  <script src="js/services.js?v=20260825-2007"></script>
+  <script src="js/services.js?v=20260825-2020"></script>
 
-  <script src="js/promos.js?v=20260825-2007"></script>
+  <script src="js/promos.js?v=20260825-2020"></script>
 
-  <script src="js/app.js?v=20260825-2007"></script>
+  <script src="js/app.js?v=20260825-2020"></script>
 
 </body>
 

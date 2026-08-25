@@ -1,6 +1,7 @@
 /* ============================================================
    NEXT LEVEL BEAUTY BAR
    MANAGEMENT DASHBOARD
+   FULL DASHBOARD.JS
    ============================================================ */
 
 const Dashboard = (() => {
@@ -218,7 +219,6 @@ const Dashboard = (() => {
       rendering = false;
 
     }
-
   }
 
 
@@ -370,6 +370,11 @@ const Dashboard = (() => {
     if (!element) {
       return;
     }
+
+
+    currentMetric =
+      element.value ||
+      "revenue";
 
 
     element.addEventListener(
@@ -545,10 +550,8 @@ const Dashboard = (() => {
       () => {
 
         if (start.value) {
-
           end.min =
             start.value;
-
         }
 
 
@@ -881,10 +884,12 @@ const Dashboard = (() => {
         error,
       );
 
+
       banner.innerHTML = "";
 
       banner.style.display =
         "none";
+
 
       return;
 
@@ -903,6 +908,7 @@ const Dashboard = (() => {
 
       banner.style.display =
         "none";
+
 
       return;
 
@@ -956,7 +962,7 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     SAFE TRANSACTIONS
+     SAFE TRANSACTION LOADER
      ============================================================ */
 
   function getSafeTransactions() {
@@ -1042,6 +1048,7 @@ const Dashboard = (() => {
       ) {
 
         return "";
+
       }
 
 
@@ -1070,7 +1077,9 @@ const Dashboard = (() => {
 
 
     if (isoMatch) {
+
       return isoMatch[1];
+
     }
 
 
@@ -1085,7 +1094,9 @@ const Dashboard = (() => {
         parsed.getTime(),
       )
     ) {
+
       return "";
+
     }
 
 
@@ -1113,7 +1124,9 @@ const Dashboard = (() => {
       !range.start ||
       !range.end
     ) {
+
       return [];
+
     }
 
 
@@ -1295,7 +1308,7 @@ const Dashboard = (() => {
     }
 
 
-    const lastDay =
+    const monthLastDay =
       new Date(
         current.getFullYear(),
         current.getMonth() + 1,
@@ -1311,15 +1324,32 @@ const Dashboard = (() => {
       );
 
 
-    const end =
+    const endDay =
+      Math.min(
+        startDay + 6,
+        monthLastDay,
+      );
+
+
+    let end =
       new Date(
         current.getFullYear(),
         current.getMonth(),
-        Math.min(
-          startDay + 6,
-          lastDay,
-        ),
+        endDay,
       );
+
+
+    if (
+      end >
+      current
+    ) {
+
+      end =
+        new Date(
+          current,
+        );
+
+    }
 
 
     return {
@@ -1349,7 +1379,9 @@ const Dashboard = (() => {
       currentCompare ===
       "none"
     ) {
+
       return null;
+
     }
 
 
@@ -1403,7 +1435,7 @@ const Dashboard = (() => {
       );
 
 
-    const totalDays =
+    const days =
       diffDays(
         start,
         end,
@@ -1421,7 +1453,7 @@ const Dashboard = (() => {
       addDays(
         previousEnd,
         -(
-          totalDays -
+          days -
           1
         ),
       );
@@ -1540,7 +1572,7 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     KPI
+     SUMMARY / KPI
      ============================================================ */
 
   async function renderSummaryCards() {
@@ -1670,7 +1702,7 @@ const Dashboard = (() => {
       selected.length;
 
 
-    const averageTicket =
+    const average =
       count
         ? revenue /
         count
@@ -1696,7 +1728,7 @@ const Dashboard = (() => {
     setText(
       "dashAverageTicket",
       Store.formatCurrency(
-        averageTicket,
+        average,
       ),
     );
 
@@ -1815,20 +1847,23 @@ const Dashboard = (() => {
 
     updateChartTitles();
 
-    await renderTrendChart();
 
-    await renderServiceChart();
+    await _renderRevenueChart();
 
-    await renderServiceComparison();
+
+    await _renderServiceChart();
+
+
+    await _renderBarChart();
 
   }
 
 
   /* ============================================================
-     TREND CHART
+     REVENUE / TREND CHART
      ============================================================ */
 
-  async function renderTrendChart() {
+  async function _renderRevenueChart() {
 
     const canvas =
       document.getElementById(
@@ -1837,24 +1872,514 @@ const Dashboard = (() => {
 
 
     if (!canvas) {
+
+      console.warn(
+        "revenueChart canvas not found",
+      );
+
       return;
+
     }
 
 
-    const selected =
-      getSelectedTransactions();
+    const dataResult =
+      await _getRevenueData();
 
 
-    const comparison =
-      getComparisonTransactions();
+    const labels =
+      dataResult.labels ||
+      [];
+
+
+    const data =
+      dataResult.data ||
+      [];
+
+
+    const comparisonData =
+      dataResult.comparisonData ||
+      [];
+
+
+    const comparisonLabel =
+      dataResult.comparisonLabel ||
+      "";
+
+
+    if (revenueChart) {
+
+      revenueChart.destroy();
+
+      revenueChart = null;
+
+    }
+
+
+    const container =
+      canvas.parentElement;
+
+
+    if (container) {
+
+      container.style.position =
+        "relative";
+
+      container.style.width =
+        "100%";
+
+      container.style.height =
+        "320px";
+
+    }
+
+
+    canvas.style.display =
+      "block";
+
+    canvas.style.width =
+      "100%";
+
+    canvas.style.height =
+      "100%";
+
+
+    const isRevenue =
+      currentMetric ===
+      "revenue";
+
+
+    const isLine =
+      currentChartType ===
+      "line";
+
+
+    const datasets = [];
+
+
+    datasets.push({
+
+      label:
+        getPeriodLabel(),
+
+      data:
+
+        data,
+
+      borderColor:
+        "#e30022",
+
+      backgroundColor:
+
+        isLine
+          ? _gradient(
+            canvas,
+            "#e30022",
+          )
+          : "#e30022",
+
+      borderWidth:
+        3,
+
+      fill:
+        isLine,
+
+      tension:
+        0.35,
+
+      spanGaps:
+        false,
+
+      borderRadius:
+        isLine
+          ? 0
+          : 7,
+
+      pointBackgroundColor:
+        "#e30022",
+
+      pointBorderColor:
+        "#ffffff",
+
+      pointBorderWidth:
+        2,
+
+      pointRadius:
+        data.map(
+          (value) =>
+            value === null
+              ? 0
+              : 3,
+        ),
+
+      pointHoverRadius:
+        6,
+
+      maxBarThickness:
+        48,
+
+    });
+
+
+    if (
+      Array.isArray(
+        comparisonData,
+      ) &&
+      comparisonData.length >
+      0 &&
+      currentCompare !==
+      "none"
+    ) {
+
+      datasets.push({
+
+        label:
+          comparisonLabel ||
+          "Comparison",
+
+        data:
+          comparisonData,
+
+        borderColor:
+          "#60a5fa",
+
+        backgroundColor:
+          "transparent",
+
+        borderWidth:
+          2,
+
+        borderDash:
+          [
+            6,
+            5,
+          ],
+
+        fill:
+          false,
+
+        tension:
+          0.35,
+
+        spanGaps:
+          false,
+
+        pointBackgroundColor:
+          "#60a5fa",
+
+        pointBorderColor:
+          "#ffffff",
+
+        pointBorderWidth:
+          1.5,
+
+        pointRadius:
+          comparisonData.map(
+            (value) =>
+              value ===
+                null
+                ? 0
+                : 2,
+          ),
+
+      });
+
+    }
+
+
+    console.log(
+      "TREND CHART:",
+      {
+        labels,
+        data,
+        comparisonData,
+      },
+    );
+
+
+    const chartDatasets =
+      isLine
+        ? datasets
+        : datasets.map(
+          (
+            dataset,
+            index,
+          ) => ({
+
+            label:
+              dataset.label,
+
+            data:
+              dataset.data,
+
+            backgroundColor:
+              index ===
+                0
+                ? "#e30022"
+                : "#60a5fa",
+
+            borderColor:
+              index ===
+                0
+                ? "#e30022"
+                : "#60a5fa",
+
+            borderWidth:
+              1,
+
+            borderRadius:
+              7,
+
+            borderSkipped:
+              false,
+
+            maxBarThickness:
+              48,
+
+          }),
+        );
+
+
+    revenueChart =
+      new Chart(
+        canvas,
+        {
+
+          type:
+            currentChartType,
+
+          data: {
+
+            labels,
+
+            datasets:
+              chartDatasets,
+
+          },
+
+
+          options: {
+
+            responsive:
+              true,
+
+            maintainAspectRatio:
+              false,
+
+
+            animation: {
+
+              duration:
+                500,
+
+            },
+
+
+            interaction: {
+
+              intersect:
+                false,
+
+              mode:
+                "index",
+
+            },
+
+
+            plugins: {
+
+              legend: {
+
+                display:
+                  datasets.length >
+                  1,
+
+                labels: {
+
+                  color:
+                    "#f4f4f5",
+
+                  usePointStyle:
+                    true,
+
+                  padding:
+                    15,
+
+                },
+
+              },
+
+
+              tooltip: {
+
+                backgroundColor:
+                  "#18181b",
+
+                borderColor:
+                  "#27272a",
+
+                borderWidth:
+                  1,
+
+                padding:
+                  10,
+
+
+                callbacks: {
+
+                  label:
+                    (context) => {
+
+                      const value =
+                        context.parsed.y;
+
+
+                      if (
+                        value ===
+                        null ||
+                        value ===
+                        undefined
+                      ) {
+
+                        return "";
+
+                      }
+
+
+                      return isRevenue
+
+                        ? `${context.dataset.label}: ${Store.formatCurrency(
+                          value,
+                        )}`
+
+                        : `${context.dataset.label}: ${value} transactions`;
+
+                    },
+
+                },
+
+              },
+
+            },
+
+
+            scales: {
+
+              y: {
+
+                beginAtZero:
+                  true,
+
+
+                ticks: {
+
+                  color:
+                    "#a1a1aa",
+
+                  callback:
+                    (value) =>
+
+                      isRevenue
+                        ? _shortCurrency(
+                          value,
+                        )
+                        : value,
+
+                },
+
+
+                grid: {
+
+                  color:
+                    "rgba(255,255,255,0.05)",
+
+                },
+
+              },
+
+
+              x: {
+
+                ticks: {
+
+                  color:
+                    "#a1a1aa",
+
+                  autoSkip:
+                    true,
+
+                  maxTicksLimit:
+                    currentFilter ===
+                      "daily"
+                      ? 10
+                      : 12,
+
+                  maxRotation:
+                    0,
+
+                  minRotation:
+                    0,
+
+                },
+
+
+                grid: {
+
+                  display:
+                    false,
+
+                },
+
+              },
+
+            },
+
+          },
+
+        },
+      );
+
+
+    renderTrendLegend(
+      datasets,
+    );
+
+  }
+
+
+  /* ============================================================
+     REVENUE DATA
+     ============================================================ */
+
+  async function _getRevenueData() {
+
+    const all =
+      filterBranch(
+        getSafeTransactions(),
+      );
 
 
     const selectedRange =
       getSelectedRange();
 
 
+    const selected =
+      filterRange(
+        all,
+        selectedRange,
+      );
+
+
     const comparisonRange =
       getComparisonRange();
+
+
+    const comparison =
+      comparisonRange
+        ? filterRange(
+          all,
+          comparisonRange,
+        )
+        : [];
 
 
     const selectedBuckets =
@@ -1882,225 +2407,52 @@ const Dashboard = (() => {
       );
 
 
-    const selectedValues =
+    const data =
       selectedBuckets.map(
         (bucket) =>
           bucket.value,
       );
 
 
-    const datasets = [
-
-      {
-
-        label:
-          getPeriodLabel(),
-
-        data:
-          selectedValues,
-
-        borderColor:
-          "#e30022",
-
-        backgroundColor:
-          makeGradient(
-            canvas,
-            "#e30022",
-          ),
-
-        borderWidth:
-          2.5,
-
-        tension:
-          0.35,
-
-        fill:
-          true,
-
-        spanGaps:
-          false,
-
-        pointRadius:
-          getPointRadius(
-            selectedValues,
-            3,
-          ),
-
-        pointHoverRadius:
-          6,
-
-        pointBackgroundColor:
-          "#e30022",
-
-        pointBorderColor:
-          "#ffffff",
-
-        pointBorderWidth:
-          2,
-
-      },
-
-    ];
+    let comparisonData =
+      [];
 
 
     if (
       comparisonBuckets.length >
-      0 &&
-      currentCompare !==
-      "none"
+      0
     ) {
 
-      const comparisonValues =
+      comparisonData =
         alignComparison(
           selectedBuckets,
           comparisonBuckets,
         );
 
-
-      datasets.push({
-
-        label:
-          getComparisonLabel(),
-
-        data:
-          comparisonValues,
-
-        borderColor:
-          "#60a5fa",
-
-        backgroundColor:
-          "rgba(96,165,250,0.04)",
-
-        borderWidth:
-          2,
-
-        borderDash:
-          [
-            6,
-            5,
-          ],
-
-        tension:
-          0.35,
-
-        fill:
-          false,
-
-        spanGaps:
-          false,
-
-        pointRadius:
-          getPointRadius(
-            comparisonValues,
-            2,
-          ),
-
-        pointHoverRadius:
-          5,
-
-        pointBackgroundColor:
-          "#60a5fa",
-
-        pointBorderColor:
-          "#ffffff",
-
-        pointBorderWidth:
-          1.5,
-
-      });
-
     }
 
 
-    if (revenueChart) {
+    return {
 
-      revenueChart.destroy();
+      labels,
 
-      revenueChart = null;
+      data,
 
-    }
+      comparisonData,
 
+      comparisonLabel:
+        getComparisonLabel(),
 
-    const chartDatasets =
-      currentChartType ===
-        "bar"
-
-        ? datasets.map(
-          (
-            dataset,
-            index,
-          ) => ({
-
-            label:
-              dataset.label,
-
-            data:
-              dataset.data,
-
-            backgroundColor:
-              index === 0
-                ? "rgba(227,0,34,0.85)"
-                : "rgba(96,165,250,0.72)",
-
-            borderColor:
-              index === 0
-                ? "#e30022"
-                : "#60a5fa",
-
-            borderWidth:
-              1,
-
-            borderRadius:
-              6,
-
-            borderSkipped:
-              false,
-
-            maxBarThickness:
-              42,
-
-          }),
-        )
-
-        : datasets;
-
-
-    revenueChart =
-      new Chart(
-        canvas,
-        {
-
-          type:
-            currentChartType,
-
-          data: {
-
-            labels,
-
-            datasets:
-              chartDatasets,
-
-          },
-
-          options:
-            trendOptions(),
-
-        },
-      );
-
-
-    renderTrendLegend(
-      datasets,
-    );
+    };
 
   }
 
 
   /* ============================================================
-     SERVICE DONUT
+     SERVICE DOUGHNUT
      ============================================================ */
 
-  async function renderServiceChart() {
+  async function _renderServiceChart() {
 
     const canvas =
       document.getElementById(
@@ -2109,9 +2461,239 @@ const Dashboard = (() => {
 
 
     if (!canvas) {
+
+      console.warn(
+        "serviceChart canvas not found",
+      );
+
       return;
+
     }
 
+
+    const {
+      labels,
+      data,
+      colors,
+    } =
+      await _getServiceData();
+
+
+    if (serviceChart) {
+
+      serviceChart.destroy();
+
+      serviceChart = null;
+
+    }
+
+
+    const container =
+      canvas.parentElement;
+
+
+    if (container) {
+
+      container.style.position =
+        "relative";
+
+      container.style.width =
+        "100%";
+
+      container.style.height =
+        "300px";
+
+    }
+
+
+    canvas.style.display =
+      "block";
+
+    canvas.style.width =
+      "100%";
+
+    canvas.style.height =
+      "100%";
+
+
+    console.log(
+      "SERVICE CHART:",
+      {
+        labels,
+        data,
+      },
+    );
+
+
+    serviceChart =
+      new Chart(
+        canvas,
+        {
+
+          type:
+            "doughnut",
+
+
+          data: {
+
+            labels,
+
+
+            datasets: [
+
+              {
+
+                data,
+
+                backgroundColor:
+                  colors.length
+                    ? colors
+                    : [
+                      "#e30022",
+                      "#60a5fa",
+                      "#4ade80",
+                      "#facc15",
+                    ],
+
+                borderColor:
+                  "#121214",
+
+                borderWidth:
+                  3,
+
+                hoverOffset:
+                  6,
+
+              },
+
+            ],
+
+          },
+
+
+          options: {
+
+            responsive:
+              true,
+
+            maintainAspectRatio:
+              false,
+
+            cutout:
+              "64%",
+
+
+            plugins: {
+
+              legend: {
+
+                position:
+                  "bottom",
+
+                labels: {
+
+                  color:
+                    "#f4f4f5",
+
+                  padding:
+                    12,
+
+                  usePointStyle:
+                    true,
+
+                  pointStyle:
+                    "circle",
+
+                  font: {
+
+                    size:
+                      10,
+
+                  },
+
+                },
+
+              },
+
+
+              tooltip: {
+
+                backgroundColor:
+                  "#18181b",
+
+                borderColor:
+                  "#27272a",
+
+                borderWidth:
+                  1,
+
+
+                callbacks: {
+
+                  label:
+                    (context) => {
+
+                      const value =
+                        context.parsed;
+
+
+                      const total =
+                        data.reduce(
+                          (
+                            sum,
+                            item,
+                          ) =>
+                            sum +
+                            item,
+                          0,
+                        );
+
+
+                      const percent =
+                        total >
+                          0
+                          ? (
+                            (
+                              value /
+                              total
+                            ) *
+                            100
+                          ).toFixed(
+                            1,
+                          )
+                          : "0.0";
+
+
+                      return currentMetric ===
+                        "revenue"
+
+                        ? `${context.label}: ${Store.formatCurrency(
+                          value,
+                        )} (${percent}%)`
+
+                        : `${context.label}: ${value} transactions (${percent}%)`;
+
+                    },
+
+                },
+
+              },
+
+            },
+
+          },
+
+        },
+      );
+
+  }
+
+
+  /* ============================================================
+     SERVICE DATA
+     ============================================================ */
+
+  async function _getServiceData() {
 
     const selected =
       getSelectedTransactions();
@@ -2123,7 +2705,7 @@ const Dashboard = (() => {
     selected.forEach(
       (transaction) => {
 
-        const service =
+        const name =
           String(
             transaction.serviceName ||
             "Unknown Service",
@@ -2131,12 +2713,15 @@ const Dashboard = (() => {
           "Unknown Service";
 
 
-        if (!map[service]) {
-          map[service] = 0;
+        if (!map[name]) {
+
+          map[name] =
+            0;
+
         }
 
 
-        map[service] +=
+        map[name] +=
           metricValue(
             transaction,
           );
@@ -2184,164 +2769,24 @@ const Dashboard = (() => {
       );
 
 
-    if (serviceChart) {
+    return {
 
-      serviceChart.destroy();
+      labels,
 
-      serviceChart = null;
+      data,
 
-    }
+      colors,
 
-
-    serviceChart =
-      new Chart(
-        canvas,
-        {
-
-          type:
-            "doughnut",
-
-          data: {
-
-            labels,
-
-            datasets: [
-
-              {
-
-                data,
-
-                backgroundColor:
-                  colors,
-
-                borderColor:
-                  "#121214",
-
-                borderWidth:
-                  3,
-
-              },
-
-            ],
-
-          },
-
-          options: {
-
-            responsive:
-              true,
-
-            maintainAspectRatio:
-              false,
-
-            cutout:
-              "66%",
-
-            plugins: {
-
-              legend: {
-
-                position:
-                  "bottom",
-
-                labels: {
-
-                  color:
-                    "#f4f4f5",
-
-                  padding:
-                    12,
-
-                  usePointStyle:
-                    true,
-
-                  pointStyle:
-                    "circle",
-
-                  font: {
-
-                    size:
-                      10,
-
-                  },
-
-                },
-
-              },
-
-
-              tooltip: {
-
-                callbacks: {
-
-                  label:
-                    (context) => {
-
-                      const value =
-                        context.parsed;
-
-
-                      const total =
-                        data.reduce(
-                          (
-                            sum,
-                            item,
-                          ) =>
-                            sum +
-                            item,
-                          0,
-                        );
-
-
-                      const percentage =
-                        total
-                          ? (
-                            (
-                              value /
-                              total
-                            ) *
-                            100
-                          ).toFixed(
-                            1,
-                          )
-                          : "0.0";
-
-
-                      if (
-                        currentMetric ===
-                        "revenue"
-                      ) {
-
-                        return `${context.label}: ${Store.formatCurrency(
-                          value,
-                        )} (${percentage}%)`;
-
-                      }
-
-
-                      return `${context.label}: ${value} transactions (${percentage}%)`;
-
-                    },
-
-                },
-
-              },
-
-            },
-
-          },
-
-        },
-      );
+    };
 
   }
 
 
   /* ============================================================
-     SERVICE COMPARISON BAR
+     SERVICE COMPARISON
      ============================================================ */
 
-  async function renderServiceComparison() {
+  async function _renderBarChart() {
 
     const canvas =
       document.getElementById(
@@ -2350,27 +2795,84 @@ const Dashboard = (() => {
 
 
     if (!canvas) {
+
+      console.warn(
+        "barChart canvas not found",
+      );
+
       return;
+
     }
 
 
-    const selected =
-      getSelectedTransactions();
+    const {
+      labels,
+      data,
+      colors,
+    } =
+      await _getServiceData();
 
 
-    const comparison =
-      getComparisonTransactions();
+    if (barChart) {
+
+      barChart.destroy();
+
+      barChart = null;
+
+    }
+
+
+    const container =
+      canvas.parentElement;
+
+
+    if (container) {
+
+      container.style.position =
+        "relative";
+
+      container.style.width =
+        "100%";
+
+      container.style.height =
+        "320px";
+
+    }
+
+
+    canvas.style.display =
+      "block";
+
+    canvas.style.width =
+      "100%";
+
+    canvas.style.height =
+      "100%";
+
+
+    const isRevenue =
+      currentMetric ===
+      "revenue";
+
+
+    console.log(
+      "BAR CHART:",
+      {
+        labels,
+        data,
+      },
+    );
 
 
     const selectedMap =
       serviceMap(
-        selected,
+        getSelectedTransactions(),
       );
 
 
     const comparisonMap =
       serviceMap(
-        comparison,
+        getComparisonTransactions(),
       );
 
 
@@ -2380,6 +2882,7 @@ const Dashboard = (() => {
           ...Object.keys(
             selectedMap,
           ),
+
           ...Object.keys(
             comparisonMap,
           ),
@@ -2440,13 +2943,13 @@ const Dashboard = (() => {
           1,
 
         borderRadius:
-          6,
+          7,
 
         borderSkipped:
           false,
 
         maxBarThickness:
-          40,
+          48,
 
       },
 
@@ -2455,7 +2958,9 @@ const Dashboard = (() => {
 
     if (
       currentCompare !==
-      "none"
+      "none" &&
+      comparisonValues.length >
+      0
     ) {
 
       datasets.push({
@@ -2476,24 +2981,15 @@ const Dashboard = (() => {
           1,
 
         borderRadius:
-          6,
+          7,
 
         borderSkipped:
           false,
 
         maxBarThickness:
-          40,
+          48,
 
       });
-
-    }
-
-
-    if (barChart) {
-
-      barChart.destroy();
-
-      barChart = null;
 
     }
 
@@ -2506,6 +3002,7 @@ const Dashboard = (() => {
           type:
             "bar",
 
+
           data: {
 
             labels:
@@ -2515,8 +3012,162 @@ const Dashboard = (() => {
 
           },
 
-          options:
-            serviceComparisonOptions(),
+
+          options: {
+
+            responsive:
+              true,
+
+            maintainAspectRatio:
+              false,
+
+            animation: {
+
+              duration:
+                500,
+
+            },
+
+
+            interaction: {
+
+              intersect:
+                false,
+
+              mode:
+                "index",
+
+            },
+
+
+            plugins: {
+
+              legend: {
+
+                display:
+                  datasets.length >
+                  1,
+
+
+                labels: {
+
+                  color:
+                    "#a1a1aa",
+
+                  usePointStyle:
+                    true,
+
+                  pointStyle:
+                    "circle",
+
+                },
+
+              },
+
+
+              tooltip: {
+
+                backgroundColor:
+                  "#18181b",
+
+                borderColor:
+                  "#27272a",
+
+                borderWidth:
+                  1,
+
+
+                callbacks: {
+
+                  label:
+                    (context) => {
+
+                      return isRevenue
+
+                        ? `${context.dataset.label}: ${Store.formatCurrency(
+                          context.parsed.y,
+                        )}`
+
+                        : `${context.dataset.label}: ${context.parsed.y} transactions`;
+
+                    },
+
+                },
+
+              },
+
+            },
+
+
+            scales: {
+
+              y: {
+
+                beginAtZero:
+                  true,
+
+
+                ticks: {
+
+                  color:
+                    "#a1a1aa",
+
+                  callback:
+                    (value) =>
+
+                      isRevenue
+                        ? _shortCurrency(
+                          value,
+                        )
+                        : value,
+
+                },
+
+
+                grid: {
+
+                  color:
+                    "rgba(255,255,255,0.05)",
+
+                },
+
+              },
+
+
+              x: {
+
+                ticks: {
+
+                  color:
+                    "#a1a1aa",
+
+                  autoSkip:
+                    true,
+
+                  maxTicksLimit:
+                    10,
+
+                  maxRotation:
+                    35,
+
+                  minRotation:
+                    0,
+
+                },
+
+
+                grid: {
+
+                  display:
+                    false,
+
+                },
+
+              },
+
+            },
+
+          },
 
         },
       );
@@ -2542,7 +3193,8 @@ const Dashboard = (() => {
 
 
     if (
-      days <= 31
+      days <=
+      31
     ) {
 
       return buildDailyBuckets(
@@ -2555,7 +3207,8 @@ const Dashboard = (() => {
 
 
     if (
-      days <= 180
+      days <=
+      180
     ) {
 
       return buildWeeklyBuckets(
@@ -2892,10 +3545,13 @@ const Dashboard = (() => {
           cursor.toLocaleDateString(
             "en-US",
             {
+
               month:
                 "short",
+
               year:
                 "numeric",
+
             },
           ),
 
@@ -2984,7 +3640,7 @@ const Dashboard = (() => {
         comparisonBuckets[index]
           ? comparisonBuckets[index]
             .value
-          : 0,
+          : null,
     );
 
   }
@@ -3057,7 +3713,7 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     REVENUE
+     SUM REVENUE
      ============================================================ */
 
   function sumRevenue(
@@ -3080,7 +3736,6 @@ const Dashboard = (() => {
         total,
         transaction,
       ) =>
-
         total +
         Number(
           transaction.price ||
@@ -3094,7 +3749,7 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     DISCOUNT
+     SUM DISCOUNT
      ============================================================ */
 
   function sumDiscount(
@@ -3117,7 +3772,6 @@ const Dashboard = (() => {
         total,
         transaction,
       ) =>
-
         total +
         Number(
           transaction.discountAmount ||
@@ -3160,7 +3814,7 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     PROMO PERFORMANCE
+     PROMOTION PERFORMANCE
      ============================================================ */
 
   async function renderPromoPerformance() {
@@ -3207,7 +3861,7 @@ const Dashboard = (() => {
       normalRevenue;
 
 
-    const promoContribution =
+    const contribution =
       totalRevenue
         ? (
           promoRevenue /
@@ -3249,7 +3903,7 @@ const Dashboard = (() => {
 
     setText(
       "promoContribution",
-      `${promoContribution.toFixed(
+      `${contribution.toFixed(
         1,
       )}%`,
     );
@@ -3370,10 +4024,14 @@ const Dashboard = (() => {
 
 
         if (
-          !promoMap[promoId]
+          !promoMap[
+          promoId
+          ]
         ) {
 
-          promoMap[promoId] = {
+          promoMap[
+            promoId
+          ] = {
 
             transactions:
               0,
@@ -3902,7 +4560,7 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     CHART TITLES
+     UPDATE TITLES
      ============================================================ */
 
   function updateChartTitles() {
@@ -3957,370 +4615,7 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     TREND OPTIONS
-     ============================================================ */
-
-  function trendOptions() {
-
-    const isRevenue =
-      currentMetric ===
-      "revenue";
-
-
-    return {
-
-      responsive:
-        true,
-
-      maintainAspectRatio:
-        false,
-
-
-      interaction: {
-
-        intersect:
-          false,
-
-        mode:
-          "index",
-
-      },
-
-
-      plugins: {
-
-        legend: {
-
-          display:
-            false,
-
-        },
-
-
-        tooltip: {
-
-          backgroundColor:
-            "#18181b",
-
-          borderColor:
-            "#27272a",
-
-          borderWidth:
-            1,
-
-          padding:
-            10,
-
-
-          callbacks: {
-
-            label:
-              (context) => {
-
-                const value =
-                  context.parsed.y;
-
-
-                if (
-                  value ===
-                  null ||
-                  value ===
-                  undefined
-                ) {
-
-                  return "";
-
-                }
-
-
-                return isRevenue
-                  ? `${context.dataset.label}: ${Store.formatCurrency(
-                    value,
-                  )}`
-                  : `${context.dataset.label}: ${value} transactions`;
-
-              },
-
-          },
-
-        },
-
-      },
-
-
-      scales: {
-
-        y: {
-
-          beginAtZero:
-            true,
-
-
-          ticks: {
-
-            color:
-              "#a1a1aa",
-
-
-            callback:
-              (value) =>
-                isRevenue
-                  ? shortCurrency(
-                    value,
-                  )
-                  : value,
-
-          },
-
-
-          grid: {
-
-            color:
-              "rgba(255,255,255,0.045)",
-
-          },
-
-        },
-
-
-        x: {
-
-          ticks: {
-
-            color:
-              "#a1a1aa",
-
-            maxRotation:
-              0,
-
-            minRotation:
-              0,
-
-            autoSkip:
-              true,
-
-            maxTicksLimit:
-              getXAxisLimit(),
-
-          },
-
-
-          grid: {
-
-            display:
-              false,
-
-          },
-
-        },
-
-      },
-
-    };
-
-  }
-
-
-  /* ============================================================
-     SERVICE BAR OPTIONS
-     ============================================================ */
-
-  function serviceComparisonOptions() {
-
-    const isRevenue =
-      currentMetric ===
-      "revenue";
-
-
-    return {
-
-      responsive:
-        true,
-
-      maintainAspectRatio:
-        false,
-
-
-      interaction: {
-
-        intersect:
-          false,
-
-        mode:
-          "index",
-
-      },
-
-
-      plugins: {
-
-        legend: {
-
-          display:
-            currentCompare !==
-            "none",
-
-
-          labels: {
-
-            color:
-              "#a1a1aa",
-
-            usePointStyle:
-              true,
-
-            font: {
-
-              size:
-                10,
-
-            },
-
-          },
-
-        },
-
-
-        tooltip: {
-
-          callbacks: {
-
-            label:
-              (context) => {
-
-                return isRevenue
-                  ? `${context.dataset.label}: ${Store.formatCurrency(
-                    context.parsed.y,
-                  )}`
-                  : `${context.dataset.label}: ${context.parsed.y} transactions`;
-
-              },
-
-          },
-
-        },
-
-      },
-
-
-      scales: {
-
-        y: {
-
-          beginAtZero:
-            true,
-
-
-          ticks: {
-
-            color:
-              "#a1a1aa",
-
-
-            callback:
-              (value) =>
-                isRevenue
-                  ? shortCurrency(
-                    value,
-                  )
-                  : value,
-
-          },
-
-
-          grid: {
-
-            color:
-              "rgba(255,255,255,0.045)",
-
-          },
-
-        },
-
-
-        x: {
-
-          ticks: {
-
-            color:
-              "#a1a1aa",
-
-            maxRotation:
-              35,
-
-            minRotation:
-              0,
-
-          },
-
-
-          grid: {
-
-            display:
-              false,
-
-          },
-
-        },
-
-      },
-
-    };
-
-  }
-
-
-  /* ============================================================
-     X AXIS LIMIT
-     ============================================================ */
-
-  function getXAxisLimit() {
-
-    const range =
-      getSelectedRange();
-
-
-    const days =
-      diffDays(
-        range.start,
-        range.end,
-      );
-
-
-    if (
-      days <= 14
-    ) {
-
-      return 15;
-
-    }
-
-
-    if (
-      days <= 31
-    ) {
-
-      return 10;
-
-    }
-
-
-    if (
-      days <= 180
-    ) {
-
-      return 12;
-
-    }
-
-
-    return 14;
-
-  }
-
-
-  /* ============================================================
-     CUSTOM LEGEND
+     LEGEND
      ============================================================ */
 
   function renderTrendLegend(
@@ -4347,7 +4642,8 @@ const Dashboard = (() => {
           ) => {
 
             const color =
-              index === 0
+              index ===
+                0
                 ? "#e30022"
                 : "#60a5fa";
 
@@ -4377,7 +4673,135 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     GROWTH CALCULATION
+     GRADIENT
+     ============================================================ */
+
+  function _gradient(
+    canvas,
+    color,
+  ) {
+
+    const ctx =
+      canvas.getContext(
+        "2d",
+      );
+
+
+    const gradient =
+      ctx.createLinearGradient(
+        0,
+        0,
+        0,
+        canvas.height ||
+        300,
+      );
+
+
+    gradient.addColorStop(
+      0,
+      color + "55",
+    );
+
+
+    gradient.addColorStop(
+      1,
+      color + "00",
+    );
+
+
+    return gradient;
+
+  }
+
+
+  /* ============================================================
+     SHORT CURRENCY
+     ============================================================ */
+
+  function _shortCurrency(
+    value,
+  ) {
+
+    const number =
+      Number(
+        value || 0,
+      );
+
+
+    if (
+      number >=
+      1000000000
+    ) {
+
+      return (
+        "Rp " +
+        (
+          number /
+          1000000000
+        )
+          .toFixed(1)
+          .replace(
+            ".0",
+            "",
+          ) +
+        "B"
+      );
+
+    }
+
+
+    if (
+      number >=
+      1000000
+    ) {
+
+      return (
+        "Rp " +
+        (
+          number /
+          1000000
+        )
+          .toFixed(1)
+          .replace(
+            ".0",
+            "",
+          ) +
+        "M"
+      );
+
+    }
+
+
+    if (
+      number >=
+      1000
+    ) {
+
+      return (
+        "Rp " +
+        (
+          number /
+          1000
+        )
+          .toFixed(0) +
+        "K"
+      );
+
+    }
+
+
+    return (
+      "Rp " +
+      number.toLocaleString(
+        "id-ID",
+      )
+    );
+
+  }
+
+
+  /* ============================================================
+     GROWTH
      ============================================================ */
 
   function calculateGrowth(
@@ -4654,92 +5078,6 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     SHORT CURRENCY
-     ============================================================ */
-
-  function shortCurrency(
-    value,
-  ) {
-
-    const number =
-      Number(
-        value || 0,
-      );
-
-
-    if (
-      number >=
-      1000000000
-    ) {
-
-      return (
-        "Rp " +
-        (
-          number /
-          1000000000
-        )
-          .toFixed(1)
-          .replace(
-            ".0",
-            "",
-          ) +
-        "B"
-      );
-
-    }
-
-
-    if (
-      number >=
-      1000000
-    ) {
-
-      return (
-        "Rp " +
-        (
-          number /
-          1000000
-        )
-          .toFixed(1)
-          .replace(
-            ".0",
-            "",
-          ) +
-        "M"
-      );
-
-    }
-
-
-    if (
-      number >=
-      1000
-    ) {
-
-      return (
-        "Rp " +
-        (
-          number /
-          1000
-        )
-          .toFixed(0) +
-        "K"
-      );
-
-    }
-
-
-    return (
-      "Rp " +
-      number.toLocaleString(
-        "id-ID",
-      )
-    );
-
-  }
-
-
-  /* ============================================================
      DATE PARSER
      ============================================================ */
 
@@ -4896,7 +5234,7 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     DIFF DAYS
+     DIFFERENCE DAYS
      ============================================================ */
 
   function diffDays(
@@ -4966,7 +5304,7 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     NORMAL DATE DISPLAY
+     DATE DISPLAY
      ============================================================ */
 
   function formatDate(
