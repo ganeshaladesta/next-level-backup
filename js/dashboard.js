@@ -37,6 +37,7 @@ const Dashboard = (() => {
       await renderSummaryCards();
       await renderCharts();
       await renderPromoPerformance();
+
     } catch (error) {
       console.error(
         "Dashboard render error:",
@@ -50,6 +51,7 @@ const Dashboard = (() => {
      ============================================================ */
 
   function _setup() {
+
     /* ----------------------------------------------------------
        TIMEFRAME
        ---------------------------------------------------------- */
@@ -59,9 +61,11 @@ const Dashboard = (() => {
         ".filter-btn[data-filter]",
       )
       .forEach((btn) => {
+
         btn.addEventListener(
           "click",
           async () => {
+
             document
               .querySelectorAll(
                 ".filter-btn[data-filter]",
@@ -84,6 +88,7 @@ const Dashboard = (() => {
         );
       });
 
+
     /* ----------------------------------------------------------
        CHART TYPE
        ---------------------------------------------------------- */
@@ -93,9 +98,11 @@ const Dashboard = (() => {
         ".chart-type-btn",
       )
       .forEach((btn) => {
+
         btn.addEventListener(
           "click",
           async () => {
+
             document
               .querySelectorAll(
                 ".chart-type-btn",
@@ -118,6 +125,7 @@ const Dashboard = (() => {
         );
       });
 
+
     /* ----------------------------------------------------------
        METRIC
        ---------------------------------------------------------- */
@@ -128,9 +136,11 @@ const Dashboard = (() => {
       );
 
     if (metricFilter) {
+
       metricFilter.addEventListener(
         "change",
         async (e) => {
+
           currentMetric =
             e.target.value;
 
@@ -138,6 +148,7 @@ const Dashboard = (() => {
         },
       );
     }
+
 
     /* ----------------------------------------------------------
        BRANCH
@@ -149,8 +160,10 @@ const Dashboard = (() => {
       );
 
     if (branchFilter) {
+
       BRANCHES.forEach(
         (branch) => {
+
           if (
             ![
               ...branchFilter.options,
@@ -160,6 +173,7 @@ const Dashboard = (() => {
                 branch,
             )
           ) {
+
             const option =
               document.createElement(
                 "option",
@@ -178,9 +192,11 @@ const Dashboard = (() => {
         },
       );
 
+
       branchFilter.addEventListener(
         "change",
         async (e) => {
+
           currentBranch =
             e.target.value;
 
@@ -195,8 +211,11 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function refreshDashboard() {
+
     await renderSummaryCards();
+
     await renderCharts();
+
     await renderPromoPerformance();
   }
 
@@ -205,6 +224,7 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderPromoBanner() {
+
     const banner =
       document.getElementById(
         "promoBanner",
@@ -221,7 +241,9 @@ const Dashboard = (() => {
       !active ||
       active.length === 0
     ) {
+
       banner.innerHTML = "";
+
       banner.style.display =
         "none";
 
@@ -233,11 +255,13 @@ const Dashboard = (() => {
         .map(
           (p) => `
             <div class="promo-badge-item">
+
               <span class="promo-badge-icon">
                 🎉
               </span>
 
               <span>
+
                 <strong>
                   ${escapeHtml(
             p.name,
@@ -255,7 +279,9 @@ const Dashboard = (() => {
               )
               : ""
             }
+
               </span>
+
             </div>
           `,
         )
@@ -267,79 +293,39 @@ const Dashboard = (() => {
 
   /* ============================================================
      SUMMARY / KPI
+     
+     ORDER:
+     TODAY
+     THIS WEEK
+     THIS MONTH
+     THIS YEAR
+     
+     NOTE:
+     KPI tidak mengikuti currentFilter.
+     Masing-masing card selalu menunjukkan
+     periodenya sendiri.
      ============================================================ */
 
   async function renderSummaryCards() {
+
     let all =
       await Store.getTransactions();
 
     all =
       filterBranch(all);
 
-    /*
-      IMPORTANT:
-
-      filtered selalu mengikuti
-      timeframe aktif.
-
-      Daily   = hari ini
-      Weekly  = bucket minggu berjalan
-      Monthly = bulan berjalan
-      Yearly  = tahun berjalan
-    */
-
-    const filtered =
-      getPeriodTransactions(
-        all,
-      );
-
-    const revenue =
-      sumRevenue(filtered);
-
-    const count =
-      filtered.length;
-
-    const averageTicket =
-      count > 0
-        ? revenue / count
-        : 0;
-
-    const discount =
-      filtered.reduce(
-        (total, t) =>
-          total +
-          Number(
-            t.discountAmount || 0,
-          ),
-        0,
-      );
-
-    const promoTransactions =
-      filtered.filter(
-        isPromoTransaction,
-      );
-
-    const promoRevenue =
-      sumRevenue(
-        promoTransactions,
-      );
-
-    const promoDiscount =
-      promoTransactions.reduce(
-        (total, t) =>
-          total +
-          Number(
-            t.discountAmount || 0,
-          ),
-        0,
-      );
-
-    /* ----------------------------------------------------------
-       EXISTING KPI CARDS
-       ---------------------------------------------------------- */
-
     const today =
       Store.getTodayStr();
+
+    const todayDate =
+      new Date(
+        `${today}T00:00:00`,
+      );
+
+
+    /* ==========================================================
+       TODAY
+       ========================================================== */
 
     const todayTxns =
       all.filter(
@@ -347,19 +333,115 @@ const Dashboard = (() => {
           t.date === today,
       );
 
+
+    /* ==========================================================
+       THIS WEEK
+
+       Weekly system:
+
+       1 - 7
+       8 - 14
+       15 - 21
+       22 - 28
+       29 - end of month
+       ========================================================== */
+
+    const currentDay =
+      todayDate.getDate();
+
+    let weekStartDay;
+
+    if (
+      currentDay <= 7
+    ) {
+
+      weekStartDay = 1;
+
+    } else if (
+      currentDay <= 14
+    ) {
+
+      weekStartDay = 8;
+
+    } else if (
+      currentDay <= 21
+    ) {
+
+      weekStartDay = 15;
+
+    } else if (
+      currentDay <= 28
+    ) {
+
+      weekStartDay = 22;
+
+    } else {
+
+      weekStartDay = 29;
+    }
+
+
+    const weekStart =
+      new Date(
+        todayDate.getFullYear(),
+        todayDate.getMonth(),
+        weekStartDay,
+      );
+
+
+    const weekEnd =
+      new Date(
+        todayDate.getFullYear(),
+        todayDate.getMonth() + 1,
+        0,
+      );
+
+
+    const weekStartStr =
+      _dateStr(
+        weekStart,
+      );
+
+    const weekEndStr =
+      _dateStr(
+        weekEnd,
+      );
+
+
+    const weekTxns =
+      all.filter(
+        (t) =>
+          t.date >=
+          weekStartStr &&
+          t.date <=
+          weekEndStr,
+      );
+
+
+    /* ==========================================================
+       THIS MONTH
+       ========================================================== */
+
     const monthStart =
       today.substring(
         0,
         7,
       ) + "-01";
 
+
     const monthTxns =
       all.filter(
         (t) =>
           t.date >=
           monthStart &&
-          t.date <= today,
+          t.date <=
+          today,
       );
+
+
+    /* ==========================================================
+       THIS YEAR
+       ========================================================== */
 
     const yearStart =
       today.substring(
@@ -367,17 +449,29 @@ const Dashboard = (() => {
         4,
       ) + "-01-01";
 
+
     const yearTxns =
       all.filter(
         (t) =>
           t.date >=
           yearStart &&
-          t.date <= today,
+          t.date <=
+          today,
       );
+
+
+    /* ==========================================================
+       REVENUE
+       ========================================================== */
 
     const todayRevenue =
       sumRevenue(
         todayTxns,
+      );
+
+    const weekRevenue =
+      sumRevenue(
+        weekTxns,
       );
 
     const monthRevenue =
@@ -390,11 +484,22 @@ const Dashboard = (() => {
         yearTxns,
       );
 
+
+    /* ==========================================================
+       CURRENT METRIC
+       ========================================================== */
+
     const isRevenue =
       currentMetric ===
       "revenue";
 
+
+    /* ==========================================================
+       TODAY KPI
+       ========================================================== */
+
     if (isRevenue) {
+
       _setText(
         "todayRevenue",
         Store.formatCurrency(
@@ -406,6 +511,62 @@ const Dashboard = (() => {
         "todayCount",
         `${todayTxns.length} transactions`,
       );
+
+    } else {
+
+      _setText(
+        "todayRevenue",
+        `${todayTxns.length} Transactions`,
+      );
+
+      _setText(
+        "todayCount",
+        `Revenue: ${Store.formatCurrency(
+          todayRevenue,
+        )}`,
+      );
+    }
+
+
+    /* ==========================================================
+       THIS WEEK KPI
+       ========================================================== */
+
+    if (isRevenue) {
+
+      _setText(
+        "weekRevenue",
+        Store.formatCurrency(
+          weekRevenue,
+        ),
+      );
+
+      _setText(
+        "weekCount",
+        `${weekTxns.length} transactions`,
+      );
+
+    } else {
+
+      _setText(
+        "weekRevenue",
+        `${weekTxns.length} Transactions`,
+      );
+
+      _setText(
+        "weekCount",
+        `Revenue: ${Store.formatCurrency(
+          weekRevenue,
+        )}`,
+      );
+    }
+
+
+    /* ==========================================================
+       THIS MONTH KPI
+       ========================================================== */
+
+    if (isRevenue) {
 
       _setText(
         "monthRevenue",
@@ -419,29 +580,7 @@ const Dashboard = (() => {
         `${monthTxns.length} transactions`,
       );
 
-      _setText(
-        "yearRevenue",
-        Store.formatCurrency(
-          yearRevenue,
-        ),
-      );
-
-      _setText(
-        "yearCount",
-        `${yearTxns.length} transactions`,
-      );
     } else {
-      _setText(
-        "todayRevenue",
-        `${todayTxns.length} Transactions`,
-      );
-
-      _setText(
-        "todayCount",
-        `Revenue: ${Store.formatCurrency(
-          todayRevenue,
-        )}`,
-      );
 
       _setText(
         "monthRevenue",
@@ -454,6 +593,28 @@ const Dashboard = (() => {
           monthRevenue,
         )}`,
       );
+    }
+
+
+    /* ==========================================================
+       THIS YEAR KPI
+       ========================================================== */
+
+    if (isRevenue) {
+
+      _setText(
+        "yearRevenue",
+        Store.formatCurrency(
+          yearRevenue,
+        ),
+      );
+
+      _setText(
+        "yearCount",
+        `${yearTxns.length} transactions`,
+      );
+
+    } else {
 
       _setText(
         "yearRevenue",
@@ -468,26 +629,91 @@ const Dashboard = (() => {
       );
     }
 
-    /* ----------------------------------------------------------
-       EXISTING TOTAL KPI
-       ---------------------------------------------------------- */
+
+    /* ==========================================================
+       SELECTED PERIOD KPI
+       
+       Kalau masih ada element lama,
+       dikosongkan supaya tidak muncul.
+       ========================================================== */
 
     _setText(
       "totalTransactions",
-      filtered.length,
+      "",
     );
-
-    const services =
-      await Store.getActiveServices();
 
     _setText(
       "totalServices",
-      `${services.length} active services`,
+      "",
     );
 
-    /* ----------------------------------------------------------
-       SELECTED PERIOD KPI
-       ---------------------------------------------------------- */
+    _setText(
+      "dashPeriodLabel",
+      getPeriodLabel(),
+    );
+
+
+    /* ==========================================================
+       NEW KPI DATA
+       
+       Tetap dipertahankan karena mungkin
+       dipakai bagian dashboard lain.
+       ========================================================== */
+
+    const filtered =
+      getPeriodTransactions(
+        all,
+      );
+
+    const revenue =
+      sumRevenue(
+        filtered,
+      );
+
+    const count =
+      filtered.length;
+
+    const averageTicket =
+      count > 0
+        ? revenue / count
+        : 0;
+
+
+    const discount =
+      filtered.reduce(
+        (total, t) =>
+          total +
+          Number(
+            t.discountAmount ||
+            0,
+          ),
+        0,
+      );
+
+
+    const promoTransactions =
+      filtered.filter(
+        isPromoTransaction,
+      );
+
+
+    const promoRevenue =
+      sumRevenue(
+        promoTransactions,
+      );
+
+
+    const promoDiscount =
+      promoTransactions.reduce(
+        (total, t) =>
+          total +
+          Number(
+            t.discountAmount ||
+            0,
+          ),
+        0,
+      );
+
 
     _setText(
       "dashTotalRevenue",
@@ -496,12 +722,14 @@ const Dashboard = (() => {
       ),
     );
 
+
     _setText(
       "dashTotalTransactions",
       count.toLocaleString(
         "id-ID",
       ),
     );
+
 
     _setText(
       "dashAverageTicket",
@@ -510,12 +738,14 @@ const Dashboard = (() => {
       ),
     );
 
+
     _setText(
       "dashTotalDiscount",
       Store.formatCurrency(
         discount,
       ),
     );
+
 
     _setText(
       "dashPromoTransactions",
@@ -524,12 +754,14 @@ const Dashboard = (() => {
       ),
     );
 
+
     _setText(
       "dashPromoRevenue",
       Store.formatCurrency(
         promoRevenue,
       ),
     );
+
 
     _setText(
       "dashPromoDiscount",
@@ -538,18 +770,19 @@ const Dashboard = (() => {
       ),
     );
 
-    /* ----------------------------------------------------------
-       PERIOD LABEL
-       ---------------------------------------------------------- */
 
-    _setText(
-      "dashPeriodLabel",
-      getPeriodLabel(),
-    );
+    /* ----------------------------------------------------------
+       CARD LABELS
+       ---------------------------------------------------------- */
 
     _setText(
       "todayCardLabel",
       "Today",
+    );
+
+    _setText(
+      "weekCardLabel",
+      "This Week",
     );
 
     _setText(
@@ -568,6 +801,7 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderCharts() {
+
     _updateChartTitles();
 
     await _renderRevenueChart();
@@ -582,9 +816,11 @@ const Dashboard = (() => {
      ============================================================ */
 
   function _updateChartTitles() {
+
     const isRevenue =
       currentMetric ===
       "revenue";
+
 
     const revTitle =
       document.getElementById(
@@ -592,11 +828,13 @@ const Dashboard = (() => {
       );
 
     if (revTitle) {
+
       revTitle.textContent =
         isRevenue
           ? "📈 Revenue Trend"
           : "📈 Transaction Count Trend";
     }
+
 
     const svcTitle =
       document.getElementById(
@@ -604,11 +842,13 @@ const Dashboard = (() => {
       );
 
     if (svcTitle) {
+
       svcTitle.textContent =
         isRevenue
           ? "🍩 Revenue by Service"
           : "🍩 Transactions by Service";
     }
+
 
     const barTitle =
       document.getElementById(
@@ -616,6 +856,7 @@ const Dashboard = (() => {
       );
 
     if (barTitle) {
+
       barTitle.textContent =
         isRevenue
           ? "📊 Service Comparison (Revenue)"
@@ -628,6 +869,7 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function _renderRevenueChart() {
+
     const canvas =
       document.getElementById(
         "revenueChart",
@@ -637,15 +879,21 @@ const Dashboard = (() => {
       return;
     }
 
+
     const {
       labels,
       data,
     } =
       await _getRevenueData();
 
+
     if (revenueChart) {
+
       revenueChart.destroy();
+
+      revenueChart = null;
     }
+
 
     const isLine =
       currentChartType ===
@@ -655,87 +903,93 @@ const Dashboard = (() => {
       currentMetric ===
       "revenue";
 
+
     const datasetLabel =
       isRevenue
         ? "Revenue"
         : "Transactions";
 
+
     revenueChart =
-      new Chart(canvas, {
-        type: currentChartType,
+      new Chart(
+        canvas,
+        {
+          type:
+            currentChartType,
 
-        data: {
-          labels,
+          data: {
 
-          datasets: [
-            {
-              label:
-                datasetLabel,
+            labels,
 
-              data,
+            datasets: [
+              {
 
-              /*
-                IMPORTANT:
+                label:
+                  datasetLabel,
 
-                null = tidak ada data.
+                data,
 
-                Chart.js tidak akan
-                menggambar titik pada
-                bucket kosong.
-              */
+                spanGaps:
+                  false,
 
-              spanGaps: false,
+                ...(isLine
+                  ? {
 
-              ...(isLine
-                ? {
-                  borderColor:
-                    "#e30022",
-
-                  backgroundColor:
-                    _gradient(
-                      canvas,
+                    borderColor:
                       "#e30022",
-                    ),
 
-                  fill: true,
+                    backgroundColor:
+                      _gradient(
+                        canvas,
+                        "#e30022",
+                      ),
 
-                  tension: 0.4,
+                    fill:
+                      true,
 
-                  pointBackgroundColor:
-                    "#e30022",
+                    tension:
+                      0.4,
 
-                  pointBorderColor:
-                    "#ffffff",
+                    pointBackgroundColor:
+                      "#e30022",
 
-                  pointBorderWidth:
-                    2,
+                    pointBorderColor:
+                      "#ffffff",
 
-                  pointRadius: 4,
+                    pointBorderWidth:
+                      2,
 
-                  pointHoverRadius:
-                    7,
-                }
-                : {
-                  backgroundColor:
-                    "#e30022",
+                    pointRadius:
+                      3,
 
-                  borderRadius: 8,
+                    pointHoverRadius:
+                      6,
 
-                  borderSkipped:
-                    false,
+                  }
+                  : {
 
-                  maxBarThickness:
-                    48,
-                }),
-            },
-          ],
+                    backgroundColor:
+                      "#e30022",
+
+                    borderRadius:
+                      8,
+
+                    borderSkipped:
+                      false,
+
+                    maxBarThickness:
+                      48,
+                  }),
+              },
+            ],
+          },
+
+          options:
+            _axisChartOptions(
+              isRevenue,
+            ),
         },
-
-        options:
-          _axisChartOptions(
-            isRevenue,
-          ),
-      });
+      );
   }
 
   /* ============================================================
@@ -743,6 +997,7 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function _renderServiceChart() {
+
     const canvas =
       document.getElementById(
         "serviceChart",
@@ -752,6 +1007,7 @@ const Dashboard = (() => {
       return;
     }
 
+
     const {
       labels,
       data,
@@ -759,80 +1015,104 @@ const Dashboard = (() => {
     } =
       await _getServiceData();
 
+
     if (serviceChart) {
+
       serviceChart.destroy();
+
+      serviceChart = null;
     }
+
 
     const isRevenue =
       currentMetric ===
       "revenue";
 
+
     serviceChart =
-      new Chart(canvas, {
-        type: "doughnut",
+      new Chart(
+        canvas,
+        {
 
-        data: {
-          labels,
+          type:
+            "doughnut",
 
-          datasets: [
-            {
-              data,
+          data: {
 
-              backgroundColor:
-                colors,
+            labels,
 
-              borderWidth: 2,
+            datasets: [
+              {
 
-              borderColor:
-                "#121214",
-            },
-          ],
-        },
+                data,
 
-        options: {
-          responsive: true,
+                backgroundColor:
+                  colors,
 
-          maintainAspectRatio:
-            false,
+                borderWidth:
+                  2,
 
-          cutout: "65%",
+                borderColor:
+                  "#121214",
+              },
+            ],
+          },
 
-          plugins: {
-            legend: {
-              position:
-                "bottom",
+          options: {
 
-              labels: {
-                color:
-                  "#f4f4f5",
+            responsive:
+              true,
 
-                padding: 12,
+            maintainAspectRatio:
+              false,
 
-                usePointStyle:
-                  true,
+            cutout:
+              "65%",
 
-                pointStyle:
-                  "circle",
+            plugins: {
 
-                font: {
-                  size: 11,
+              legend: {
+
+                position:
+                  "bottom",
+
+                labels: {
+
+                  color:
+                    "#f4f4f5",
+
+                  padding:
+                    12,
+
+                  usePointStyle:
+                    true,
+
+                  pointStyle:
+                    "circle",
+
+                  font: {
+                    size:
+                      11,
+                  },
                 },
               },
-            },
 
-            tooltip: {
-              callbacks: {
-                label: (c) =>
-                  isRevenue
-                    ? `${c.label}: ${Store.formatCurrency(
-                      c.parsed,
-                    )}`
-                    : `${c.label}: ${c.parsed} transactions`,
+              tooltip: {
+
+                callbacks: {
+
+                  label: (c) =>
+                    isRevenue
+                      ? `${c.label}: ${Store.formatCurrency(
+                        c.parsed,
+                      )}`
+                      : `${c.label}: ${c.parsed} transactions`,
+                },
               },
             },
           },
         },
-      });
+      );
   }
 
   /* ============================================================
@@ -840,6 +1120,7 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function _renderBarChart() {
+
     const canvas =
       document.getElementById(
         "barChart",
@@ -849,6 +1130,7 @@ const Dashboard = (() => {
       return;
     }
 
+
     const {
       labels,
       data,
@@ -856,9 +1138,14 @@ const Dashboard = (() => {
     } =
       await _getServiceData();
 
+
     if (barChart) {
+
       barChart.destroy();
+
+      barChart = null;
     }
+
 
     const isLine =
       currentChartType ===
@@ -868,75 +1155,91 @@ const Dashboard = (() => {
       currentMetric ===
       "revenue";
 
+
     const datasetLabel =
       isRevenue
         ? "Revenue"
         : "Transactions";
 
+
     barChart =
-      new Chart(canvas, {
-        type: currentChartType,
+      new Chart(
+        canvas,
+        {
 
-        data: {
-          labels,
+          type:
+            currentChartType,
 
-          datasets: [
-            {
-              label:
-                datasetLabel,
+          data: {
 
-              data,
+            labels,
 
-              ...(isLine
-                ? {
-                  borderColor:
-                    "#e30022",
+            datasets: [
+              {
 
-                  backgroundColor:
-                    _gradient(
-                      canvas,
+                label:
+                  datasetLabel,
+
+                data,
+
+                ...(isLine
+                  ? {
+
+                    borderColor:
                       "#e30022",
-                    ),
 
-                  fill: true,
+                    backgroundColor:
+                      _gradient(
+                        canvas,
+                        "#e30022",
+                      ),
 
-                  tension: 0.4,
+                    fill:
+                      true,
 
-                  pointBackgroundColor:
-                    colors,
+                    tension:
+                      0.4,
 
-                  pointBorderColor:
-                    "#ffffff",
+                    pointBackgroundColor:
+                      colors,
 
-                  pointBorderWidth:
-                    2,
+                    pointBorderColor:
+                      "#ffffff",
 
-                  pointRadius: 5,
+                    pointBorderWidth:
+                      2,
 
-                  pointHoverRadius:
-                    7,
-                }
-                : {
-                  backgroundColor:
-                    colors,
+                    pointRadius:
+                      5,
 
-                  borderRadius: 8,
+                    pointHoverRadius:
+                      7,
 
-                  borderSkipped:
-                    false,
+                  }
+                  : {
 
-                  maxBarThickness:
-                    48,
-                }),
-            },
-          ],
+                    backgroundColor:
+                      colors,
+
+                    borderRadius:
+                      8,
+
+                    borderSkipped:
+                      false,
+
+                    maxBarThickness:
+                      48,
+                  }),
+              },
+            ],
+          },
+
+          options:
+            _axisChartOptions(
+              isRevenue,
+            ),
         },
-
-        options:
-          _axisChartOptions(
-            isRevenue,
-          ),
-      });
+      );
   }
 
   /* ============================================================
@@ -946,32 +1249,45 @@ const Dashboard = (() => {
   function _axisChartOptions(
     isRevenue = true,
   ) {
+
     return {
-      responsive: true,
+
+      responsive:
+        true,
 
       maintainAspectRatio:
         false,
 
       interaction: {
-        intersect: false,
 
-        mode: "index",
+        intersect:
+          false,
+
+        mode:
+          "index",
       },
 
       plugins: {
+
         legend: {
-          display: false,
+          display:
+            false,
         },
 
         tooltip: {
+
           callbacks: {
+
             label: (c) => {
+
               const value =
                 c.parsed.y;
 
               if (
-                value === null ||
-                value === undefined
+                value ===
+                null ||
+                value ===
+                undefined
               ) {
                 return "";
               }
@@ -987,10 +1303,14 @@ const Dashboard = (() => {
       },
 
       scales: {
+
         y: {
-          beginAtZero: true,
+
+          beginAtZero:
+            true,
 
           ticks: {
+
             color:
               "#a1a1aa",
 
@@ -1007,34 +1327,38 @@ const Dashboard = (() => {
           },
 
           grid: {
+
             color:
               "rgba(255,255,255,0.05)",
           },
         },
 
         x: {
+
           ticks: {
+
             color:
               "#a1a1aa",
 
-            autoSkip: true,
+            autoSkip:
+              true,
 
             maxTicksLimit:
               currentFilter ===
                 "weekly"
                 ? 12
-                : currentFilter ===
-                  "daily"
-                  ? 12
-                  : undefined,
+                : undefined,
 
-            maxRotation: 0,
+            maxRotation:
+              0,
 
-            minRotation: 0,
+            minRotation:
+              0,
           },
 
           grid: {
-            display: false,
+            display:
+              false,
           },
         },
       },
@@ -1046,21 +1370,27 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function _getRevenueData() {
+
     let all =
       await Store.getTransactions();
 
     all =
       filterBranch(all);
 
+
     const today =
       new Date();
+
 
     const isRevenue =
       currentMetric ===
       "revenue";
 
+
     const labels = [];
+
     const data = [];
+
 
     const monthNames = [
       "Jan",
@@ -1077,73 +1407,81 @@ const Dashboard = (() => {
       "Dec",
     ];
 
+
     /* ==========================================================
        DAILY
+       30 DAYS
        ========================================================== */
 
     if (
       currentFilter ===
       "daily"
     ) {
+
       const map = {};
+
 
       for (
         let i = 29;
         i >= 0;
         i--
       ) {
+
         const d =
-          new Date(today);
+          new Date(
+            today,
+          );
 
         d.setDate(
-          d.getDate() - i,
+          d.getDate() -
+          i,
         );
+
 
         const key =
           _dateStr(d);
+
 
         labels.push(
           `${d.getDate()} ${monthNames[d.getMonth()]}`,
         );
 
+
         map[key] = 0;
       }
 
-      all.forEach((t) => {
-        if (
-          Object.prototype.hasOwnProperty.call(
-            map,
-            t.date,
-          )
-        ) {
-          map[t.date] +=
-            isRevenue
-              ? Number(
-                t.price || 0,
-              )
-              : 1;
-        }
-      });
 
-      /*
-        FIX:
+      all.forEach(
+        (t) => {
 
-        Sebelumnya ada:
+          if (
+            map[t.date] !==
+            undefined
+          ) {
 
-        MapValues(map)
+            map[t.date] +=
+              isRevenue
+                ? Number(
+                  t.price ||
+                  0,
+                )
+                : 1;
+          }
+        },
+      );
 
-        Itu SALAH.
-
-        Sekarang menggunakan
-        Object.values(map).
-      */
 
       return {
+
         labels,
+
         data:
-          Object.values(map),
+          Object.values(
+            map,
+          ),
       };
     }
+
 
     /* ==========================================================
        WEEKLY
@@ -1153,6 +1491,7 @@ const Dashboard = (() => {
       currentFilter ===
       "weekly"
     ) {
+
       return _getWeeklyRevenueData(
         all,
         today,
@@ -1160,6 +1499,7 @@ const Dashboard = (() => {
         monthNames,
       );
     }
+
 
     /* ==========================================================
        MONTHLY
@@ -1169,13 +1509,16 @@ const Dashboard = (() => {
       currentFilter ===
       "monthly"
     ) {
+
       const map = {};
+
 
       for (
         let i = 11;
         i >= 0;
         i--
       ) {
+
         const d =
           new Date(
             today.getFullYear(),
@@ -1184,48 +1527,62 @@ const Dashboard = (() => {
             1,
           );
 
+
         const key =
           `${d.getFullYear()}-${String(
             d.getMonth() + 1,
           ).padStart(2, "0")}`;
 
+
         labels.push(
           `${monthNames[d.getMonth()]} ${d.getFullYear()}`,
         );
 
+
         map[key] = 0;
       }
 
-      all.forEach((t) => {
-        const key =
-          String(
-            t.date || "",
-          ).substring(
-            0,
-            7,
-          );
 
-        if (
-          Object.prototype.hasOwnProperty.call(
-            map,
-            key,
-          )
-        ) {
-          map[key] +=
-            isRevenue
-              ? Number(
-                t.price || 0,
-              )
-              : 1;
-        }
-      });
+      all.forEach(
+        (t) => {
+
+          const key =
+            String(
+              t.date,
+            ).substring(
+              0,
+              7,
+            );
+
+
+          if (
+            map[key] !==
+            undefined
+          ) {
+
+            map[key] +=
+              isRevenue
+                ? Number(
+                  t.price ||
+                  0,
+                )
+                : 1;
+          }
+        },
+      );
+
 
       return {
+
         labels,
+
         data:
-          Object.values(map),
+          Object.values(
+            map,
+          ),
       };
     }
+
 
     /* ==========================================================
        YEARLY
@@ -1233,78 +1590,81 @@ const Dashboard = (() => {
 
     const map = {};
 
+
     for (
       let i = 4;
       i >= 0;
       i--
     ) {
+
       const year =
         today.getFullYear() -
         i;
+
 
       labels.push(
         String(year),
       );
 
-      map[String(year)] =
-        0;
+
+      map[
+        String(year)
+      ] = 0;
     }
 
-    all.forEach((t) => {
-      const key =
-        String(
-          t.date || "",
-        ).substring(
-          0,
-          4,
-        );
 
-      if (
-        Object.prototype.hasOwnProperty.call(
-          map,
-          key,
-        )
-      ) {
-        map[key] +=
-          isRevenue
-            ? Number(
-              t.price || 0,
-            )
-            : 1;
-      }
-    });
+    all.forEach(
+      (t) => {
+
+        const key =
+          String(
+            t.date,
+          ).substring(
+            0,
+            4,
+          );
+
+
+        if (
+          map[key] !==
+          undefined
+        ) {
+
+          map[key] +=
+            isRevenue
+              ? Number(
+                t.price ||
+                0,
+              )
+              : 1;
+        }
+      },
+    );
+
 
     return {
+
       labels,
+
       data:
-        Object.values(map),
+        Object.values(
+          map,
+        ),
     };
   }
 
   /* ============================================================
      WEEKLY DATA
-     ============================================================
+     
+     BUCKET:
+     1-7
+     8-14
+     15-21
+     22-28
+     29-END MONTH
 
-     WEEKLY BUCKET:
-
-     1  - 7
-     8  - 14
-     15 - 21
-     22 - 28
-     29 - END MONTH
-
-     Contoh:
-
-     1 Jul  = transaksi 1-7 Jul
-     8 Jul  = transaksi 8-14 Jul
-     15 Jul = transaksi 15-21 Jul
-
-     Kalau 8 Jul ada transaksi:
-       titik/bar ada di 8 Jul.
-
-     Kalau 8-14 kosong:
-       nilai = null
-       tidak ada titik merah.
+     EMPTY BUCKET = null
+     ADA DATA = VALUE
      ============================================================ */
 
   function _getWeeklyRevenueData(
@@ -1313,18 +1673,16 @@ const Dashboard = (() => {
     isRevenue,
     monthNames,
   ) {
+
     const tempBuckets = [];
 
-    /*
-      Generate 6 bulan terakhir
-      sampai bulan sekarang.
-    */
 
     for (
       let monthOffset = -5;
-      monthOffset <= 0;
+      monthOffset <= 1;
       monthOffset++
     ) {
+
       const monthDate =
         new Date(
           today.getFullYear(),
@@ -1333,11 +1691,14 @@ const Dashboard = (() => {
           1,
         );
 
+
       const year =
         monthDate.getFullYear();
 
+
       const month =
         monthDate.getMonth();
+
 
       const lastDay =
         new Date(
@@ -1345,6 +1706,7 @@ const Dashboard = (() => {
           month + 1,
           0,
         ).getDate();
+
 
       const starts = [
         1,
@@ -1354,13 +1716,17 @@ const Dashboard = (() => {
         29,
       ];
 
+
       starts.forEach(
         (day) => {
+
           if (
-            day > lastDay
+            day >
+            lastDay
           ) {
             return;
           }
+
 
           const start =
             new Date(
@@ -1369,16 +1735,20 @@ const Dashboard = (() => {
               day,
             );
 
+
           let endDay =
             day + 6;
+
 
           if (
             endDay >
             lastDay
           ) {
+
             endDay =
               lastDay;
           }
+
 
           const end =
             new Date(
@@ -1387,116 +1757,111 @@ const Dashboard = (() => {
               endDay,
             );
 
-          /*
-            Jangan membuat bucket
-            yang dimulai setelah hari ini.
-          */
-
-          if (
-            start.getTime() >
-            today.getTime()
-          ) {
-            return;
-          }
 
           tempBuckets.push({
+
             start,
+
             end,
-            value: 0,
+
+            key:
+              _dateStr(
+                start,
+              ),
+
+            value:
+              0,
           });
         },
       );
     }
 
-    /*
-      Urutkan berdasarkan tanggal.
-    */
 
-    tempBuckets.sort(
-      (a, b) =>
-        a.start.getTime() -
-        b.start.getTime(),
-    );
+    const todayTime =
+      today.getTime();
 
-    /*
-      Ambil 12 bucket terakhir.
-    */
+
+    const validBuckets =
+      tempBuckets
+        .filter(
+          (b) =>
+            b.start.getTime() <=
+            todayTime,
+        )
+        .sort(
+          (a, b) =>
+            a.start -
+            b.start,
+        );
+
 
     const selectedBuckets =
-      tempBuckets.slice(-12);
+      validBuckets.slice(
+        -12,
+      );
+
 
     /* ----------------------------------------------------------
-       MASUKKAN TRANSAKSI
+       TRANSACTIONS → BUCKET
        ---------------------------------------------------------- */
 
-    all.forEach((t) => {
-      if (!t.date) {
-        return;
-      }
+    all.forEach(
+      (t) => {
 
-      /*
-        Parse YYYY-MM-DD secara
-        local time supaya tidak
-        kena timezone shift.
-      */
+        if (!t.date) {
+          return;
+        }
 
-      const parts =
-        String(
-          t.date,
-        ).split("-");
 
-      if (
-        parts.length !== 3
-      ) {
-        return;
-      }
+        const date =
+          new Date(
+            `${t.date}T00:00:00`,
+          );
 
-      const date =
-        new Date(
-          Number(parts[0]),
-          Number(parts[1]) - 1,
-          Number(parts[2]),
-        );
 
-      if (
-        Number.isNaN(
-          date.getTime(),
-        )
-      ) {
-        return;
-      }
-
-      /*
-        Cari bucket yang mencakup
-        tanggal transaksi.
-      */
-
-      const bucket =
-        selectedBuckets.find(
-          (b) =>
-            date >= b.start &&
-            date <= b.end,
-        );
-
-      if (!bucket) {
-        return;
-      }
-
-      bucket.value +=
-        isRevenue
-          ? Number(
-            t.price || 0,
+        if (
+          Number.isNaN(
+            date.getTime(),
           )
-          : 1;
-    });
+        ) {
+          return;
+        }
+
+
+        const bucket =
+          selectedBuckets.find(
+            (b) =>
+              date >=
+              b.start &&
+              date <=
+              b.end,
+          );
+
+
+        if (!bucket) {
+          return;
+        }
+
+
+        bucket.value +=
+          isRevenue
+            ? Number(
+              t.price ||
+              0,
+            )
+            : 1;
+      },
+    );
+
 
     /* ----------------------------------------------------------
-       LABEL
+       LABELS
        ---------------------------------------------------------- */
 
     const labels =
       selectedBuckets.map(
         (bucket) => {
+
           const d =
             bucket.start;
 
@@ -1504,25 +1869,28 @@ const Dashboard = (() => {
         },
       );
 
+
     /* ----------------------------------------------------------
        DATA
 
-       0 -> null
+       IMPORTANT:
 
-       Dengan begini:
+       EMPTY = null
 
-       1 Jul ada data
-       8 Jul ada data
-       15 Jul kosong
-       22 Jul ada data
+       Jadi Chart.js tidak membuat
+       titik merah di minggu kosong.
+
+       Contoh:
+
+       1 Jul  = 0
+       8 Jul  = 50.000
+       15 Jul = 0
 
        hasil:
 
-       [data, data, null, data]
-
-       Chart hanya menggambar
-       titik pada bucket yang
-       memiliki transaksi.
+       null
+       50000
+       null
        ---------------------------------------------------------- */
 
     const data =
@@ -1533,8 +1901,11 @@ const Dashboard = (() => {
             : null,
       );
 
+
     return {
+
       labels,
+
       data,
     };
   }
@@ -1544,57 +1915,78 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function _getServiceData() {
+
     let txns =
       await Store.getTransactions();
 
+
     txns =
-      filterBranch(txns);
+      filterBranch(
+        txns,
+      );
+
 
     txns =
       getPeriodTransactions(
         txns,
       );
 
+
     const map = {};
 
-    txns.forEach((t) => {
-      const name =
-        t.serviceName ||
-        "Unknown Service";
 
-      if (!map[name]) {
-        map[name] = 0;
-      }
+    txns.forEach(
+      (t) => {
 
-      map[name] +=
-        currentMetric ===
-          "revenue"
-          ? Number(
-            t.price || 0,
-          )
-          : 1;
-    });
+        const name =
+          t.serviceName ||
+          "Unknown Service";
+
+
+        if (!map[name]) {
+          map[name] = 0;
+        }
+
+
+        map[name] +=
+          currentMetric ===
+            "revenue"
+            ? Number(
+              t.price ||
+              0,
+            )
+            : 1;
+      },
+    );
+
 
     const entries =
       Object.entries(
         map,
       ).sort(
         (a, b) =>
-          b[1] - a[1],
+          b[1] -
+          a[1],
       );
+
 
     const labels =
       entries.map(
-        (x) => x[0],
+        (x) =>
+          x[0],
       );
+
 
     const data =
       entries.map(
-        (x) => x[1],
+        (x) =>
+          x[1],
       );
+
 
     const palette =
       _chartColors();
+
 
     const colors =
       labels.map(
@@ -1605,9 +1997,13 @@ const Dashboard = (() => {
           ],
       );
 
+
     return {
+
       labels,
+
       data,
+
       colors,
     };
   }
@@ -1617,21 +2013,28 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderPromoPerformance() {
+
     let txns =
       await Store.getTransactions();
 
+
     txns =
-      filterBranch(txns);
+      filterBranch(
+        txns,
+      );
+
 
     txns =
       getPeriodTransactions(
         txns,
       );
 
+
     const promoTxns =
       txns.filter(
         isPromoTransaction,
       );
+
 
     const normalTxns =
       txns.filter(
@@ -1641,15 +2044,18 @@ const Dashboard = (() => {
           ),
       );
 
+
     const promoRevenue =
       sumRevenue(
         promoTxns,
       );
 
+
     const normalRevenue =
       sumRevenue(
         normalTxns,
       );
+
 
     const promoDiscount =
       promoTxns.reduce(
@@ -1662,17 +2068,20 @@ const Dashboard = (() => {
         0,
       );
 
+
     const normalAverage =
       normalTxns.length
         ? normalRevenue /
         normalTxns.length
         : 0;
 
+
     const promoAverage =
       promoTxns.length
         ? promoRevenue /
         promoTxns.length
         : 0;
+
 
     _setText(
       "promoRevenue",
@@ -1681,6 +2090,7 @@ const Dashboard = (() => {
       ),
     );
 
+
     _setText(
       "nonPromoRevenue",
       Store.formatCurrency(
@@ -1688,15 +2098,18 @@ const Dashboard = (() => {
       ),
     );
 
+
     _setText(
       "promoTransactionCount",
       promoTxns.length,
     );
 
+
     _setText(
       "nonPromoTransactionCount",
       normalTxns.length,
     );
+
 
     _setText(
       "promoAverageTicket",
@@ -1705,12 +2118,14 @@ const Dashboard = (() => {
       ),
     );
 
+
     _setText(
       "nonPromoAverageTicket",
       Store.formatCurrency(
         normalAverage,
       ),
     );
+
 
     _setText(
       "promoDiscountTotal",
@@ -1719,59 +2134,92 @@ const Dashboard = (() => {
       ),
     );
 
+
     const container =
       document.getElementById(
         "promoPerformance",
       );
 
+
     if (!container) {
       return;
     }
 
+
     let promos = [];
 
+
     try {
+
       promos =
         await Store.getPromos();
+
     } catch (error) {
+
       console.error(
         "Promo fetch error:",
         error,
       );
     }
 
+
     const promoMap = {};
 
-    promoTxns.forEach((t) => {
-      const promoId =
-        t.promoId;
 
-      if (!promoId) {
-        return;
-      }
+    promoTxns.forEach(
+      (t) => {
 
-      if (!promoMap[promoId]) {
-        promoMap[promoId] = {
-          transactions: 0,
-          revenue: 0,
-          discount: 0,
-        };
-      }
+        const promoId =
+          t.promoId;
 
-      promoMap[promoId]
-        .transactions++;
 
-      promoMap[promoId].revenue +=
-        Number(
-          t.price || 0,
-        );
+        if (!promoId) {
+          return;
+        }
 
-      promoMap[promoId].discount +=
-        Number(
-          t.discountAmount ||
-          0,
-        );
-    });
+
+        if (
+          !promoMap[promoId]
+        ) {
+
+          promoMap[promoId] = {
+
+            transactions:
+              0,
+
+            revenue:
+              0,
+
+            discount:
+              0,
+          };
+        }
+
+
+        promoMap[
+          promoId
+        ].transactions++;
+
+
+        promoMap[
+          promoId
+        ].revenue +=
+          Number(
+            t.price ||
+            0,
+          );
+
+
+        promoMap[
+          promoId
+        ].discount +=
+          Number(
+            t.discountAmount ||
+            0,
+          );
+      },
+    );
+
 
     const rows =
       promos
@@ -1779,48 +2227,69 @@ const Dashboard = (() => {
           (p) =>
             promoMap[p.id],
         )
-        .map((p) => {
-          const item =
-            promoMap[p.id];
+        .map(
+          (p) => {
 
-          return `
-            <tr>
-              <td data-label="Promotion">
-                <span class="discount-tag">
-                  🎉 ${escapeHtml(
-            p.name,
-          )}
-                </span>
-              </td>
+            const item =
+              promoMap[p.id];
 
-              <td data-label="Transactions">
-                ${item.transactions}
-              </td>
 
-              <td data-label="Revenue">
-                ${Store.formatCurrency(
-            item.revenue,
-          )}
-              </td>
+            return `
+              <tr>
 
-              <td data-label="Discount">
-                ${Store.formatCurrency(
-            item.discount,
-          )}
-              </td>
+                <td data-label="Promotion">
 
-              <td data-label="Avg Ticket">
-                ${Store.formatCurrency(
-            item.revenue /
-            item.transactions,
-          )}
-              </td>
-            </tr>
-          `;
-        })
+                  <span class="discount-tag">
+
+                    🎉
+                    ${escapeHtml(
+              p.name,
+            )}
+
+                  </span>
+
+                </td>
+
+                <td data-label="Transactions">
+
+                  ${item.transactions}
+
+                </td>
+
+                <td data-label="Revenue">
+
+                  ${Store.formatCurrency(
+              item.revenue,
+            )}
+
+                </td>
+
+                <td data-label="Discount">
+
+                  ${Store.formatCurrency(
+              item.discount,
+            )}
+
+                </td>
+
+                <td data-label="Avg Ticket">
+
+                  ${Store.formatCurrency(
+              item.revenue /
+              item.transactions,
+            )}
+
+                </td>
+
+              </tr>
+            `;
+          },
+        )
         .join("");
 
+
     if (!rows) {
+
       container.innerHTML = `
         <div class="empty-state">
           No promotion transactions
@@ -1831,38 +2300,67 @@ const Dashboard = (() => {
       return;
     }
 
+
     container.innerHTML = `
       <div class="table-responsive">
+
         <table class="data-table">
+
           <thead>
+
             <tr>
-              <th>Promotion</th>
-              <th>Transactions</th>
-              <th>Revenue</th>
-              <th>Discount</th>
-              <th>Avg Ticket</th>
+
+              <th>
+                Promotion
+              </th>
+
+              <th>
+                Transactions
+              </th>
+
+              <th>
+                Revenue
+              </th>
+
+              <th>
+                Discount
+              </th>
+
+              <th>
+                Avg Ticket
+              </th>
+
             </tr>
+
           </thead>
 
           <tbody>
+
             ${rows}
+
           </tbody>
+
         </table>
+
       </div>
     `;
   }
 
   /* ============================================================
-     FILTER BRANCH
+     FILTER HELPERS
      ============================================================ */
 
-  function filterBranch(data) {
+  function filterBranch(
+    data,
+  ) {
+
     if (
       currentBranch ===
       "all"
     ) {
       return data;
     }
+
 
     return data.filter(
       (t) =>
@@ -1882,8 +2380,10 @@ const Dashboard = (() => {
   function getPeriodTransactions(
     data,
   ) {
+
     const today =
       Store.getTodayStr();
+
 
     /* ----------------------------------------------------------
        DAILY
@@ -1893,11 +2393,14 @@ const Dashboard = (() => {
       currentFilter ===
       "daily"
     ) {
+
       return data.filter(
         (t) =>
-          t.date === today,
+          t.date ===
+          today,
       );
     }
+
 
     /* ----------------------------------------------------------
        WEEKLY
@@ -1906,41 +2409,67 @@ const Dashboard = (() => {
        8-14
        15-21
        22-28
-       29-END
-
-       KPI mengambil bucket
-       minggu yang sedang berjalan.
+       29-end
        ---------------------------------------------------------- */
 
     if (
       currentFilter ===
       "weekly"
     ) {
+
       const now =
         new Date();
+
 
       const year =
         now.getFullYear();
 
+
       const month =
         now.getMonth();
+
 
       const day =
         now.getDate();
 
+
       let startDay;
 
-      if (day <= 7) {
-        startDay = 1;
-      } else if (day <= 14) {
-        startDay = 8;
-      } else if (day <= 21) {
-        startDay = 15;
-      } else if (day <= 28) {
-        startDay = 22;
+
+      if (
+        day <= 7
+      ) {
+
+        startDay =
+          1;
+
+      } else if (
+        day <= 14
+      ) {
+
+        startDay =
+          8;
+
+      } else if (
+        day <= 21
+      ) {
+
+        startDay =
+          15;
+
+      } else if (
+        day <= 28
+      ) {
+
+        startDay =
+          22;
+
       } else {
-        startDay = 29;
+
+        startDay =
+          29;
       }
+
 
       const start =
         new Date(
@@ -1949,6 +2478,7 @@ const Dashboard = (() => {
           startDay,
         );
 
+
       start.setHours(
         0,
         0,
@@ -1956,19 +2486,14 @@ const Dashboard = (() => {
         0,
       );
 
+
       const end =
         new Date(
           year,
-          month,
-          Math.min(
-            startDay + 6,
-            new Date(
-              year,
-              month + 1,
-              0,
-            ).getDate(),
-          ),
+          month + 1,
+          0,
         );
+
 
       end.setHours(
         23,
@@ -1977,30 +2502,15 @@ const Dashboard = (() => {
         999,
       );
 
+
       return data.filter(
         (t) => {
-          if (!t.date) {
-            return false;
-          }
-
-          const parts =
-            String(
-              t.date,
-            ).split("-");
-
-          if (
-            parts.length !== 3
-          ) {
-            return false;
-          }
 
           const d =
             new Date(
-              Number(parts[0]),
-              Number(parts[1]) -
-              1,
-              Number(parts[2]),
+              `${t.date}T00:00:00`,
             );
+
 
           return (
             d >= start &&
@@ -2010,6 +2520,7 @@ const Dashboard = (() => {
       );
     }
 
+
     /* ----------------------------------------------------------
        MONTHLY
        ---------------------------------------------------------- */
@@ -2018,18 +2529,23 @@ const Dashboard = (() => {
       currentFilter ===
       "monthly"
     ) {
+
       const start =
         today.substring(
           0,
           7,
         ) + "-01";
 
+
       return data.filter(
         (t) =>
-          t.date >= start &&
-          t.date <= today,
+          t.date >=
+          start &&
+          t.date <=
+          today,
       );
     }
+
 
     /* ----------------------------------------------------------
        YEARLY
@@ -2039,18 +2555,23 @@ const Dashboard = (() => {
       currentFilter ===
       "yearly"
     ) {
+
       const start =
         today.substring(
           0,
           4,
         ) + "-01-01";
 
+
       return data.filter(
         (t) =>
-          t.date >= start &&
-          t.date <= today,
+          t.date >=
+          start &&
+          t.date <=
+          today,
       );
     }
+
 
     return data;
   }
@@ -2062,14 +2583,21 @@ const Dashboard = (() => {
   function isPromoTransaction(
     t,
   ) {
+
     return Boolean(
+
       t.promoId ||
+
       Number(
-        t.promoDiscount || 0,
+        t.promoDiscount ||
+        0,
       ) > 0 ||
+
       Number(
-        t.discountAmount || 0,
-      ) > 0,
+        t.discountAmount ||
+        0,
+      ) > 0
+
     );
   }
 
@@ -2080,11 +2608,13 @@ const Dashboard = (() => {
   function sumRevenue(
     transactions,
   ) {
+
     return transactions.reduce(
       (total, t) =>
         total +
         Number(
-          t.price || 0,
+          t.price ||
+          0,
         ),
       0,
     );
@@ -2095,33 +2625,42 @@ const Dashboard = (() => {
      ============================================================ */
 
   function getPeriodLabel() {
+
     if (
       currentFilter ===
       "daily"
     ) {
+
       return "Today";
     }
+
 
     if (
       currentFilter ===
       "weekly"
     ) {
+
       return "This Week";
     }
+
 
     if (
       currentFilter ===
       "monthly"
     ) {
+
       return "This Month";
     }
+
 
     if (
       currentFilter ===
       "yearly"
     ) {
+
       return "This Year";
     }
+
 
     return "Selected Period";
   }
@@ -2131,19 +2670,33 @@ const Dashboard = (() => {
      ============================================================ */
 
   function _chartColors() {
+
     return [
+
       "#e30022",
+
       "#ff1a3d",
+
       "#990017",
+
       "#b0b0b0",
+
       "#ffffff",
+
       "#808080",
+
       "#4d4d4d",
+
       "#ff4d66",
+
       "#cc001f",
+
       "#e60000",
+
       "#cccccc",
+
       "#333333",
+
     ];
   }
 
@@ -2155,28 +2708,34 @@ const Dashboard = (() => {
     canvas,
     color,
   ) {
+
     const ctx =
       canvas.getContext(
         "2d",
       );
+
 
     const gradient =
       ctx.createLinearGradient(
         0,
         0,
         0,
-        canvas.height || 300,
+        canvas.height ||
+        300,
       );
+
 
     gradient.addColorStop(
       0,
       color + "66",
     );
 
+
     gradient.addColorStop(
       1,
       color + "00",
     );
+
 
     return gradient;
   }
@@ -2188,18 +2747,23 @@ const Dashboard = (() => {
   function _shortCurrency(
     value,
   ) {
+
     const n =
       Number(
         value || 0,
       );
 
+
     if (
-      n >= 1000000000
+      n >=
+      1000000000
     ) {
+
       return (
         "Rp " +
         (
-          n / 1000000000
+          n /
+          1000000000
         )
           .toFixed(1)
           .replace(
@@ -2210,13 +2774,17 @@ const Dashboard = (() => {
       );
     }
 
+
     if (
-      n >= 1000000
+      n >=
+      1000000
     ) {
+
       return (
         "Rp " +
         (
-          n / 1000000
+          n /
+          1000000
         )
           .toFixed(1)
           .replace(
@@ -2227,18 +2795,23 @@ const Dashboard = (() => {
       );
     }
 
+
     if (
-      n >= 1000
+      n >=
+      1000
     ) {
+
       return (
         "Rp " +
         (
-          n / 1000
+          n /
+          1000
         )
           .toFixed(0) +
         "K"
       );
     }
+
 
     return (
       "Rp " +
@@ -2252,17 +2825,32 @@ const Dashboard = (() => {
      DATE STRING
      ============================================================ */
 
-  function _dateStr(d) {
+  function _dateStr(
+    d,
+  ) {
+
     return (
+
       d.getFullYear() +
+
       "-" +
+
       String(
         d.getMonth() + 1,
-      ).padStart(2, "0") +
+      ).padStart(
+        2,
+        "0",
+      ) +
+
       "-" +
+
       String(
         d.getDate(),
-      ).padStart(2, "0")
+      ).padStart(
+        2,
+        "0",
+      )
+
     );
   }
 
@@ -2274,12 +2862,15 @@ const Dashboard = (() => {
     id,
     value,
   ) {
+
     const el =
       document.getElementById(
         id,
       );
 
+
     if (el) {
+
       el.textContent =
         value;
     }
@@ -2290,9 +2881,12 @@ const Dashboard = (() => {
      ============================================================ */
 
   return {
+
     render,
 
     refresh:
       refreshDashboard,
+
   };
+
 })();
