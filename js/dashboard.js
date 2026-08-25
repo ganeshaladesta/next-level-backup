@@ -4,9 +4,17 @@
    ============================================================ */
 
 const Dashboard = (() => {
+  /* ============================================================
+     CHART INSTANCES
+     ============================================================ */
+
   let revenueChart = null;
   let serviceChart = null;
   let barChart = null;
+
+  /* ============================================================
+     DASHBOARD STATE
+     ============================================================ */
 
   let currentFilter = "monthly";
   let currentBranch = "all";
@@ -41,9 +49,9 @@ const Dashboard = (() => {
     "#ffffff",
   ];
 
-  /* ==========================================================
+  /* ============================================================
      PUBLIC
-     ========================================================== */
+     ============================================================ */
 
   async function render() {
     try {
@@ -68,9 +76,9 @@ const Dashboard = (() => {
     await renderDashboard();
   }
 
-  /* ==========================================================
+  /* ============================================================
      SETUP
-     ========================================================== */
+     ============================================================ */
 
   function setup() {
     setupQuickFilters();
@@ -81,9 +89,9 @@ const Dashboard = (() => {
     setupDatePicker();
   }
 
-  /* ==========================================================
+  /* ============================================================
      QUICK FILTER
-     ========================================================== */
+     ============================================================ */
 
   function setupQuickFilters() {
     document
@@ -117,9 +125,9 @@ const Dashboard = (() => {
       });
   }
 
-  /* ==========================================================
+  /* ============================================================
      CHART TYPE
-     ========================================================== */
+     ============================================================ */
 
   function setupChartType() {
     document
@@ -151,9 +159,9 @@ const Dashboard = (() => {
       });
   }
 
-  /* ==========================================================
+  /* ============================================================
      METRIC
-     ========================================================== */
+     ============================================================ */
 
   function setupMetric() {
     const el =
@@ -174,9 +182,9 @@ const Dashboard = (() => {
     );
   }
 
-  /* ==========================================================
+  /* ============================================================
      BRANCH
-     ========================================================== */
+     ============================================================ */
 
   function setupBranch() {
     const el =
@@ -218,9 +226,9 @@ const Dashboard = (() => {
     );
   }
 
-  /* ==========================================================
+  /* ============================================================
      COMPARE
-     ========================================================== */
+     ============================================================ */
 
   function setupCompare() {
     const el =
@@ -241,9 +249,9 @@ const Dashboard = (() => {
     );
   }
 
-  /* ==========================================================
+  /* ============================================================
      DATE PICKER
-     ========================================================== */
+     ============================================================ */
 
   function setupDatePicker() {
     const start =
@@ -334,6 +342,8 @@ const Dashboard = (() => {
             null,
           );
 
+          clearDateError();
+
           await renderDashboard();
         },
       );
@@ -345,20 +355,9 @@ const Dashboard = (() => {
         async () => {
           clearCustomDateRange();
 
-          const activeButton =
-            document.querySelector(
-              `.filter-btn[data-filter="${currentFilter}"]`,
-            );
-
-          if (activeButton) {
-            setQuickFilterActive(
-              currentFilter,
-            );
-          } else {
-            setQuickFilterActive(
-              "monthly",
-            );
-          }
+          setQuickFilterActive(
+            currentFilter,
+          );
 
           await renderDashboard();
         },
@@ -366,14 +365,11 @@ const Dashboard = (() => {
     }
   }
 
-  /* ==========================================================
+  /* ============================================================
      INITIAL DATE
-     ========================================================== */
+     ============================================================ */
 
   function normalizeInitialDates() {
-    const today =
-      Store.getTodayStr();
-
     const start =
       document.getElementById(
         "dashDateStart",
@@ -388,20 +384,16 @@ const Dashboard = (() => {
       return;
     }
 
-    if (
-      !start.value &&
-      !end.value
-    ) {
-      start.value = "";
-      end.value = "";
+    if (start.value) {
+      end.min = start.value;
     }
 
     updateFilterStatus();
   }
 
-  /* ==========================================================
-     DATE RANGE STATE
-     ========================================================== */
+  /* ============================================================
+     CUSTOM DATE STATE
+     ============================================================ */
 
   function hasCustomDateRange() {
     return Boolean(
@@ -446,8 +438,7 @@ const Dashboard = (() => {
       .forEach((btn) => {
         btn.classList.toggle(
           "active",
-          btn.dataset.filter ===
-          filter,
+          btn.dataset.filter === filter,
         );
       });
   }
@@ -476,9 +467,9 @@ const Dashboard = (() => {
     }
   }
 
-  /* ==========================================================
-     DASHBOARD RENDER
-     ========================================================== */
+  /* ============================================================
+     DASHBOARD
+     ============================================================ */
 
   async function renderDashboard() {
     updateFilterStatus();
@@ -489,59 +480,33 @@ const Dashboard = (() => {
     await renderManagerInsights();
   }
 
-  /* ==========================================================
+  /* ============================================================
      FILTER STATUS
-     ========================================================== */
+     ============================================================ */
 
   function updateFilterStatus() {
-    const status =
-      document.getElementById(
-        "dashboardFilterStatus",
-      );
-
     const label =
-      document.getElementById(
-        "dashPeriodLabel",
-      );
-
-    if (hasCustomDateRange()) {
-      const text =
-        `${formatDateLabel(
-          selectedStartDate,
-        )} → ${formatDateLabel(
-          selectedEndDate,
-        )}`;
-
-      setText(
-        "dashboardFilterStatus",
-        text,
-      );
-
-      setText(
-        "dashPeriodLabel",
-        text,
-      );
-
-      return;
-    }
-
-    const labelText =
       getPeriodLabel();
 
     setText(
       "dashboardFilterStatus",
-      labelText,
+      label,
     );
 
     setText(
       "dashPeriodLabel",
-      labelText,
+      label,
+    );
+
+    setText(
+      "dashCompareLabel",
+      getComparisonLabel(),
     );
   }
 
-  /* ==========================================================
+  /* ============================================================
      PROMO BANNER
-     ========================================================== */
+     ============================================================ */
 
   async function renderPromoBanner() {
     const banner =
@@ -606,26 +571,51 @@ const Dashboard = (() => {
     }
   }
 
-  /* ==========================================================
-     KPI
-     ========================================================== */
+  /* ============================================================
+     SUMMARY CARDS
+     ============================================================ */
 
   async function renderSummaryCards() {
-    let all =
+    const all =
       await getTransactions();
 
     const today =
       Store.getTodayStr();
 
-    const todayData =
-      all.filter(
-        (t) =>
-          t.date === today,
-      );
+    const todayRange = {
+      start: today,
+      end: today,
+    };
 
     const weekRange =
       getCurrentBucketRange(
         today,
+      );
+
+    const monthRange = {
+      start:
+        `${today.substring(
+          0,
+          7,
+        )}-01`,
+      end:
+        today,
+    };
+
+    const yearRange = {
+      start:
+        `${today.substring(
+          0,
+          4,
+        )}-01-01`,
+      end:
+        today,
+    };
+
+    const todayData =
+      filterByRange(
+        all,
+        todayRange,
       );
 
     const weekData =
@@ -634,81 +624,79 @@ const Dashboard = (() => {
         weekRange,
       );
 
-    const monthStart =
-      `${today.substring(
-        0,
-        7,
-      )}-01`;
-
     const monthData =
-      all.filter(
-        (t) =>
-          t.date >=
-          monthStart &&
-          t.date <= today,
+      filterByRange(
+        all,
+        monthRange,
       );
-
-    const yearStart =
-      `${today.substring(
-        0,
-        4,
-      )}-01-01`;
 
     const yearData =
-      all.filter(
-        (t) =>
-          t.date >=
-          yearStart &&
-          t.date <= today,
+      filterByRange(
+        all,
+        yearRange,
       );
 
-    renderPeriodKPI(
+    await renderPeriodKPI(
       "today",
       todayData,
+      todayRange,
     );
 
-    renderPeriodKPI(
+    await renderPeriodKPI(
       "week",
       weekData,
+      weekRange,
     );
 
-    renderPeriodKPI(
+    await renderPeriodKPI(
       "month",
       monthData,
+      monthRange,
     );
 
-    renderPeriodKPI(
+    await renderPeriodKPI(
       "year",
       yearData,
+      yearRange,
     );
 
     const selected =
-      getSelectedPeriodTransactions(
+      filterByRange(
         all,
+        getSelectedRange(),
       );
 
     const compare =
-      getComparisonTransactions(
-        all,
-      );
+      getComparisonRange()
+        ? filterByRange(
+          all,
+          getComparisonRange(),
+        )
+        : [];
 
     const selectedRevenue =
-      sumRevenue(selected);
+      sumRevenue(
+        selected,
+      );
 
     const compareRevenue =
-      sumRevenue(compare);
+      sumRevenue(
+        compare,
+      );
 
     const selectedCount =
       selected.length;
 
-    const avgTicket =
+    const averageTicket =
       selectedCount > 0
         ? selectedRevenue /
         selectedCount
         : 0;
 
     const discount =
-      sumDiscount(selected);
+      sumDiscount(
+        selected,
+      );
 
     const growth =
       calculateGrowth(
@@ -718,7 +706,7 @@ const Dashboard = (() => {
 
     setText(
       "dashTotalRevenue",
-      formatMetricValue(
+      Store.formatCurrency(
         selectedRevenue,
       ),
     );
@@ -733,7 +721,7 @@ const Dashboard = (() => {
     setText(
       "dashAverageTicket",
       Store.formatCurrency(
-        avgTicket,
+        averageTicket,
       ),
     );
 
@@ -748,20 +736,16 @@ const Dashboard = (() => {
       "dashGrowth",
       growth,
     );
-
-    setText(
-      "dashCompareLabel",
-      getComparisonLabel(),
-    );
   }
 
-  /* ==========================================================
-     KPI CARD
-     ========================================================== */
+  /* ============================================================
+     PERIOD KPI
+     ============================================================ */
 
-  function renderPeriodKPI(
+  async function renderPeriodKPI(
     prefix,
     transactions,
+    range,
   ) {
     const revenue =
       sumRevenue(
@@ -770,20 +754,6 @@ const Dashboard = (() => {
 
     const count =
       transactions.length;
-
-    const compare =
-      getKpiComparisonData(
-        prefix,
-      );
-
-    const compareRevenue =
-      sumRevenue(compare);
-
-    const growth =
-      calculateGrowth(
-        revenue,
-        compareRevenue,
-      );
 
     if (
       currentMetric ===
@@ -814,116 +784,87 @@ const Dashboard = (() => {
       );
     }
 
-    setGrowthElement(
-      `${prefix}Change`,
-      growth,
-    );
-  }
+    if (!range) {
+      setGrowthElement(
+        `${prefix}Change`,
+        0,
+      );
 
-  /* ==========================================================
-     KPI COMPARISON
-     ========================================================== */
-
-  function getKpiComparisonData(
-    prefix,
-  ) {
-    const today =
-      Store.getTodayStr();
-
-    let start = "";
-    let end = "";
-
-    if (prefix === "today") {
-      start = today;
-      end = today;
-    } else if (
-      prefix === "week"
-    ) {
-      const range =
-        getCurrentBucketRange(
-          today,
-        );
-
-      start =
-        range.start;
-
-      end =
-        range.end;
-    } else if (
-      prefix === "month"
-    ) {
-      start =
-        `${today.substring(
-          0,
-          7,
-        )}-01`;
-
-      end = today;
-    } else {
-      start =
-        `${today.substring(
-          0,
-          4,
-        )}-01-01`;
-
-      end = today;
+      return;
     }
 
-    const transactions =
-      getAllTransactionsSync();
+    const all =
+      await getTransactions();
 
     const current =
       filterByRange(
-        transactions,
-        {
-          start,
-          end,
-        },
+        all,
+        range,
       );
-
-    const currentPeriodStart =
-      parseDate(start);
-
-    const currentPeriodEnd =
-      parseDate(end);
 
     let compareRange;
 
     if (
-      prefix === "today"
+      prefix ===
+      "today"
     ) {
-      const d =
-        new Date(
-          currentPeriodStart,
+      const currentDate =
+        parseDate(
+          range.start,
         );
 
-      d.setDate(
-        d.getDate() - 1,
-      );
+      const previousDate =
+        addDays(
+          currentDate,
+          -1,
+        );
 
       compareRange = {
         start:
-          dateString(d),
+          dateString(
+            previousDate,
+          ),
         end:
-          dateString(d),
+          dateString(
+            previousDate,
+          ),
       };
     } else {
       compareRange =
         getPreviousPeriodRange(
-          start,
-          end,
+          range.start,
+          range.end,
         );
     }
 
-    return filterByRange(
-      transactions,
-      compareRange,
+    const previous =
+      filterByRange(
+        all,
+        compareRange,
+      );
+
+    const currentRevenue =
+      sumRevenue(
+        current,
+      );
+
+    const previousRevenue =
+      sumRevenue(
+        previous,
+      );
+
+    setGrowthElement(
+      `${prefix}Change`,
+      calculateGrowth(
+        currentRevenue,
+        previousRevenue,
+      ),
     );
   }
 
-  /* ==========================================================
+  /* ============================================================
      CHARTS
-     ========================================================== */
+     ============================================================ */
 
   async function renderCharts() {
     updateChartTitles();
@@ -933,9 +874,9 @@ const Dashboard = (() => {
     await renderServiceComparison();
   }
 
-  /* ==========================================================
+  /* ============================================================
      TREND CHART
-     ========================================================== */
+     ============================================================ */
 
   async function renderTrendChart() {
     const canvas =
@@ -948,13 +889,13 @@ const Dashboard = (() => {
     const selected =
       await getSelectedPeriodTransactionsAsync();
 
-    const compare =
+    const comparison =
       await getComparisonTransactionsAsync();
 
     const selectedRange =
       getSelectedRange();
 
-    const compareRange =
+    const comparisonRange =
       getComparisonRange();
 
     const selectedBuckets =
@@ -964,18 +905,18 @@ const Dashboard = (() => {
         selected,
       );
 
-    let compareBuckets = [];
+    let comparisonBuckets = [];
 
     if (
+      comparisonRange &&
       currentCompare !==
-      "none" &&
-      compareRange
+      "none"
     ) {
-      compareBuckets =
+      comparisonBuckets =
         buildBuckets(
-          compareRange.start,
-          compareRange.end,
-          compare,
+          comparisonRange.start,
+          comparisonRange.end,
+          comparison,
         );
     }
 
@@ -993,85 +934,105 @@ const Dashboard = (() => {
 
     const datasets = [];
 
-    const selectedColor =
-      "#e30022";
-
     datasets.push({
       label:
         getPeriodLabel(),
+
       data:
         selectedData,
+
       borderColor:
-        selectedColor,
+        "#e30022",
+
       backgroundColor:
         makeGradient(
           canvas,
-          selectedColor,
+          "#e30022",
         ),
+
       borderWidth:
         2.5,
+
       tension:
         0.35,
+
       fill:
         true,
+
       spanGaps:
         false,
+
       pointRadius:
         getPointRadius(
           selectedData,
           3,
         ),
+
       pointHoverRadius:
         6,
+
       pointBackgroundColor:
-        selectedColor,
+        "#e30022",
+
       pointBorderColor:
         "#ffffff",
+
       pointBorderWidth:
         2,
     });
 
     if (
-      currentCompare !==
-      "none" &&
-      compareBuckets.length
+      comparisonBuckets.length > 0
     ) {
-      const compareData =
+      const comparisonData =
         alignComparisonData(
           selectedBuckets,
-          compareBuckets,
+          comparisonBuckets,
         );
 
       datasets.push({
         label:
           getComparisonLabel(),
+
         data:
-          compareData,
+          comparisonData,
+
         borderColor:
           "#60a5fa",
+
         backgroundColor:
           "rgba(96,165,250,0.05)",
+
         borderWidth:
           2,
+
         tension:
           0.35,
+
         fill:
           false,
+
         spanGaps:
           false,
+
         pointRadius:
           getPointRadius(
-            compareData,
+            comparisonData,
             2,
           ),
+
         pointHoverRadius:
           5,
+
         pointBackgroundColor:
           "#60a5fa",
+
         pointBorderColor:
           "#ffffff",
+
         pointBorderWidth:
           1.5,
+
         borderDash:
           [6, 5],
       });
@@ -1090,6 +1051,7 @@ const Dashboard = (() => {
 
           data: {
             labels,
+
             datasets:
               currentChartType ===
                 "bar"
@@ -1109,15 +1071,18 @@ const Dashboard = (() => {
     );
   }
 
-  /* ==========================================================
-     BAR DATASET CONVERSION
-     ========================================================== */
+  /* ============================================================
+     BAR DATASET
+     ============================================================ */
 
   function convertTrendToBarDatasets(
     datasets,
   ) {
     return datasets.map(
-      (dataset, index) => ({
+      (
+        dataset,
+        index,
+      ) => ({
         label:
           dataset.label,
 
@@ -1152,9 +1117,9 @@ const Dashboard = (() => {
     );
   }
 
-  /* ==========================================================
+  /* ============================================================
      SERVICE DONUT
-     ========================================================== */
+     ============================================================ */
 
   async function renderServiceChart() {
     const canvas =
@@ -1187,9 +1152,13 @@ const Dashboard = (() => {
       Object.entries(map)
         .sort(
           (a, b) =>
-            b[1] - a[1],
+            b[1] -
+            a[1],
         )
-        .slice(0, 10);
+        .slice(
+          0,
+          10,
+        );
 
     const labels =
       entries.map(
@@ -1225,13 +1194,17 @@ const Dashboard = (() => {
 
           data: {
             labels,
+
             datasets: [
               {
                 data,
+
                 backgroundColor:
                   colors,
+
                 borderColor:
                   "#121214",
+
                 borderWidth:
                   3,
               },
@@ -1302,12 +1275,16 @@ const Dashboard = (() => {
                           )
                           : "0.0";
 
-                      return currentMetric ===
+                      if (
+                        currentMetric ===
                         "revenue"
-                        ? `${context.label}: ${Store.formatCurrency(
+                      ) {
+                        return `${context.label}: ${Store.formatCurrency(
                           value,
-                        )} (${percentage}%)`
-                        : `${context.label}: ${value} transactions (${percentage}%)`;
+                        )} (${percentage}%)`;
+                      }
+
+                      return `${context.label}: ${value} transactions (${percentage}%)`;
                     },
                 },
               },
@@ -1317,9 +1294,9 @@ const Dashboard = (() => {
       );
   }
 
-  /* ==========================================================
+  /* ============================================================
      SERVICE COMPARISON
-     ========================================================== */
+     ============================================================ */
 
   async function renderServiceComparison() {
     const canvas =
@@ -1332,7 +1309,7 @@ const Dashboard = (() => {
     const selected =
       await getSelectedPeriodTransactionsAsync();
 
-    const compare =
+    const comparison =
       await getComparisonTransactionsAsync();
 
     const selectedMap =
@@ -1340,9 +1317,9 @@ const Dashboard = (() => {
         selected,
       );
 
-    const compareMap =
+    const comparisonMap =
       groupByService(
-        compare,
+        comparison,
       );
 
     const allServices =
@@ -1352,7 +1329,7 @@ const Dashboard = (() => {
             selectedMap,
           ),
           ...Object.keys(
-            compareMap,
+            comparisonMap,
           ),
         ]),
       )
@@ -1367,7 +1344,10 @@ const Dashboard = (() => {
               0
             ),
         )
-        .slice(0, 10);
+        .slice(
+          0,
+          10,
+        );
 
     const selectedData =
       allServices.map(
@@ -1377,10 +1357,10 @@ const Dashboard = (() => {
           ] || 0,
       );
 
-    const compareData =
+    const comparisonData =
       allServices.map(
         (service) =>
-          compareMap[
+          comparisonMap[
           service
           ] || 0,
       );
@@ -1422,7 +1402,7 @@ const Dashboard = (() => {
           getComparisonLabel(),
 
         data:
-          compareData,
+          comparisonData,
 
         backgroundColor:
           "rgba(96,165,250,0.68)",
@@ -1468,9 +1448,9 @@ const Dashboard = (() => {
       );
   }
 
-  /* ==========================================================
+  /* ============================================================
      CHART OPTIONS
-     ========================================================== */
+     ============================================================ */
 
   function getTrendChartOptions() {
     const isRevenue =
@@ -1532,11 +1512,15 @@ const Dashboard = (() => {
                   return "";
                 }
 
-                return isRevenue
-                  ? `${context.dataset.label}: ${Store.formatCurrency(
+                if (
+                  isRevenue
+                ) {
+                  return `${context.dataset.label}: ${Store.formatCurrency(
                     value,
-                  )}`
-                  : `${context.dataset.label}: ${value} transactions`;
+                  )}`;
+                }
+
+                return `${context.dataset.label}: ${value} transactions`;
               },
           },
         },
@@ -1722,24 +1706,30 @@ const Dashboard = (() => {
         range.end,
       );
 
-    if (days <= 14) {
-      return days;
+    if (
+      days <= 14
+    ) {
+      return days + 1;
     }
 
-    if (days <= 31) {
+    if (
+      days <= 31
+    ) {
       return 10;
     }
 
-    if (days <= 100) {
+    if (
+      days <= 100
+    ) {
       return 12;
     }
 
     return 14;
   }
 
-  /* ==========================================================
-     TREND DATA
-     ========================================================== */
+  /* ============================================================
+     BUCKET ENGINE
+     ============================================================ */
 
   function buildBuckets(
     start,
@@ -1752,18 +1742,9 @@ const Dashboard = (() => {
         end,
       );
 
-    let mode =
-      "daily";
-
-    if (days > 31 && days <= 180) {
-      mode =
-        "weekly";
-    } else if (days > 180) {
-      mode =
-        "monthly";
-    }
-
-    if (days <= 31) {
+    if (
+      days <= 31
+    ) {
       return buildDailyBuckets(
         start,
         end,
@@ -1771,7 +1752,9 @@ const Dashboard = (() => {
       );
     }
 
-    if (mode === "weekly") {
+    if (
+      days <= 180
+    ) {
       return buildWeeklyBuckets(
         start,
         end,
@@ -1786,9 +1769,9 @@ const Dashboard = (() => {
     );
   }
 
-  /* ==========================================================
+  /* ============================================================
      DAILY BUCKETS
-     ========================================================== */
+     ============================================================ */
 
   function buildDailyBuckets(
     start,
@@ -1799,55 +1782,58 @@ const Dashboard = (() => {
 
     const map = {};
 
-    let current =
+    let cursor =
       parseDate(start);
 
     const finish =
       parseDate(end);
 
     while (
-      current <=
-      finish
+      cursor <= finish
     ) {
       const key =
         dateString(
-          current,
+          cursor,
         );
 
       map[key] = 0;
 
       buckets.push({
         key,
+
         label:
           formatShortDate(
-            current,
+            cursor,
           ),
+
         value:
           0,
       });
 
-      current =
+      cursor =
         addDays(
-          current,
+          cursor,
           1,
         );
     }
 
     transactions.forEach(
       (transaction) => {
-        const key =
-          String(
-            transaction.date ||
-            "",
+        const normalized =
+          normalizeTransactionDate(
+            transaction.date,
           );
 
         if (
+          normalized &&
           Object.prototype.hasOwnProperty.call(
             map,
-            key,
+            normalized,
           )
         ) {
-          map[key] +=
+          map[
+            normalized
+          ] +=
             getMetricValue(
               transaction,
             );
@@ -1858,17 +1844,16 @@ const Dashboard = (() => {
     return buckets.map(
       (bucket) => ({
         ...bucket,
+
         value:
-          map[bucket.key],
+          map[bucket.key] || 0,
       }),
     );
   }
 
-  /* ==========================================================
+  /* ============================================================
      WEEKLY BUCKETS
-     
-     SAME BUCKET FOR LINE + BAR
-     ========================================================== */
+     ============================================================ */
 
   function buildWeeklyBuckets(
     start,
@@ -1884,27 +1869,26 @@ const Dashboard = (() => {
       parseDate(end);
 
     while (
-      cursor <=
-      finish
+      cursor <= finish
     ) {
       const weekStart =
         new Date(
           cursor,
         );
 
-      const weekEnd =
+      let weekEnd =
         addDays(
           weekStart,
           6,
         );
 
       if (
-        weekEnd >
-        finish
+        weekEnd > finish
       ) {
-        weekEnd.setTime(
-          finish.getTime(),
-        );
+        weekEnd =
+          new Date(
+            finish,
+          );
       }
 
       buckets.push({
@@ -1924,9 +1908,9 @@ const Dashboard = (() => {
           ),
 
         label:
-          `${formatShortDate(
+          formatShortDate(
             weekStart,
-          )}`,
+          ),
 
         value:
           0,
@@ -1941,19 +1925,28 @@ const Dashboard = (() => {
 
     transactions.forEach(
       (transaction) => {
-        const date =
-          parseDate(
+        const normalized =
+          normalizeTransactionDate(
             transaction.date,
+          );
+
+        if (!normalized) {
+          return;
+        }
+
+        const transactionDate =
+          parseDate(
+            normalized,
           );
 
         const bucket =
           buckets.find(
             (item) =>
-              date >=
+              transactionDate >=
               parseDate(
                 item.start,
               ) &&
-              date <=
+              transactionDate <=
               parseDate(
                 item.end,
               ),
@@ -1971,9 +1964,9 @@ const Dashboard = (() => {
     return buckets;
   }
 
-  /* ==========================================================
+  /* ============================================================
      MONTHLY BUCKETS
-     ========================================================== */
+     ============================================================ */
 
   function buildMonthlyBuckets(
     start,
@@ -1984,31 +1977,21 @@ const Dashboard = (() => {
 
     const map = {};
 
-    let cursor =
-      new Date(
-        parseDate(
-          start,
-        ).getFullYear(),
-        parseDate(
-          start,
-        ).getMonth(),
-        1,
-      );
+    const first =
+      parseDate(start);
 
     const finish =
+      parseDate(end);
+
+    let cursor =
       new Date(
-        parseDate(
-          end,
-        ).getFullYear(),
-        parseDate(
-          end,
-        ).getMonth(),
+        first.getFullYear(),
+        first.getMonth(),
         1,
       );
 
     while (
-      cursor <=
-      finish
+      cursor <= finish
     ) {
       const key =
         `${cursor.getFullYear()}-${String(
@@ -2022,16 +2005,19 @@ const Dashboard = (() => {
 
       buckets.push({
         key,
+
         label:
           cursor.toLocaleDateString(
             "en-US",
             {
               month:
                 "short",
+
               year:
                 "numeric",
             },
           ),
+
         value:
           0,
       });
@@ -2046,11 +2032,17 @@ const Dashboard = (() => {
 
     transactions.forEach(
       (transaction) => {
+        const normalized =
+          normalizeTransactionDate(
+            transaction.date,
+          );
+
+        if (!normalized) {
+          return;
+        }
+
         const key =
-          String(
-            transaction.date ||
-            "",
-          ).substring(
+          normalized.substring(
             0,
             7,
           );
@@ -2072,31 +2064,32 @@ const Dashboard = (() => {
     return buckets.map(
       (bucket) => ({
         ...bucket,
+
         value:
-          map[bucket.key],
+          map[bucket.key] || 0,
       }),
     );
   }
 
-  /* ==========================================================
+  /* ============================================================
      COMPARISON ALIGNMENT
-     ========================================================== */
+     ============================================================ */
 
   function alignComparisonData(
     selectedBuckets,
-    compareBuckets,
+    comparisonBuckets,
   ) {
     if (
       selectedBuckets.length ===
-      compareBuckets.length
+      comparisonBuckets.length
     ) {
-      return compareBuckets.map(
+      return comparisonBuckets.map(
         (bucket) =>
           bucket.value,
       );
     }
 
-    const result = [];
+    const output = [];
 
     for (
       let i = 0;
@@ -2104,44 +2097,41 @@ const Dashboard = (() => {
       selectedBuckets.length;
       i++
     ) {
-      result.push(
-        compareBuckets[
-          i
-        ]
-          ? compareBuckets[i]
+      output.push(
+        comparisonBuckets[i]
+          ? comparisonBuckets[i]
             .value
           : null,
       );
     }
 
-    return result;
+    return output;
   }
 
-  /* ==========================================================
-     FILTER TRANSACTIONS
-     ========================================================== */
+  /* ============================================================
+     TRANSACTION GETTERS
+     ============================================================ */
 
   async function getTransactions() {
-    let transactions =
+    const raw =
       await Store.getTransactions();
 
+    if (!Array.isArray(raw)) {
+      console.warn(
+        "Store.getTransactions() did not return an array:",
+        raw,
+      );
+
+      return [];
+    }
+
     return filterBranch(
-      transactions,
+      raw,
     );
   }
 
-  function getAllTransactionsSync() {
-    /*
-     * Store.getTransactions() is async.
-     * KPI comparison uses its own cached-less fallback
-     * through an empty array when unavailable.
-     *
-     * Main dashboard calculations use async versions.
-     */
-    return [];
-  }
-
-  async function getSelectedPeriodTransactionsAsync() {
+  async function
+    getSelectedPeriodTransactionsAsync() {
     const all =
       await getTransactions();
 
@@ -2151,7 +2141,8 @@ const Dashboard = (() => {
     );
   }
 
-  async function getComparisonTransactionsAsync() {
+  async function
+    getComparisonTransactionsAsync() {
     const all =
       await getTransactions();
 
@@ -2168,14 +2159,226 @@ const Dashboard = (() => {
     );
   }
 
-  function getSelectedPeriodTransactions(
-    all,
+  /* ============================================================
+     DATE NORMALIZER
+     ============================================================ */
+
+  function normalizeTransactionDate(
+    value,
   ) {
-    return filterByRange(
-      all,
-      getSelectedRange(),
+    if (!value) {
+      return "";
+    }
+
+    if (
+      value instanceof Date
+    ) {
+      if (
+        Number.isNaN(
+          value.getTime(),
+        )
+      ) {
+        return "";
+      }
+
+      return dateString(
+        value,
+      );
+    }
+
+    const raw =
+      String(
+        value,
+      ).trim();
+
+    if (!raw) {
+      return "";
+    }
+
+    /*
+     * Handles:
+     *
+     * 2026-08-25
+     * 2026-08-25T19:43:00
+     * 2026-08-25T19:43:00.000Z
+     */
+
+    const isoMatch =
+      raw.match(
+        /^(\d{4}-\d{2}-\d{2})/,
+      );
+
+    if (isoMatch) {
+      return isoMatch[1];
+    }
+
+    const parsed =
+      new Date(raw);
+
+    if (
+      !Number.isNaN(
+        parsed.getTime(),
+      )
+    ) {
+      return dateString(
+        parsed,
+      );
+    }
+
+    return "";
+  }
+
+  /* ============================================================
+     RANGE FILTER
+     ============================================================ */
+
+  function filterByRange(
+    transactions,
+    range,
+  ) {
+    if (
+      !Array.isArray(
+        transactions,
+      ) ||
+      !range ||
+      !range.start ||
+      !range.end
+    ) {
+      return [];
+    }
+
+    return transactions.filter(
+      (transaction) => {
+        const transactionDate =
+          normalizeTransactionDate(
+            transaction.date,
+          );
+
+        if (!transactionDate) {
+          return false;
+        }
+
+        return (
+          transactionDate >=
+          range.start &&
+          transactionDate <=
+          range.end
+        );
+      },
     );
   }
+
+  /* ============================================================
+     BRANCH FILTER
+     ============================================================ */
+
+  function filterBranch(
+    transactions,
+  ) {
+    if (
+      !Array.isArray(
+        transactions,
+      )
+    ) {
+      return [];
+    }
+
+    if (
+      currentBranch ===
+      "all"
+    ) {
+      return transactions;
+    }
+
+    return transactions.filter(
+      (transaction) =>
+        String(
+          transaction.branch ||
+          "",
+        )
+          .trim()
+          .toLowerCase() ===
+        String(
+          currentBranch ||
+          "",
+        )
+          .trim()
+          .toLowerCase(),
+    );
+  }
+
+  /* ============================================================
+     PRESET RANGE
+     ============================================================ */
+
+  function getPresetRange(
+    filter,
+  ) {
+    const today =
+      parseDate(
+        Store.getTodayStr(),
+      );
+
+    if (
+      filter ===
+      "daily"
+    ) {
+      return {
+        start:
+          dateString(
+            today,
+          ),
+
+        end:
+          dateString(
+            today,
+          ),
+      };
+    }
+
+    if (
+      filter ===
+      "weekly"
+    ) {
+      return getCurrentBucketRange(
+        Store.getTodayStr(),
+      );
+    }
+
+    if (
+      filter ===
+      "yearly"
+    ) {
+      return {
+        start:
+          `${today.getFullYear()}-01-01`,
+
+        end:
+          dateString(
+            today,
+          ),
+      };
+    }
+
+    return {
+      start:
+        `${today.getFullYear()}-${String(
+          today.getMonth() + 1,
+        ).padStart(
+          2,
+          "0",
+        )}-01`,
+
+      end:
+        dateString(
+          today,
+        ),
+    };
+  }
+
+  /* ============================================================
+     SELECTED RANGE
+     ============================================================ */
 
   function getSelectedRange() {
     if (
@@ -2184,6 +2387,7 @@ const Dashboard = (() => {
       return {
         start:
           selectedStartDate,
+
         end:
           selectedEndDate,
       };
@@ -2193,6 +2397,10 @@ const Dashboard = (() => {
       currentFilter,
     );
   }
+
+  /* ============================================================
+     COMPARISON RANGE
+     ============================================================ */
 
   function getComparisonRange() {
     if (
@@ -2228,145 +2436,9 @@ const Dashboard = (() => {
     return null;
   }
 
-  function getComparisonTransactions(
-    all,
-  ) {
-    const range =
-      getComparisonRange();
-
-    if (!range) {
-      return [];
-    }
-
-    return filterByRange(
-      all,
-      range,
-    );
-  }
-
-  function filterByRange(
-    transactions,
-    range,
-  ) {
-    if (
-      !range ||
-      !range.start ||
-      !range.end
-    ) {
-      return [];
-    }
-
-    return transactions.filter(
-      (transaction) => {
-        if (!transaction.date) {
-          return false;
-        }
-
-        const date =
-          String(
-            transaction.date,
-          );
-
-        return (
-          date >=
-          range.start &&
-          date <=
-          range.end
-        );
-      },
-    );
-  }
-
-  function filterBranch(
-    transactions,
-  ) {
-    if (
-      currentBranch ===
-      "all"
-    ) {
-      return transactions;
-    }
-
-    return transactions.filter(
-      (transaction) =>
-        String(
-          transaction.branch ||
-          "",
-        ).toLowerCase() ===
-        currentBranch.toLowerCase(),
-    );
-  }
-
-  /* ==========================================================
-     PRESET RANGES
-     ========================================================== */
-
-  function getPresetRange(
-    filter,
-  ) {
-    const today =
-      parseDate(
-        Store.getTodayStr(),
-      );
-
-    if (
-      filter ===
-      "daily"
-    ) {
-      return {
-        start:
-          dateString(
-            today,
-          ),
-        end:
-          dateString(
-            today,
-          ),
-      };
-    }
-
-    if (
-      filter ===
-      "weekly"
-    ) {
-      return getCurrentBucketRange(
-        Store.getTodayStr(),
-      );
-    }
-
-    if (
-      filter ===
-      "yearly"
-    ) {
-      return {
-        start:
-          `${today.getFullYear()}-01-01`,
-        end:
-          dateString(
-            today,
-          ),
-      };
-    }
-
-    return {
-      start:
-        `${today.getFullYear()}-${String(
-          today.getMonth() + 1,
-        ).padStart(
-          2,
-          "0",
-        )}-01`,
-
-      end:
-        dateString(
-          today,
-        ),
-    };
-  }
-
-  /* ==========================================================
-     WEEKLY BUCKET RANGE
-     ========================================================== */
+  /* ============================================================
+     WEEK BUCKET RANGE
+     ============================================================ */
 
   function getCurrentBucketRange(
     date,
@@ -2377,8 +2449,7 @@ const Dashboard = (() => {
     const day =
       d.getDate();
 
-    let startDay =
-      1;
+    let startDay = 1;
 
     if (day <= 7) {
       startDay = 1;
@@ -2412,37 +2483,31 @@ const Dashboard = (() => {
         0,
       ).getDate();
 
-    const endDay =
+    let endDay =
       Math.min(
         startDay + 6,
         lastDay,
       );
 
-    const end =
+    let end =
       new Date(
         d.getFullYear(),
         d.getMonth(),
         endDay,
       );
 
-    /*
-     * KPI weekly = only through today,
-     * not future dates.
-     */
+    const today =
+      parseDate(
+        Store.getTodayStr(),
+      );
 
     if (
-      dateString(end) >
-      Store.getTodayStr()
+      end > today
     ) {
-      return {
-        start:
-          dateString(
-            start,
-          ),
-
-        end:
-          Store.getTodayStr(),
-      };
+      end =
+        new Date(
+          today,
+        );
     }
 
     return {
@@ -2458,9 +2523,9 @@ const Dashboard = (() => {
     };
   }
 
-  /* ==========================================================
+  /* ============================================================
      PREVIOUS PERIOD
-     ========================================================== */
+     ============================================================ */
 
   function getPreviousPeriodRange(
     start,
@@ -2468,9 +2533,6 @@ const Dashboard = (() => {
   ) {
     const startDate =
       parseDate(start);
-
-    const endDate =
-      parseDate(end);
 
     const length =
       diffDays(
@@ -2503,9 +2565,9 @@ const Dashboard = (() => {
     };
   }
 
-  /* ==========================================================
+  /* ============================================================
      PREVIOUS YEAR
-     ========================================================== */
+     ============================================================ */
 
   function getPreviousYearRange(
     start,
@@ -2538,105 +2600,9 @@ const Dashboard = (() => {
     };
   }
 
-  /* ==========================================================
-     KPI COMPARISON
-     ========================================================== */
-
-  async function renderKpiGrowth(
-    prefix,
-    range,
-  ) {
-    const all =
-      await getTransactions();
-
-    const current =
-      filterByRange(
-        all,
-        range,
-      );
-
-    let compareRange;
-
-    if (
-      prefix ===
-      "today"
-    ) {
-      const d =
-        parseDate(
-          range.start,
-        );
-
-      const previous =
-        addDays(
-          d,
-          -1,
-        );
-
-      compareRange = {
-        start:
-          dateString(
-            previous,
-          ),
-        end:
-          dateString(
-            previous,
-          ),
-      };
-    } else {
-      compareRange =
-        getPreviousPeriodRange(
-          range.start,
-          range.end,
-        );
-    }
-
-    const compare =
-      filterByRange(
-        all,
-        compareRange,
-      );
-
-    const currentRevenue =
-      sumRevenue(current);
-
-    const compareRevenue =
-      sumRevenue(compare);
-
-    setGrowthElement(
-      `${prefix}Change`,
-      calculateGrowth(
-        currentRevenue,
-        compareRevenue,
-      ),
-    );
-  }
-
-  /* ==========================================================
-     FORMAT KPI
-     ========================================================== */
-
-  function formatMetricValue(
-    value,
-  ) {
-    if (
-      currentMetric ===
-      "revenue"
-    ) {
-      return Store.formatCurrency(
-        value,
-      );
-    }
-
-    return `${Number(
-      value || 0,
-    ).toLocaleString(
-      "id-ID",
-    )} transactions`;
-  }
-
-  /* ==========================================================
+  /* ============================================================
      MANAGER INSIGHTS
-     ========================================================== */
+     ============================================================ */
 
   async function renderManagerInsights() {
     const container =
@@ -2644,12 +2610,14 @@ const Dashboard = (() => {
         "managerInsights",
       );
 
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const selected =
       await getSelectedPeriodTransactionsAsync();
 
-    const compare =
+    const comparison =
       await getComparisonTransactionsAsync();
 
     if (!selected.length) {
@@ -2676,10 +2644,14 @@ const Dashboard = (() => {
     }
 
     const selectedRevenue =
-      sumRevenue(selected);
+      sumRevenue(
+        selected,
+      );
 
-    const compareRevenue =
-      sumRevenue(compare);
+    const comparisonRevenue =
+      sumRevenue(
+        comparison,
+      );
 
     const selectedAverage =
       selected.length
@@ -2687,16 +2659,16 @@ const Dashboard = (() => {
         selected.length
         : 0;
 
-    const compareAverage =
-      compare.length
-        ? compareRevenue /
-        compare.length
+    const comparisonAverage =
+      comparison.length
+        ? comparisonRevenue /
+        comparison.length
         : 0;
 
     const growth =
       calculateGrowth(
         selectedRevenue,
-        compareRevenue,
+        comparisonRevenue,
       );
 
     const promoTxns =
@@ -2726,37 +2698,46 @@ const Dashboard = (() => {
         serviceMap,
       ).sort(
         (a, b) =>
-          b[1] - a[1],
+          b[1] -
+          a[1],
       )[0];
 
     const insights = [];
 
     if (
-      growth !== null &&
-      growth !== 0
+      growth !== null
     ) {
-      insights.push({
-        icon:
-          growth > 0
-            ? "📈"
-            : "📉",
+      if (
+        growth > 0
+      ) {
+        insights.push({
+          icon: "📈",
 
-        title:
-          growth > 0
-            ? `Revenue increased ${Math.abs(
-              growth,
-            ).toFixed(
+          title:
+            `Revenue increased ${growth.toFixed(
               1,
-            )}%`
-            : `Revenue decreased ${Math.abs(
+            )}%`,
+
+          text:
+            `Compared with ${getComparisonLabel()}.`,
+        });
+      } else if (
+        growth < 0
+      ) {
+        insights.push({
+          icon: "📉",
+
+          title:
+            `Revenue decreased ${Math.abs(
               growth,
             ).toFixed(
               1,
             )}%`,
 
-        text:
-          `Compared with ${getComparisonLabel()}.`,
-      });
+          text:
+            `Compared with ${getComparisonLabel()}.`,
+        });
+      }
     }
 
     if (topService) {
@@ -2777,12 +2758,12 @@ const Dashboard = (() => {
     if (
       currentCompare !==
       "none" &&
-      compare.length
+      comparison.length
     ) {
       const ticketGrowth =
         calculateGrowth(
           selectedAverage,
-          compareAverage,
+          comparisonAverage,
         );
 
       if (
@@ -2814,7 +2795,8 @@ const Dashboard = (() => {
     }
 
     if (
-      promoContribution > 0
+      promoContribution >
+      0
     ) {
       insights.push({
         icon:
@@ -2828,22 +2810,27 @@ const Dashboard = (() => {
         text:
           `${promoTxns.length} transactions used promotions.`,
       });
-    } else {
+    }
+
+    if (!insights.length) {
       insights.push({
         icon:
-          "💡",
+          "📊",
 
         title:
-          "No promo revenue detected",
+          "Performance is stable",
 
         text:
-          "No promotion-linked transaction was recorded in this period.",
+          "No significant comparison change detected.",
       });
     }
 
     container.innerHTML =
       insights
-        .slice(0, 4)
+        .slice(
+          0,
+          4,
+        )
         .map(
           (insight) => `
             <div class="insight-item">
@@ -2870,16 +2857,13 @@ const Dashboard = (() => {
         .join("");
   }
 
-  /* ==========================================================
-     PROMO PERFORMANCE
-     ========================================================== */
+  /* ============================================================
+     PROMOTION PERFORMANCE
+     ============================================================ */
 
   async function renderPromoPerformance() {
     const selected =
       await getSelectedPeriodTransactionsAsync();
-
-    const compare =
-      await getComparisonTransactionsAsync();
 
     const promoTxns =
       selected.filter(
@@ -2888,9 +2872,9 @@ const Dashboard = (() => {
 
     const normalTxns =
       selected.filter(
-        (t) =>
+        (transaction) =>
           !isPromoTransaction(
-            t,
+            transaction,
           ),
       );
 
@@ -2993,9 +2977,9 @@ const Dashboard = (() => {
     );
   }
 
-  /* ==========================================================
+  /* ============================================================
      PROMO TABLE
-     ========================================================== */
+     ============================================================ */
 
   async function renderPromoTable(
     transactions,
@@ -3005,7 +2989,9 @@ const Dashboard = (() => {
         "promoPerformance",
       );
 
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     let promos = [];
 
@@ -3018,10 +3004,11 @@ const Dashboard = (() => {
         error,
       );
 
-      container.innerHTML =
-        `<div class="empty-state">
+      container.innerHTML = `
+        <div class="empty-state">
           Unable to load promotion data.
-        </div>`;
+        </div>
+      `;
 
       return;
     }
@@ -3030,12 +3017,12 @@ const Dashboard = (() => {
 
     transactions.forEach(
       (transaction) => {
-        if (!transaction.promoId) {
-          return;
-        }
-
         const promoId =
           transaction.promoId;
+
+        if (!promoId) {
+          return;
+        }
 
         if (
           !promoMap[promoId]
@@ -3043,8 +3030,10 @@ const Dashboard = (() => {
           promoMap[promoId] = {
             transactions:
               0,
+
             revenue:
               0,
+
             discount:
               0,
           };
@@ -3085,50 +3074,52 @@ const Dashboard = (() => {
             promoMap[a.id]
               .revenue,
         )
-        .map((promo) => {
-          const item =
-            promoMap[promo.id];
+        .map(
+          (promo) => {
+            const item =
+              promoMap[promo.id];
 
-          const avg =
-            item.transactions
-              ? item.revenue /
+            const average =
               item.transactions
-              : 0;
+                ? item.revenue /
+                item.transactions
+                : 0;
 
-          return `
-            <tr>
-              <td data-label="Promotion">
-                <span class="discount-tag">
-                  🎉 ${escapeHtml(
-            promo.name,
-          )}
-                </span>
-              </td>
+            return `
+              <tr>
+                <td data-label="Promotion">
+                  <span class="discount-tag">
+                    🎉 ${escapeHtml(
+              promo.name,
+            )}
+                  </span>
+                </td>
 
-              <td data-label="Transactions">
-                ${item.transactions}
-              </td>
+                <td data-label="Transactions">
+                  ${item.transactions}
+                </td>
 
-              <td data-label="Revenue">
-                ${Store.formatCurrency(
-            item.revenue,
-          )}
-              </td>
+                <td data-label="Revenue">
+                  ${Store.formatCurrency(
+              item.revenue,
+            )}
+                </td>
 
-              <td data-label="Discount">
-                ${Store.formatCurrency(
-            item.discount,
-          )}
-              </td>
+                <td data-label="Discount">
+                  ${Store.formatCurrency(
+              item.discount,
+            )}
+                </td>
 
-              <td data-label="Avg Ticket">
-                ${Store.formatCurrency(
-            avg,
-          )}
-              </td>
-            </tr>
-          `;
-        })
+                <td data-label="Avg Ticket">
+                  ${Store.formatCurrency(
+              average,
+            )}
+                </td>
+              </tr>
+            `;
+          },
+        )
         .join("");
 
     if (!rows) {
@@ -3163,9 +3154,9 @@ const Dashboard = (() => {
     `;
   }
 
-  /* ==========================================================
-     GROUP SERVICE
-     ========================================================== */
+  /* ============================================================
+     SERVICE MAP
+     ============================================================ */
 
   function groupByService(
     transactions,
@@ -3189,9 +3180,9 @@ const Dashboard = (() => {
     return map;
   }
 
-  /* ==========================================================
+  /* ============================================================
      METRIC VALUE
-     ========================================================== */
+     ============================================================ */
 
   function getMetricValue(
     transaction,
@@ -3209,34 +3200,16 @@ const Dashboard = (() => {
     );
   }
 
-  /* ==========================================================
-     DISCOUNT
-     ========================================================== */
-
-  function sumDiscount(
-    transactions,
-  ) {
-    return transactions.reduce(
-      (sum, transaction) =>
-        sum +
-        Number(
-          transaction.discountAmount ||
-          0,
-        ),
-      0,
-    );
-  }
-
-  /* ==========================================================
+  /* ============================================================
      REVENUE
-     ========================================================== */
+     ============================================================ */
 
   function sumRevenue(
     transactions,
   ) {
     return transactions.reduce(
-      (sum, transaction) =>
-        sum +
+      (total, transaction) =>
+        total +
         Number(
           transaction.price ||
           0,
@@ -3245,9 +3218,27 @@ const Dashboard = (() => {
     );
   }
 
-  /* ==========================================================
-     PROMO
-     ========================================================== */
+  /* ============================================================
+     DISCOUNT
+     ============================================================ */
+
+  function sumDiscount(
+    transactions,
+  ) {
+    return transactions.reduce(
+      (total, transaction) =>
+        total +
+        Number(
+          transaction.discountAmount ||
+          0,
+        ),
+      0,
+    );
+  }
+
+  /* ============================================================
+     PROMO CHECK
+     ============================================================ */
 
   function isPromoTransaction(
     transaction,
@@ -3265,19 +3256,23 @@ const Dashboard = (() => {
     );
   }
 
-  /* ==========================================================
+  /* ============================================================
      GROWTH
-     ========================================================== */
+     ============================================================ */
 
   function calculateGrowth(
     current,
     previous,
   ) {
     const currentValue =
-      Number(current || 0);
+      Number(
+        current || 0,
+      );
 
     const previousValue =
-      Number(previous || 0);
+      Number(
+        previous || 0,
+      );
 
     if (
       previousValue === 0
@@ -3292,16 +3287,18 @@ const Dashboard = (() => {
     }
 
     return (
-      ((currentValue -
-        previousValue) /
-        previousValue) *
+      (
+        (currentValue -
+          previousValue) /
+        previousValue
+      ) *
       100
     );
   }
 
-  /* ==========================================================
+  /* ============================================================
      GROWTH UI
-     ========================================================== */
+     ============================================================ */
 
   function setGrowthElement(
     id,
@@ -3312,7 +3309,9 @@ const Dashboard = (() => {
         id,
       );
 
-    if (!el) return;
+    if (!el) {
+      return;
+    }
 
     el.classList.remove(
       "positive",
@@ -3320,7 +3319,9 @@ const Dashboard = (() => {
       "neutral",
     );
 
-    if (value === null) {
+    if (
+      value === null
+    ) {
       el.textContent =
         "New";
 
@@ -3373,9 +3374,9 @@ const Dashboard = (() => {
     );
   }
 
-  /* ==========================================================
+  /* ============================================================
      LABELS
-     ========================================================== */
+     ============================================================ */
 
   function getPeriodLabel() {
     if (
@@ -3445,9 +3446,9 @@ const Dashboard = (() => {
     )}`;
   }
 
-  /* ==========================================================
+  /* ============================================================
      CHART TITLES
-     ========================================================== */
+     ============================================================ */
 
   function updateChartTitles() {
     const isRevenue =
@@ -3492,9 +3493,9 @@ const Dashboard = (() => {
     );
   }
 
-  /* ==========================================================
-     TREND LEGEND
-     ========================================================== */
+  /* ============================================================
+     LEGEND
+     ============================================================ */
 
   function renderTrendLegend(
     datasets,
@@ -3504,12 +3505,17 @@ const Dashboard = (() => {
         "trendLegend",
       );
 
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     container.innerHTML =
       datasets
         .map(
-          (dataset, index) => {
+          (
+            dataset,
+            index,
+          ) => {
             const color =
               index === 0
                 ? "#e30022"
@@ -3532,9 +3538,9 @@ const Dashboard = (() => {
         .join("");
   }
 
-  /* ==========================================================
+  /* ============================================================
      CHART DESTROY
-     ========================================================== */
+     ============================================================ */
 
   function destroyChart(
     type,
@@ -3570,9 +3576,9 @@ const Dashboard = (() => {
     }
   }
 
-  /* ==========================================================
+  /* ============================================================
      GRADIENT
-     ========================================================== */
+     ============================================================ */
 
   function makeGradient(
     canvas,
@@ -3588,8 +3594,7 @@ const Dashboard = (() => {
         0,
         0,
         0,
-        canvas.height ||
-        300,
+        canvas.height || 300,
       );
 
     gradient.addColorStop(
@@ -3605,9 +3610,9 @@ const Dashboard = (() => {
     return gradient;
   }
 
-  /* ==========================================================
+  /* ============================================================
      POINT RADIUS
-     ========================================================== */
+     ============================================================ */
 
   function getPointRadius(
     data,
@@ -3627,9 +3632,9 @@ const Dashboard = (() => {
     );
   }
 
-  /* ==========================================================
-     DATE UTILITIES
-     ========================================================== */
+  /* ============================================================
+     DATE PARSER
+     ============================================================ */
 
   function parseDate(
     value,
@@ -3637,6 +3642,16 @@ const Dashboard = (() => {
     if (
       value instanceof Date
     ) {
+      if (
+        Number.isNaN(
+          value.getTime(),
+        )
+      ) {
+        return new Date(
+          "invalid",
+        );
+      }
+
       return new Date(
         value.getFullYear(),
         value.getMonth(),
@@ -3644,17 +3659,42 @@ const Dashboard = (() => {
       );
     }
 
-    const parts =
-      String(value || "")
-        .split("-")
-        .map(Number);
+    const raw =
+      String(
+        value || "",
+      ).trim();
+
+    if (!raw) {
+      return new Date(
+        "invalid",
+      );
+    }
+
+    const match =
+      raw.match(
+        /^(\d{4})-(\d{2})-(\d{2})/,
+      );
+
+    if (match) {
+      return new Date(
+        Number(
+          match[1],
+        ),
+        Number(
+          match[2],
+        ) - 1,
+        Number(
+          match[3],
+        ),
+      );
+    }
+
+    const parsed =
+      new Date(raw);
 
     if (
-      parts.length !==
-      3 ||
-      parts.some(
-        (item) =>
-          Number.isNaN(item),
+      Number.isNaN(
+        parsed.getTime(),
       )
     ) {
       return new Date(
@@ -3663,11 +3703,15 @@ const Dashboard = (() => {
     }
 
     return new Date(
-      parts[0],
-      parts[1] - 1,
-      parts[2],
+      parsed.getFullYear(),
+      parsed.getMonth(),
+      parsed.getDate(),
     );
   }
+
+  /* ============================================================
+     DATE STRING
+     ============================================================ */
 
   function dateString(
     date,
@@ -3691,22 +3735,30 @@ const Dashboard = (() => {
     );
   }
 
+  /* ============================================================
+     ADD DAYS
+     ============================================================ */
+
   function addDays(
     date,
     amount,
   ) {
-    const result =
+    const output =
       new Date(
         date,
       );
 
-    result.setDate(
-      result.getDate() +
+    output.setDate(
+      output.getDate() +
       amount,
     );
 
-    return result;
+    return output;
   }
+
+  /* ============================================================
+     DIFF DAYS
+     ============================================================ */
 
   function diffDays(
     start,
@@ -3718,6 +3770,17 @@ const Dashboard = (() => {
     const b =
       parseDate(end);
 
+    if (
+      Number.isNaN(
+        a.getTime(),
+      ) ||
+      Number.isNaN(
+        b.getTime(),
+      )
+    ) {
+      return 0;
+    }
+
     return Math.floor(
       (
         b.getTime() -
@@ -3727,6 +3790,10 @@ const Dashboard = (() => {
     );
   }
 
+  /* ============================================================
+     DATE FORMAT
+     ============================================================ */
+
   function formatShortDate(
     date,
   ) {
@@ -3735,6 +3802,7 @@ const Dashboard = (() => {
       {
         day:
           "numeric",
+
         month:
           "short",
       },
@@ -3749,9 +3817,7 @@ const Dashboard = (() => {
     }
 
     const parsed =
-      parseDate(
-        date,
-      );
+      parseDate(date);
 
     if (
       Number.isNaN(
@@ -3766,34 +3832,36 @@ const Dashboard = (() => {
       {
         day:
           "2-digit",
+
         month:
           "short",
+
         year:
           "numeric",
       },
     );
   }
 
-  /* ==========================================================
-     SHORT CURRENCY
-     ========================================================== */
+  /* ============================================================
+     CURRENCY
+     ============================================================ */
 
   function shortCurrency(
     value,
   ) {
-    const n =
+    const number =
       Number(
         value || 0,
       );
 
     if (
-      n >=
+      number >=
       1000000000
     ) {
       return (
         "Rp " +
         (
-          n /
+          number /
           1000000000
         )
           .toFixed(1)
@@ -3806,13 +3874,13 @@ const Dashboard = (() => {
     }
 
     if (
-      n >=
+      number >=
       1000000
     ) {
       return (
         "Rp " +
         (
-          n /
+          number /
           1000000
         )
           .toFixed(1)
@@ -3825,13 +3893,13 @@ const Dashboard = (() => {
     }
 
     if (
-      n >=
+      number >=
       1000
     ) {
       return (
         "Rp " +
         (
-          n /
+          number /
           1000
         )
           .toFixed(0) +
@@ -3841,34 +3909,57 @@ const Dashboard = (() => {
 
     return (
       "Rp " +
-      n.toLocaleString(
+      number.toLocaleString(
         "id-ID",
       )
     );
   }
 
-  /* ==========================================================
-     SAFE TEXT
-     ========================================================== */
+  /* ============================================================
+     METRIC FORMAT
+     ============================================================ */
+
+  function formatMetricValue(
+    value,
+  ) {
+    if (
+      currentMetric ===
+      "revenue"
+    ) {
+      return Store.formatCurrency(
+        value,
+      );
+    }
+
+    return `${Number(
+      value || 0,
+    ).toLocaleString(
+      "id-ID",
+    )} transactions`;
+  }
+
+  /* ============================================================
+     SET TEXT
+     ============================================================ */
 
   function setText(
     id,
     value,
   ) {
-    const el =
+    const element =
       document.getElementById(
         id,
       );
 
-    if (el) {
-      el.textContent =
+    if (element) {
+      element.textContent =
         value;
     }
   }
 
-  /* ==========================================================
+  /* ============================================================
      PUBLIC API
-     ========================================================== */
+     ============================================================ */
 
   return {
     render,
