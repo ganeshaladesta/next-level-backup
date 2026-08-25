@@ -543,6 +543,13 @@ canvas {
 
 /* ============================================================
    ENTERPRISE DASHBOARD CONTROL
+   CLEAN 2-ROW LAYOUT
+
+   ROW 1:
+   QUICK PERIOD | METRIC | BRANCH | COMPARE
+
+   ROW 2:
+   ANALYSIS DATE | VISUALIZATION
    ============================================================ */
 
 .dashboard-control-card {
@@ -576,9 +583,9 @@ canvas {
 }
 
 
-/* ------------------------------------------------------------
-   HEADER
-   ------------------------------------------------------------ */
+/* ============================================================
+   CONTROL HEADER
+   ============================================================ */
 
 .dashboard-control-header {
   display:
@@ -663,9 +670,9 @@ canvas {
 }
 
 
-/* ------------------------------------------------------------
-   CURRENT PERIOD
-   ------------------------------------------------------------ */
+/* ============================================================
+   PERIOD STATUS PILL
+   ============================================================ */
 
 .filter-status-pill {
   flex:
@@ -709,9 +716,9 @@ canvas {
 }
 
 
-/* ------------------------------------------------------------
-   MAIN GRID
-   ------------------------------------------------------------ */
+/* ============================================================
+   DASHBOARD CONTROL GRID
+   ============================================================ */
 
 .dashboard-control-grid {
   display:
@@ -724,26 +731,26 @@ canvas {
     0;
 
   grid-template-columns:
-    minmax(285px, 1.35fr) minmax(350px, 1.55fr) minmax(145px, 0.75fr) minmax(145px, 0.75fr) minmax(145px, 0.75fr);
+    minmax(360px, 1.8fr) minmax(170px, 0.8fr) minmax(170px, 0.8fr) minmax(170px, 0.8fr);
 
   grid-template-areas:
-    "period date metric branch compare"
-    "visual visual visual visual visual";
+    "period metric branch compare"
+    "date date visual visual";
 
   column-gap:
-    14px;
+    16px;
 
   row-gap:
-    18px;
+    22px;
 
   align-items:
     start;
 }
 
 
-/* ------------------------------------------------------------
-   GRID AREA MAPPING
-   ------------------------------------------------------------ */
+/* ============================================================
+   GRID MAPPING
+   ============================================================ */
 
 .dashboard-control-grid .control-group:nth-child(1) {
   grid-area:
@@ -776,9 +783,9 @@ canvas {
 }
 
 
-/* ------------------------------------------------------------
+/* ============================================================
    CONTROL GROUP
-   ------------------------------------------------------------ */
+   ============================================================ */
 
 .control-group {
   width:
@@ -829,9 +836,6 @@ canvas {
   width:
     100%;
 
-  min-width:
-    0;
-
   display:
     grid;
 
@@ -839,7 +843,7 @@ canvas {
     repeat(4, minmax(0, 1fr));
 
   gap:
-    6px;
+    7px;
 
   height:
     44px;
@@ -849,14 +853,14 @@ canvas {
   width:
     100%;
 
-  min-width:
-    0;
-
   height:
     44px;
 
+  min-width:
+    0;
+
   padding:
-    0 8px;
+    0 12px;
 
   display:
     flex;
@@ -871,44 +875,35 @@ canvas {
     10px;
 
   font-size:
-    0.76rem;
+    0.78rem;
 
   white-space:
     nowrap;
-
-  overflow:
-    hidden;
-
-  text-overflow:
-    ellipsis;
 }
 
 
 /* ============================================================
-   DATE RANGE
+   ANALYSIS DATE
    ============================================================ */
 
 .date-range-control {
-  display:
-    grid;
-
   width:
     100%;
 
-  min-width:
-    0;
-
-  height:
-    44px;
+  display:
+    grid;
 
   grid-template-columns:
-    minmax(82px, 1fr) 18px minmax(82px, 1fr) 64px 58px;
+    minmax(160px, 1fr) 24px minmax(160px, 1fr) 82px 76px;
 
-  column-gap:
-    6px;
+  gap:
+    8px;
 
   align-items:
     center;
+
+  height:
+    44px;
 }
 
 .date-field {
@@ -918,17 +913,11 @@ canvas {
   width:
     100%;
 
-  min-width:
-    0;
-
   height:
     44px;
 
-  display:
-    flex;
-
-  align-items:
-    center;
+  min-width:
+    0;
 }
 
 .date-field span {
@@ -937,9 +926,6 @@ canvas {
 }
 
 .date-range-arrow {
-  width:
-    18px;
-
   height:
     44px;
 
@@ -956,10 +942,7 @@ canvas {
     #71717a;
 
   font-size:
-    0.82rem;
-
-  user-select:
-    none;
+    0.85rem;
 }
 
 
@@ -971,17 +954,11 @@ canvas {
   width:
     100%;
 
-  min-width:
-    0;
-
-  max-width:
-    100%;
-
   height:
     44px;
 
   padding:
-    0 34px 0 11px;
+    0 38px 0 13px;
 
   border-radius:
     10px;
@@ -999,7 +976,7 @@ canvas {
     dark;
 
   font-size:
-    0.78rem;
+    0.8rem;
 
   font-weight:
     600;
@@ -1037,67 +1014,39 @@ canvas {
 
 
 /* ============================================================
-   DATE ICON — FORCE WHITE
+   DATE ICON
    ============================================================ */
 
 .dashboard-control-card .date-field input[type="date"]::-webkit-calendar-picker-indicator {
+  filter:
+    invert(1) brightness(2) contrast(1.15);
+
   opacity:
-    0;
-
-  position:
-    absolute;
-
-  right:
-    6px;
+    1;
 
   width:
-    22px;
+    18px;
 
   height:
-    22px;
+    18px;
 
   cursor:
     pointer;
 }
 
 
-/* Custom white calendar icon */
-.date-field::after {
-  content:
-    "";
+/* ============================================================
+   DATE INPUT TEXT
+   ============================================================ */
 
-  position:
-    absolute;
+.date-field input[type="date"]:not(:valid) {
+  color:
+    #ffffff;
+}
 
-  right:
-    8px;
-
-  top:
-    50%;
-
-  width:
-    16px;
-
-  height:
-    16px;
-
-  transform:
-    translateY(-50%);
-
-  pointer-events:
-    none;
-
-  background-repeat:
-    no-repeat;
-
-  background-position:
-    center;
-
-  background-size:
-    contain;
-
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='17' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+.date-field input[type="date"]:valid {
+  color:
+    #ffffff;
 }
 
 
@@ -1105,32 +1054,7 @@ canvas {
    APPLY / CLEAR
    ============================================================ */
 
-.btn-apply-date {
-  width:
-    100%;
-
-  height:
-    44px;
-
-  min-width:
-    0;
-
-  padding:
-    0 8px;
-
-  border-radius:
-    10px;
-
-  font-size:
-    0.78rem;
-
-  font-weight:
-    700;
-
-  white-space:
-    nowrap;
-}
-
+.btn-apply-date,
 .btn-clear-date {
   width:
     100%;
@@ -1138,20 +1062,14 @@ canvas {
   height:
     44px;
 
-  min-width:
-    0;
-
   padding:
-    0 6px;
+    0 12px;
 
   border-radius:
     10px;
 
   font-size:
-    0.76rem;
-
-  font-weight:
-    600;
+    0.8rem;
 
   white-space:
     nowrap;
@@ -1159,17 +1077,11 @@ canvas {
 
 
 /* ============================================================
-   DASHBOARD SELECT
+   DASHBOARD SELECTS
    ============================================================ */
 
 .dashboard-control-card .dashboard-select {
   width:
-    100%;
-
-  min-width:
-    0;
-
-  max-width:
     100%;
 
   height:
@@ -1179,7 +1091,7 @@ canvas {
     44px;
 
   padding:
-    0 32px 0 12px;
+    0 34px 0 13px;
 
   border-radius:
     10px;
@@ -1187,14 +1099,14 @@ canvas {
   border:
     1px solid #343438;
 
-  background-color:
+  background:
     #101012;
 
   color:
     #ffffff;
 
   font-size:
-    0.8rem;
+    0.82rem;
 
   font-weight:
     600;
@@ -1215,7 +1127,7 @@ canvas {
   border-color:
     #505057;
 
-  background-color:
+  background:
     #161618;
 }
 
@@ -1241,6 +1153,9 @@ canvas {
    ============================================================ */
 
 .dashboard-control-grid .control-group:nth-child(6) {
+  width:
+    100%;
+
   padding-top:
     2px;
 }
@@ -1253,18 +1168,24 @@ canvas {
     center;
 
   gap:
-    7px;
+    8px;
+
+  height:
+    44px;
 }
 
 .chart-type-group .chart-type-btn {
   width:
-    76px;
+    82px;
 
   height:
     40px;
 
   padding:
-    0 15px;
+    0 18px;
+
+  border-radius:
+    10px;
 
   display:
     inline-flex;
@@ -1274,9 +1195,6 @@ canvas {
 
   justify-content:
     center;
-
-  border-radius:
-    10px;
 }
 
 
@@ -1353,7 +1271,7 @@ canvas {
 
 
 /* ============================================================
-   SUMMARY KPI CARDS
+   KPI CARDS
    ============================================================ */
 
 .summary-cards {
@@ -2356,7 +2274,7 @@ canvas {
 
 
 /* ============================================================
-   DATE/TIME FORMS
+   FORM DATE / TIME
    ============================================================ */
 
 .form-group input[type="date"],
@@ -2825,7 +2743,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 
 
 /* ============================================================
-   STATUS
+   STATUS BADGES
    ============================================================ */
 
 .status-badge {
@@ -3215,48 +3133,25 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 
 
 /* ============================================================
-   RESPONSIVE — 1450
+   RESPONSIVE — 1250
    ============================================================ */
 
-@media (max-width: 1450px) {
+@media (max-width: 1250px) {
 
   .dashboard-control-grid {
 
     grid-template-columns:
-      minmax(260px, 1.3fr) minmax(330px, 1.45fr) minmax(135px, 0.7fr) minmax(135px, 0.7fr) minmax(135px, 0.7fr);
+      minmax(300px, 1.5fr) minmax(150px, 0.75fr) minmax(150px, 0.75fr) minmax(150px, 0.75fr);
 
-    column-gap:
-      11px;
+    grid-template-areas:
+
+      "period period period period"
+
+      "date date date date"
+
+      "metric branch compare visual";
   }
 
-  .date-range-control {
-
-    grid-template-columns:
-      minmax(75px, 1fr) 16px minmax(75px, 1fr) 60px 54px;
-
-    column-gap:
-      5px;
-  }
-
-  .quick-filter-group {
-    gap:
-      5px;
-  }
-
-  .quick-filter-group .filter-btn {
-
-    padding:
-      0 6px;
-
-    font-size:
-      0.72rem;
-  }
-
-  .btn-apply-date,
-  .btn-clear-date {
-    font-size:
-      0.72rem;
-  }
 }
 
 
@@ -3265,27 +3160,6 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
    ============================================================ */
 
 @media (max-width: 1200px) {
-
-  .dashboard-control-grid {
-
-    grid-template-columns:
-      repeat(3, minmax(0, 1fr));
-
-    grid-template-areas:
-      "period period period"
-      "date date date"
-      "metric branch compare"
-      "visual visual visual";
-  }
-
-  .date-range-control {
-
-    grid-template-columns:
-      minmax(110px, 1fr) 18px minmax(110px, 1fr) 74px 64px;
-
-    column-gap:
-      6px;
-  }
 
   .summary-cards {
     grid-template-columns:
@@ -3319,6 +3193,32 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
     border-right:
       none;
   }
+
+}
+
+
+/* ============================================================
+   RESPONSIVE — 900
+   ============================================================ */
+
+@media (max-width: 900px) {
+
+  .dashboard-control-grid {
+
+    grid-template-columns:
+      1fr 1fr;
+
+    grid-template-areas:
+
+      "period period"
+
+      "date date"
+
+      "metric branch"
+
+      "compare visual";
+  }
+
 }
 
 
@@ -3398,14 +3298,20 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
       1fr;
 
     grid-template-areas:
+
       "period"
+
       "date"
+
       "metric"
+
       "branch"
+
       "compare"
+
       "visual";
 
-    row-gap:
+    gap:
       16px;
   }
 
@@ -3416,28 +3322,18 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 
     height:
       auto;
-
-    min-height:
-      auto;
   }
 
   .date-range-control {
 
     grid-template-columns:
-      minmax(0, 1fr) 18px minmax(0, 1fr);
-
-    column-gap:
-      7px;
+      minmax(0, 1fr) 20px minmax(0, 1fr);
 
     height:
       auto;
-
-    min-height:
-      44px;
   }
 
   .btn-apply-date {
-
     grid-column:
       1;
 
@@ -3446,7 +3342,6 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   }
 
   .btn-clear-date {
-
     grid-column:
       3;
 
@@ -3556,7 +3451,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   }
 
 
-  /* PROMOTION */
+  /* PROMO */
 
   .promo-performance-kpis {
     grid-template-columns:
@@ -3564,7 +3459,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   }
 
 
-  /* FORMS */
+  /* FORM */
 
   .form-row,
   .form-row-inline {
@@ -3670,6 +3565,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
     display:
       none;
   }
+
 }
 
 
@@ -3808,4 +3704,5 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
     text-align:
       center;
   }
+
 }
