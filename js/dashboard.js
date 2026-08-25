@@ -15,25 +15,15 @@ const Dashboard = (() => {
 
   let initialized = false;
 
-  const BRANCHES = ["Kemang", "LCC", "Bintaro", "Bandung"];
-
-  const MONTH_NAMES = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
+  const BRANCHES = [
+    "Kemang",
+    "LCC",
+    "Bintaro",
+    "Bandung",
   ];
 
   /* ============================================================
-     PUBLIC
+     PUBLIC RENDER
      ============================================================ */
 
   async function render() {
@@ -47,8 +37,12 @@ const Dashboard = (() => {
       await renderSummaryCards();
       await renderCharts();
       await renderPromoPerformance();
+
     } catch (error) {
-      console.error("Dashboard render error:", error);
+      console.error(
+        "Dashboard render error:",
+        error
+      );
     }
   }
 
@@ -57,85 +51,158 @@ const Dashboard = (() => {
      ============================================================ */
 
   function _setup() {
+
     /* ----------------------------------------------------------
        TIMEFRAME
        ---------------------------------------------------------- */
 
     document
-      .querySelectorAll(".filter-btn[data-filter]")
+      .querySelectorAll(
+        ".filter-btn[data-filter]"
+      )
       .forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          document
-            .querySelectorAll(".filter-btn[data-filter]")
-            .forEach((b) => b.classList.remove("active"));
 
-          btn.classList.add("active");
+        btn.addEventListener(
+          "click",
+          async () => {
 
-          currentFilter = btn.dataset.filter;
+            document
+              .querySelectorAll(
+                ".filter-btn[data-filter]"
+              )
+              .forEach((b) => {
+                b.classList.remove(
+                  "active"
+                );
+              });
 
-          await refreshDashboard();
-        });
+            btn.classList.add(
+              "active"
+            );
+
+            currentFilter =
+              btn.dataset.filter;
+
+            await refreshDashboard();
+          }
+        );
       });
+
 
     /* ----------------------------------------------------------
        CHART TYPE
        ---------------------------------------------------------- */
 
-    document.querySelectorAll(".chart-type-btn").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        document
-          .querySelectorAll(".chart-type-btn")
-          .forEach((b) => b.classList.remove("active"));
+    document
+      .querySelectorAll(
+        ".chart-type-btn"
+      )
+      .forEach((btn) => {
 
-        btn.classList.add("active");
+        btn.addEventListener(
+          "click",
+          async () => {
 
-        currentChartType = btn.dataset.chartType;
+            document
+              .querySelectorAll(
+                ".chart-type-btn"
+              )
+              .forEach((b) => {
+                b.classList.remove(
+                  "active"
+                );
+              });
 
-        await renderCharts();
+            btn.classList.add(
+              "active"
+            );
+
+            currentChartType =
+              btn.dataset.chartType;
+
+            await renderCharts();
+          }
+        );
       });
-    });
+
 
     /* ----------------------------------------------------------
        METRIC
        ---------------------------------------------------------- */
 
-    const metricFilter = document.getElementById("dashMetricFilter");
+    const metricFilter =
+      document.getElementById(
+        "dashMetricFilter"
+      );
 
     if (metricFilter) {
-      metricFilter.addEventListener("change", async (e) => {
-        currentMetric = e.target.value;
 
-        await refreshDashboard();
-      });
+      metricFilter.addEventListener(
+        "change",
+        async (e) => {
+
+          currentMetric =
+            e.target.value;
+
+          await refreshDashboard();
+        }
+      );
     }
+
 
     /* ----------------------------------------------------------
        BRANCH
        ---------------------------------------------------------- */
 
-    const branchFilter = document.getElementById("dashBranchFilter");
+    const branchFilter =
+      document.getElementById(
+        "dashBranchFilter"
+      );
 
     if (branchFilter) {
-      BRANCHES.forEach((branch) => {
-        if (
-          ![...branchFilter.options].some(
-            (option) => option.value === branch,
-          )
-        ) {
-          const option = document.createElement("option");
 
-          option.value = branch;
-          option.textContent = branch;
+      BRANCHES.forEach(
+        (branch) => {
 
-          branchFilter.appendChild(option);
+          if (
+            ![
+              ...branchFilter.options,
+            ].some(
+              (option) =>
+                option.value ===
+                branch
+            )
+          ) {
+
+            const option =
+              document.createElement(
+                "option"
+              );
+
+            option.value =
+              branch;
+
+            option.textContent =
+              branch;
+
+            branchFilter.appendChild(
+              option
+            );
+          }
         }
-      });
+      );
 
-      branchFilter.addEventListener("change", async (e) => {
-        currentBranch = e.target.value;
 
-        await refreshDashboard();
-      });
+      branchFilter.addEventListener(
+        "change",
+        async (e) => {
+
+          currentBranch =
+            e.target.value;
+
+          await refreshDashboard();
+        }
+      );
     }
   }
 
@@ -144,8 +211,11 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function refreshDashboard() {
+
     await renderSummaryCards();
+
     await renderCharts();
+
     await renderPromoPerformance();
   }
 
@@ -154,39 +224,67 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderPromoBanner() {
-    const banner = document.getElementById("promoBanner");
+
+    const banner =
+      document.getElementById(
+        "promoBanner"
+      );
 
     if (!banner) return;
 
-    const active = await Store.getActivePromos();
+    const active =
+      await Store.getActivePromos();
 
-    if (!active || active.length === 0) {
+    if (
+      !active ||
+      active.length === 0
+    ) {
+
       banner.innerHTML = "";
-      banner.style.display = "none";
+
+      banner.style.display =
+        "none";
+
       return;
     }
 
-    banner.innerHTML = active
-      .map(
-        (p) => `
-          <div class="promo-badge-item">
-            <span class="promo-badge-icon">🎉</span>
+    banner.innerHTML =
+      active
+        .map(
+          (p) => `
+            <div class="promo-badge-item">
 
-            <span>
-              <strong>${escapeHtml(p.name)}</strong>
-              — ${Number(p.discount || 0)}% Off
+              <span class="promo-badge-icon">
+                🎉
+              </span>
 
-              ${p.description
-            ? " · " + escapeHtml(p.description)
-            : ""
-          }
-            </span>
-          </div>
-        `,
-      )
-      .join("");
+              <span>
+                <strong>
+                  ${escapeHtml(
+            p.name
+          )}
+                </strong>
 
-    banner.style.display = "flex";
+                — ${Number(
+            p.discount || 0
+          )}% Off
+
+                ${p.description
+              ? " · " +
+              escapeHtml(
+                p.description
+              )
+              : ""
+            }
+              </span>
+
+            </div>
+          `
+        )
+        .join("");
+
+    banner.style.display =
+      "flex";
   }
 
   /* ============================================================
@@ -194,292 +292,403 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderSummaryCards() {
-    let all = await Store.getTransactions();
+
+    /* ----------------------------------------------------------
+       LOAD TRANSACTIONS
+       ---------------------------------------------------------- */
+
+    let all =
+      await Store.getTransactions();
+
+
+    /* ----------------------------------------------------------
+       BRANCH FILTER
+       ---------------------------------------------------------- */
 
     all = filterBranch(all);
 
-    /*
-     * IMPORTANT:
-     * KPI sekarang mengikuti timeframe aktif.
-     */
-    const filtered = getKPITransactions(all);
 
-    const revenue = sumRevenue(filtered);
-    const count = filtered.length;
+    /* ==========================================================
+       SELECTED PERIOD
+       ==========================================================
 
-    const averageTicket = count > 0 ? revenue / count : 0;
+       INI BAGIAN PENTING.
 
-    const discount = filtered.reduce(
-      (total, t) =>
-        total + Number(t.discountAmount || 0),
-      0,
-    );
+       Semua KPI "Selected Period" menggunakan:
+
+           getPeriodTransactions(all)
+
+       Jadi otomatis mengikuti:
+
+           Daily
+           Weekly
+           Monthly
+           Yearly
+    ========================================================== */
+
+    const filtered =
+      getPeriodTransactions(all);
+
+
+    /* ----------------------------------------------------------
+       SELECTED PERIOD CALCULATIONS
+       ---------------------------------------------------------- */
+
+    const revenue =
+      sumRevenue(filtered);
+
+    const count =
+      filtered.length;
+
+    const averageTicket =
+      count > 0
+        ? revenue / count
+        : 0;
+
+    const discount =
+      filtered.reduce(
+        (total, t) =>
+          total +
+          Number(
+            t.discountAmount || 0
+          ),
+        0
+      );
+
+
+    /* ----------------------------------------------------------
+       PROMO
+       ---------------------------------------------------------- */
 
     const promoTransactions =
-      filtered.filter(isPromoTransaction);
+      filtered.filter(
+        isPromoTransaction
+      );
 
     const promoRevenue =
-      sumRevenue(promoTransactions);
+      sumRevenue(
+        promoTransactions
+      );
 
     const promoDiscount =
       promoTransactions.reduce(
         (total, t) =>
-          total + Number(t.discountAmount || 0),
-        0,
+          total +
+          Number(
+            t.discountAmount || 0
+          ),
+        0
       );
 
-    /* ----------------------------------------------------------
-       DYNAMIC KPI
-       ---------------------------------------------------------- */
 
-    const periodLabel = getPeriodLabel();
+    /* ==========================================================
+       EXISTING TODAY / MONTH / YEAR KPI
+       ========================================================== */
 
-    _setText(
-      "todayCardLabel",
-      periodLabel,
-    );
+    const today =
+      Store.getTodayStr();
 
-    _setText(
-      "monthCardLabel",
-      currentFilter === "daily"
-        ? "Previous Period"
-        : currentFilter === "weekly"
-          ? "12 Week Total"
-          : currentFilter === "monthly"
-            ? "12 Month Total"
-            : "5 Year Total",
-    );
 
-    _setText(
-      "yearCardLabel",
-      "Transactions",
-    );
+    const todayTxns =
+      all.filter(
+        (t) =>
+          t.date === today
+      );
+
+
+    const monthStart =
+      today.substring(
+        0,
+        7
+      ) + "-01";
+
+
+    const monthTxns =
+      all.filter(
+        (t) =>
+          t.date >=
+          monthStart &&
+          t.date <=
+          today
+      );
+
+
+    const yearStart =
+      today.substring(
+        0,
+        4
+      ) + "-01-01";
+
+
+    const yearTxns =
+      all.filter(
+        (t) =>
+          t.date >=
+          yearStart &&
+          t.date <=
+          today
+      );
+
+
+    const todayRevenue =
+      sumRevenue(
+        todayTxns
+      );
+
+    const monthRevenue =
+      sumRevenue(
+        monthTxns
+      );
+
+    const yearRevenue =
+      sumRevenue(
+        yearTxns
+      );
+
 
     const isRevenue =
-      currentMetric === "revenue";
+      currentMetric ===
+      "revenue";
+
+
+    /* ==========================================================
+       EXISTING KPI CARDS
+       ========================================================== */
 
     if (isRevenue) {
+
       _setText(
         "todayRevenue",
-        Store.formatCurrency(revenue),
+        Store.formatCurrency(
+          todayRevenue
+        )
       );
 
       _setText(
         "todayCount",
-        `${count.toLocaleString("id-ID")} transactions`,
+        `${todayTxns.length} transactions`
       );
+
 
       _setText(
         "monthRevenue",
-        Store.formatCurrency(averageTicket),
+        Store.formatCurrency(
+          monthRevenue
+        )
       );
 
       _setText(
         "monthCount",
-        "Average Ticket",
+        `${monthTxns.length} transactions`
       );
+
 
       _setText(
         "yearRevenue",
-        Store.formatCurrency(discount),
+        Store.formatCurrency(
+          yearRevenue
+        )
       );
 
       _setText(
         "yearCount",
-        "Total Discount",
+        `${yearTxns.length} transactions`
       );
+
     } else {
+
       _setText(
         "todayRevenue",
-        `${count.toLocaleString("id-ID")} Transactions`,
+        `${todayTxns.length} Transactions`
       );
 
       _setText(
         "todayCount",
-        `Revenue: ${Store.formatCurrency(revenue)}`,
+        `Revenue: ${Store.formatCurrency(
+          todayRevenue
+        )}`
       );
+
 
       _setText(
         "monthRevenue",
-        Store.formatCurrency(averageTicket),
+        `${monthTxns.length} Transactions`
       );
 
       _setText(
         "monthCount",
-        "Average Ticket",
+        `Revenue: ${Store.formatCurrency(
+          monthRevenue
+        )}`
       );
+
 
       _setText(
         "yearRevenue",
-        `${promoTransactions.length.toLocaleString(
-          "id-ID",
-        )} Promo Transactions`,
+        `${yearTxns.length} Transactions`
       );
 
       _setText(
         "yearCount",
-        `Promo Revenue: ${Store.formatCurrency(
-          promoRevenue,
-        )}`,
+        `Revenue: ${Store.formatCurrency(
+          yearRevenue
+        )}`
       );
     }
 
+
+    /* ==========================================================
+       SELECTED PERIOD KPI
+       ========================================================== */
+
+    const periodLabel =
+      getPeriodLabel();
+
+
     /* ----------------------------------------------------------
-       EXISTING TOTALS
+       LABEL
        ---------------------------------------------------------- */
 
     _setText(
-      "totalTransactions",
-      count.toLocaleString("id-ID"),
+      "dashPeriodLabel",
+      periodLabel
     );
+
+
+    /* ----------------------------------------------------------
+       TOTAL REVENUE
+       ---------------------------------------------------------- */
+
+    _setText(
+      "dashTotalRevenue",
+      Store.formatCurrency(
+        revenue
+      )
+    );
+
+
+    /* ----------------------------------------------------------
+       TOTAL TRANSACTIONS
+       ----------------------------------------------------------
+
+       INI YANG MEMPERBAIKI CARD:
+
+       SELECTED PERIOD
+       13
+       7 active services
+
+       Angka 13 berasal dari FILTERED,
+       bukan seluruh transaksi.
+    ---------------------------------------------------------- */
+
+    _setText(
+      "dashTotalTransactions",
+      count.toLocaleString(
+        "id-ID"
+      )
+    );
+
+
+    _setText(
+      "totalTransactions",
+      count.toLocaleString(
+        "id-ID"
+      )
+    );
+
+
+    /* ----------------------------------------------------------
+       AVERAGE TICKET
+       ---------------------------------------------------------- */
+
+    _setText(
+      "dashAverageTicket",
+      Store.formatCurrency(
+        averageTicket
+      )
+    );
+
+
+    /* ----------------------------------------------------------
+       TOTAL DISCOUNT
+       ---------------------------------------------------------- */
+
+    _setText(
+      "dashTotalDiscount",
+      Store.formatCurrency(
+        discount
+      )
+    );
+
+
+    /* ----------------------------------------------------------
+       PROMO TRANSACTIONS
+       ---------------------------------------------------------- */
+
+    _setText(
+      "dashPromoTransactions",
+      promoTransactions.length
+        .toLocaleString(
+          "id-ID"
+        )
+    );
+
+
+    /* ----------------------------------------------------------
+       PROMO REVENUE
+       ---------------------------------------------------------- */
+
+    _setText(
+      "dashPromoRevenue",
+      Store.formatCurrency(
+        promoRevenue
+      )
+    );
+
+
+    /* ----------------------------------------------------------
+       PROMO DISCOUNT
+       ---------------------------------------------------------- */
+
+    _setText(
+      "dashPromoDiscount",
+      Store.formatCurrency(
+        promoDiscount
+      )
+    );
+
+
+    /* ----------------------------------------------------------
+       ACTIVE SERVICES
+       ---------------------------------------------------------- */
 
     const services =
       await Store.getActiveServices();
 
     _setText(
       "totalServices",
-      `${services.length} active services`,
+      `${services.length} active services`
     );
 
+
     /* ----------------------------------------------------------
-       NEW KPI IDs
+       CARD LABELS
        ---------------------------------------------------------- */
 
     _setText(
-      "dashTotalRevenue",
-      Store.formatCurrency(revenue),
+      "todayCardLabel",
+      "Today"
     );
 
     _setText(
-      "dashTotalTransactions",
-      count.toLocaleString("id-ID"),
+      "monthCardLabel",
+      "This Month"
     );
 
     _setText(
-      "dashAverageTicket",
-      Store.formatCurrency(averageTicket),
+      "yearCardLabel",
+      "This Year"
     );
-
-    _setText(
-      "dashTotalDiscount",
-      Store.formatCurrency(discount),
-    );
-
-    _setText(
-      "dashPromoTransactions",
-      promoTransactions.length.toLocaleString(
-        "id-ID",
-      ),
-    );
-
-    _setText(
-      "dashPromoRevenue",
-      Store.formatCurrency(promoRevenue),
-    );
-
-    _setText(
-      "dashPromoDiscount",
-      Store.formatCurrency(promoDiscount),
-    );
-
-    _setText(
-      "dashPeriodLabel",
-      periodLabel,
-    );
-  }
-
-  /* ============================================================
-     KPI PERIOD
-     ============================================================ */
-
-  function getKPITransactions(data) {
-    const today = new Date();
-
-    /* ----------------------------------------------------------
-       DAILY
-       Current day
-       ---------------------------------------------------------- */
-
-    if (currentFilter === "daily") {
-      const todayStr =
-        Store.getTodayStr();
-
-      return data.filter(
-        (t) => t.date === todayStr,
-      );
-    }
-
-    /* ----------------------------------------------------------
-       WEEKLY
-       LAST 12 WEEKS
-       ---------------------------------------------------------- */
-
-    if (currentFilter === "weekly") {
-      const range =
-        getWeeklyRange();
-
-      return data.filter((t) => {
-        const d =
-          new Date(`${t.date}T00:00:00`);
-
-        return (
-          d >= range.start &&
-          d <= range.end
-        );
-      });
-    }
-
-    /* ----------------------------------------------------------
-       MONTHLY
-       LAST 12 MONTHS
-       ---------------------------------------------------------- */
-
-    if (currentFilter === "monthly") {
-      const start = new Date(
-        today.getFullYear(),
-        today.getMonth() - 11,
-        1,
-      );
-
-      start.setHours(0, 0, 0, 0);
-
-      const end = new Date(today);
-      end.setHours(23, 59, 59, 999);
-
-      return data.filter((t) => {
-        const d =
-          new Date(`${t.date}T00:00:00`);
-
-        return d >= start && d <= end;
-      });
-    }
-
-    /* ----------------------------------------------------------
-       YEARLY
-       LAST 5 YEARS
-       ---------------------------------------------------------- */
-
-    if (currentFilter === "yearly") {
-      const start = new Date(
-        today.getFullYear() - 4,
-        0,
-        1,
-      );
-
-      start.setHours(0, 0, 0, 0);
-
-      const end = new Date(today);
-      end.setHours(23, 59, 59, 999);
-
-      return data.filter((t) => {
-        const d =
-          new Date(`${t.date}T00:00:00`);
-
-        return d >= start && d <= end;
-      });
-    }
-
-    return data;
   }
 
   /* ============================================================
@@ -487,6 +696,7 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderCharts() {
+
     _updateChartTitles();
 
     await _renderRevenueChart();
@@ -497,141 +707,183 @@ const Dashboard = (() => {
   }
 
   /* ============================================================
-     TITLES
+     CHART TITLES
      ============================================================ */
 
   function _updateChartTitles() {
+
     const isRevenue =
-      currentMetric === "revenue";
+      currentMetric ===
+      "revenue";
+
 
     const revTitle =
       document.getElementById(
-        "dashRevenueChartTitle",
+        "dashRevenueChartTitle"
       );
 
+
     if (revTitle) {
-      revTitle.textContent = isRevenue
-        ? "📈 Revenue Trend"
-        : "📈 Transaction Count Trend";
+
+      revTitle.textContent =
+        isRevenue
+          ? "📈 Revenue Trend"
+          : "📈 Transaction Count Trend";
     }
+
 
     const svcTitle =
       document.getElementById(
-        "dashServiceChartTitle",
+        "dashServiceChartTitle"
       );
 
+
     if (svcTitle) {
-      svcTitle.textContent = isRevenue
-        ? "🍩 Revenue by Service"
-        : "🍩 Transactions by Service";
+
+      svcTitle.textContent =
+        isRevenue
+          ? "🍩 Revenue by Service"
+          : "🍩 Transactions by Service";
     }
+
 
     const barTitle =
       document.getElementById(
-        "dashBarChartTitle",
+        "dashBarChartTitle"
       );
 
+
     if (barTitle) {
-      barTitle.textContent = isRevenue
-        ? "📊 Service Comparison (Revenue)"
-        : "📊 Service Comparison (Transactions)";
+
+      barTitle.textContent =
+        isRevenue
+          ? "📊 Service Comparison (Revenue)"
+          : "📊 Service Comparison (Transactions)";
     }
   }
 
   /* ============================================================
-     REVENUE TREND
+     REVENUE / TRANSACTION TREND
      ============================================================ */
 
   async function _renderRevenueChart() {
+
     const canvas =
       document.getElementById(
-        "revenueChart",
+        "revenueChart"
       );
 
     if (!canvas) return;
 
+
     const {
       labels,
       data,
-    } = await _getRevenueData();
+    } =
+      await _getRevenueData();
+
 
     if (revenueChart) {
+
       revenueChart.destroy();
+
+      revenueChart = null;
     }
 
+
     const isLine =
-      currentChartType === "line";
+      currentChartType ===
+      "line";
+
 
     const isRevenue =
-      currentMetric === "revenue";
+      currentMetric ===
+      "revenue";
+
 
     const datasetLabel =
       isRevenue
         ? "Revenue"
         : "Transactions";
 
-    revenueChart = new Chart(canvas, {
-      type: currentChartType,
 
-      data: {
-        labels,
+    revenueChart =
+      new Chart(
+        canvas,
+        {
+          type:
+            currentChartType,
 
-        datasets: [
-          {
-            label: datasetLabel,
+          data: {
 
-            data,
+            labels,
 
-            ...(isLine
-              ? {
-                borderColor:
-                  "#e30022",
+            datasets: [
+              {
 
-                backgroundColor:
-                  _gradient(
-                    canvas,
-                    "#e30022",
-                  ),
+                label:
+                  datasetLabel,
 
-                fill: true,
+                data,
 
-                tension: 0.35,
+                ...(isLine
+                  ? {
 
-                pointBackgroundColor:
-                  "#e30022",
+                    borderColor:
+                      "#e30022",
 
-                pointBorderColor:
-                  "#ffffff",
+                    backgroundColor:
+                      _gradient(
+                        canvas,
+                        "#e30022"
+                      ),
 
-                pointBorderWidth: 2,
+                    fill:
+                      true,
 
-                pointRadius:
-                  currentFilter ===
-                    "weekly"
-                    ? 0
-                    : 3,
+                    tension:
+                      0.4,
 
-                pointHoverRadius: 6,
-              }
-              : {
-                backgroundColor:
-                  "#e30022",
+                    pointBackgroundColor:
+                      "#e30022",
 
-                borderRadius: 8,
+                    pointBorderColor:
+                      "#ffffff",
 
-                borderSkipped: false,
+                    pointBorderWidth:
+                      2,
 
-                maxBarThickness: 48,
-              }),
+                    pointRadius:
+                      3,
+
+                    pointHoverRadius:
+                      6,
+
+                  }
+                  : {
+
+                    backgroundColor:
+                      "#e30022",
+
+                    borderRadius:
+                      8,
+
+                    borderSkipped:
+                      false,
+
+                    maxBarThickness:
+                      48,
+                  }),
+              },
+            ],
           },
-        ],
-      },
 
-      options:
-        _axisChartOptions(
-          isRevenue,
-        ),
-    });
+          options:
+            _axisChartOptions(
+              isRevenue
+            ),
+        }
+      );
   }
 
   /* ============================================================
@@ -639,177 +891,247 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function _renderServiceChart() {
+
     const canvas =
       document.getElementById(
-        "serviceChart",
+        "serviceChart"
       );
 
     if (!canvas) return;
+
 
     const {
       labels,
       data,
       colors,
-    } = await _getServiceData();
+    } =
+      await _getServiceData();
+
 
     if (serviceChart) {
+
       serviceChart.destroy();
+
+      serviceChart = null;
     }
 
+
     const isRevenue =
-      currentMetric === "revenue";
+      currentMetric ===
+      "revenue";
 
-    serviceChart = new Chart(canvas, {
-      type: "doughnut",
 
-      data: {
-        labels,
+    serviceChart =
+      new Chart(
+        canvas,
+        {
 
-        datasets: [
-          {
-            data,
+          type:
+            "doughnut",
 
-            backgroundColor: colors,
+          data: {
 
-            borderWidth: 2,
+            labels,
 
-            borderColor: "#121214",
+            datasets: [
+              {
+
+                data,
+
+                backgroundColor:
+                  colors,
+
+                borderWidth:
+                  2,
+
+                borderColor:
+                  "#121214",
+              },
+            ],
           },
-        ],
-      },
 
-      options: {
-        responsive: true,
+          options: {
 
-        maintainAspectRatio: false,
+            responsive:
+              true,
 
-        cutout: "65%",
+            maintainAspectRatio:
+              false,
 
-        plugins: {
-          legend: {
-            position: "bottom",
+            cutout:
+              "65%",
 
-            labels: {
-              color: "#f4f4f5",
+            plugins: {
 
-              padding: 12,
+              legend: {
 
-              usePointStyle: true,
+                position:
+                  "bottom",
 
-              pointStyle: "circle",
+                labels: {
 
-              font: {
-                size: 11,
+                  color:
+                    "#f4f4f5",
+
+                  padding:
+                    12,
+
+                  usePointStyle:
+                    true,
+
+                  pointStyle:
+                    "circle",
+
+                  font: {
+
+                    size:
+                      11,
+                  },
+                },
+              },
+
+              tooltip: {
+
+                callbacks: {
+
+                  label: (c) =>
+                    isRevenue
+                      ? `${c.label}: ${Store.formatCurrency(
+                        c.parsed
+                      )}`
+                      : `${c.label}: ${c.parsed} transactions`,
+                },
               },
             },
           },
-
-          tooltip: {
-            callbacks: {
-              label: (c) =>
-                isRevenue
-                  ? `${c.label}: ${Store.formatCurrency(
-                    c.parsed,
-                  )}`
-                  : `${c.label}: ${c.parsed} transactions`,
-            },
-          },
-        },
-      },
-    });
+        }
+      );
   }
 
   /* ============================================================
-     SERVICE BAR
+     SERVICE BAR / LINE
      ============================================================ */
 
   async function _renderBarChart() {
+
     const canvas =
       document.getElementById(
-        "barChart",
+        "barChart"
       );
 
     if (!canvas) return;
+
 
     const {
       labels,
       data,
       colors,
-    } = await _getServiceData();
+    } =
+      await _getServiceData();
+
 
     if (barChart) {
+
       barChart.destroy();
+
+      barChart = null;
     }
 
+
     const isLine =
-      currentChartType === "line";
+      currentChartType ===
+      "line";
+
 
     const isRevenue =
-      currentMetric === "revenue";
+      currentMetric ===
+      "revenue";
+
 
     const datasetLabel =
       isRevenue
         ? "Revenue"
         : "Transactions";
 
-    barChart = new Chart(canvas, {
-      type: currentChartType,
 
-      data: {
-        labels,
+    barChart =
+      new Chart(
+        canvas,
+        {
 
-        datasets: [
-          {
-            label: datasetLabel,
+          type:
+            currentChartType,
 
-            data,
+          data: {
 
-            ...(isLine
-              ? {
-                borderColor:
-                  "#e30022",
+            labels,
 
-                backgroundColor:
-                  _gradient(
-                    canvas,
-                    "#e30022",
-                  ),
+            datasets: [
+              {
 
-                fill: true,
+                label:
+                  datasetLabel,
 
-                tension: 0.4,
+                data,
 
-                pointBackgroundColor:
-                  colors,
+                ...(isLine
+                  ? {
 
-                pointBorderColor:
-                  "#ffffff",
+                    borderColor:
+                      "#e30022",
 
-                pointBorderWidth: 2,
+                    backgroundColor:
+                      _gradient(
+                        canvas,
+                        "#e30022"
+                      ),
 
-                pointRadius: 5,
+                    fill:
+                      true,
 
-                pointHoverRadius: 7,
-              }
-              : {
-                backgroundColor:
-                  colors,
+                    tension:
+                      0.4,
 
-                borderRadius: 8,
+                    pointBackgroundColor:
+                      colors,
 
-                borderSkipped: false,
+                    pointBorderColor:
+                      "#ffffff",
 
-                maxBarThickness: 48,
-              }),
+                    pointBorderWidth:
+                      2,
+
+                    pointRadius:
+                      5,
+
+                    pointHoverRadius:
+                      7,
+
+                  }
+                  : {
+
+                    backgroundColor:
+                      colors,
+
+                    borderRadius:
+                      8,
+
+                    borderSkipped:
+                      false,
+
+                    maxBarThickness:
+                      48,
+                  }),
+              },
+            ],
           },
-        ],
-      },
 
-      options:
-        _axisChartOptions(
-          isRevenue,
-        ),
-    });
+          options:
+            _axisChartOptions(
+              isRevenue
+            ),
+        }
+      );
   }
 
   /* ============================================================
@@ -817,67 +1139,88 @@ const Dashboard = (() => {
      ============================================================ */
 
   function _axisChartOptions(
-    isRevenue = true,
+    isRevenue = true
   ) {
-    return {
-      responsive: true,
 
-      maintainAspectRatio: false,
+    return {
+
+      responsive:
+        true,
+
+      maintainAspectRatio:
+        false,
 
       plugins: {
+
         legend: {
-          display: false,
+
+          display:
+            false,
         },
 
         tooltip: {
+
           callbacks: {
-            label: (c) =>
-              isRevenue
+
+            label: (c) => {
+
+              const value =
+                c.parsed.y ??
+                c.parsed;
+
+              return isRevenue
                 ? Store.formatCurrency(
-                  c.parsed.y,
+                  value
                 )
-                : `${c.parsed.y} transactions`,
+                : `${value} transactions`;
+            },
           },
         },
       },
 
       scales: {
+
         y: {
-          beginAtZero: true,
+
+          beginAtZero:
+            true,
 
           ticks: {
-            color: "#a1a1aa",
+
+            color:
+              "#a1a1aa",
 
             callback: (v) =>
               isRevenue
-                ? _shortCurrency(v)
-                : Number.isInteger(v)
+                ? _shortCurrency(
+                  v
+                )
+                : Number.isInteger(
+                  v
+                )
                   ? `${v}`
                   : null,
           },
 
           grid: {
+
             color:
               "rgba(255,255,255,0.05)",
           },
         },
 
         x: {
+
           ticks: {
-            color: "#a1a1aa",
 
-            autoSkip: true,
-
-            maxTicksLimit:
-              currentFilter === "daily"
-                ? 10
-                : currentFilter === "weekly"
-                  ? 12
-                  : 12,
+            color:
+              "#a1a1aa",
           },
 
           grid: {
-            display: false,
+
+            display:
+              false,
           },
         },
       },
@@ -889,271 +1232,402 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function _getRevenueData() {
+
     let all =
       await Store.getTransactions();
 
-    all = filterBranch(all);
 
-    const today = new Date();
+    all =
+      filterBranch(all);
+
+
+    const today =
+      new Date();
+
 
     const isRevenue =
-      currentMetric === "revenue";
+      currentMetric ===
+      "revenue";
+
 
     const labels = [];
+
     const data = [];
 
-    /* ----------------------------------------------------------
+
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+
+    /* ==========================================================
        DAILY
        30 DAYS
-       ---------------------------------------------------------- */
+       ========================================================== */
 
-    if (currentFilter === "daily") {
+    if (
+      currentFilter ===
+      "daily"
+    ) {
+
       const map = {};
 
-      for (let i = 29; i >= 0; i--) {
-        const d = new Date(today);
+
+      for (
+        let i = 29;
+        i >= 0;
+        i--
+      ) {
+
+        const d =
+          new Date(
+            today
+          );
 
         d.setDate(
-          d.getDate() - i,
+          d.getDate() - i
         );
 
-        const key = _dateStr(d);
+
+        const key =
+          _dateStr(d);
+
 
         labels.push(
-          `${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`,
+          `${d.getDate()} ${monthNames[d.getMonth()]}`
         );
 
-        map[key] = 0;
+
+        map[key] =
+          0;
       }
 
-      all.forEach((t) => {
-        if (
-          map[t.date] !== undefined
-        ) {
-          map[t.date] += isRevenue
-            ? Number(t.price || 0)
-            : 1;
+
+      all.forEach(
+        (t) => {
+
+          if (
+            map[t.date] !==
+            undefined
+          ) {
+
+            map[t.date] +=
+              isRevenue
+                ? Number(
+                  t.price || 0
+                )
+                : 1;
+          }
         }
-      });
+      );
+
 
       return {
+
         labels,
-        data: Object.values(map),
+
+        data:
+          Object.values(
+            map
+          ),
       };
     }
 
-    /* ----------------------------------------------------------
+
+    /* ==========================================================
        WEEKLY
        12 WEEKS
-       ---------------------------------------------------------- */
+       ========================================================== */
 
-    if (currentFilter === "weekly") {
-      const weeks =
-        buildWeeklyBuckets();
+    if (
+      currentFilter ===
+      "weekly"
+    ) {
 
-      weeks.forEach((week) => {
-        labels.push(
-          `${week.start.getDate()} ${MONTH_NAMES[week.start.getMonth()]}`,
-        );
-      });
+      const map = {};
 
-      const data =
-        weeks.map(() => 0);
 
-      all.forEach((t) => {
-        const date =
+      const weekRanges = [];
+
+
+      for (
+        let i = 11;
+        i >= 0;
+        i--
+      ) {
+
+        const end =
           new Date(
-            `${t.date}T00:00:00`,
+            today
           );
 
-        const index =
-          weeks.findIndex(
-            (week) =>
-              date >= week.start &&
-              date <= week.end,
+
+        end.setDate(
+          end.getDate() -
+          i * 7
+        );
+
+
+        const start =
+          new Date(
+            end
           );
 
-        if (index !== -1) {
-          data[index] += isRevenue
-            ? Number(t.price || 0)
-            : 1;
+
+        start.setDate(
+          start.getDate() -
+          6
+        );
+
+
+        const key =
+          _dateStr(start);
+
+
+        map[key] =
+          0;
+
+
+        weekRanges.push({
+          start:
+            new Date(
+              start
+            ),
+
+          end:
+            new Date(
+              end
+            ),
+
+          key,
+        });
+
+
+        labels.push(
+          `${start.getDate()} ${monthNames[start.getMonth()]}`
+        );
+      }
+
+
+      /* --------------------------------------------------------
+         PUT EACH TRANSACTION INTO ITS WEEK
+         -------------------------------------------------------- */
+
+      all.forEach(
+        (t) => {
+
+          const date =
+            new Date(
+              `${t.date}T00:00:00`
+            );
+
+
+          const range =
+            weekRanges.find(
+              (w) =>
+                date >=
+                w.start &&
+                date <=
+                w.end
+            );
+
+
+          if (
+            range &&
+            map[
+            range.key
+            ] !==
+            undefined
+          ) {
+
+            map[
+              range.key
+            ] +=
+              isRevenue
+                ? Number(
+                  t.price || 0
+                )
+                : 1;
+          }
         }
-      });
+      );
+
 
       return {
+
         labels,
-        data,
+
+        data:
+          Object.values(
+            map
+          ),
       };
     }
 
-    /* ----------------------------------------------------------
+
+    /* ==========================================================
        MONTHLY
        12 MONTHS
-       ---------------------------------------------------------- */
+       ========================================================== */
 
-    if (currentFilter === "monthly") {
+    if (
+      currentFilter ===
+      "monthly"
+    ) {
+
       const map = {};
 
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date(
-          today.getFullYear(),
-          today.getMonth() - i,
-          1,
-        );
+
+      for (
+        let i = 11;
+        i >= 0;
+        i--
+      ) {
+
+        const d =
+          new Date(
+            today.getFullYear(),
+            today.getMonth() -
+            i,
+            1
+          );
+
 
         const key =
           `${d.getFullYear()}-${String(
-            d.getMonth() + 1,
+            d.getMonth() + 1
           ).padStart(2, "0")}`;
 
+
         labels.push(
-          `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`,
+          `${monthNames[d.getMonth()]} ${d.getFullYear()}`
         );
 
-        map[key] = 0;
+
+        map[key] =
+          0;
       }
 
-      all.forEach((t) => {
-        const key =
-          String(t.date).substring(0, 7);
 
-        if (
-          map[key] !== undefined
-        ) {
-          map[key] += isRevenue
-            ? Number(t.price || 0)
-            : 1;
+      all.forEach(
+        (t) => {
+
+          const key =
+            String(
+              t.date
+            ).substring(
+              0,
+              7
+            );
+
+
+          if (
+            map[key] !==
+            undefined
+          ) {
+
+            map[key] +=
+              isRevenue
+                ? Number(
+                  t.price || 0
+                )
+                : 1;
+          }
         }
-      });
+      );
+
 
       return {
+
         labels,
-        data: Object.values(map),
+
+        data:
+          Object.values(
+            map
+          ),
       };
     }
 
-    /* ----------------------------------------------------------
+
+    /* ==========================================================
        YEARLY
        5 YEARS
-       ---------------------------------------------------------- */
+       ========================================================== */
 
     const map = {};
 
-    for (let i = 4; i >= 0; i--) {
-      const year =
-        today.getFullYear() - i;
 
-      labels.push(String(year));
-
-      map[String(year)] = 0;
-    }
-
-    all.forEach((t) => {
-      const key =
-        String(t.date).substring(0, 4);
-
-      if (
-        map[key] !== undefined
-      ) {
-        map[key] += isRevenue
-          ? Number(t.price || 0)
-          : 1;
-      }
-    });
-
-    return {
-      labels,
-      data: Object.values(map),
-    };
-  }
-
-  /* ============================================================
-     WEEK BUCKET BUILDER
-     ============================================================ */
-
-  function buildWeeklyBuckets() {
-    const today = new Date();
-
-    today.setHours(
-      23,
-      59,
-      59,
-      999,
-    );
-
-    /*
-     * Senin = awal minggu.
-     */
-    const day =
-      today.getDay();
-
-    const diff =
-      day === 0
-        ? -6
-        : 1 - day;
-
-    const currentMonday =
-      new Date(today);
-
-    currentMonday.setDate(
-      today.getDate() + diff,
-    );
-
-    currentMonday.setHours(
-      0,
-      0,
-      0,
-      0,
-    );
-
-    const weeks = [];
-
-    /*
-     * 12 minggu.
-     */
     for (
-      let i = 11;
+      let i = 4;
       i >= 0;
       i--
     ) {
-      const start =
-        new Date(
-          currentMonday,
-        );
 
-      start.setDate(
-        currentMonday.getDate() -
-        i * 7,
+      const year =
+        today.getFullYear() -
+        i;
+
+
+      labels.push(
+        String(year)
       );
 
-      start.setHours(
-        0,
-        0,
-        0,
-        0,
-      );
 
-      const end =
-        new Date(start);
-
-      end.setDate(
-        start.getDate() + 6,
-      );
-
-      end.setHours(
-        23,
-        59,
-        59,
-        999,
-      );
-
-      weeks.push({
-        start,
-        end,
-      });
+      map[
+        String(year)
+      ] =
+        0;
     }
 
-    return weeks;
+
+    all.forEach(
+      (t) => {
+
+        const key =
+          String(
+            t.date
+          ).substring(
+            0,
+            4
+          );
+
+
+        if (
+          map[key] !==
+          undefined
+        ) {
+
+          map[key] +=
+            isRevenue
+              ? Number(
+                t.price || 0
+              )
+              : 1;
+        }
+      }
+    );
+
+
+    return {
+
+      labels,
+
+      data:
+        Object.values(
+          map
+        ),
+    };
   }
 
   /* ============================================================
@@ -1161,46 +1635,78 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function _getServiceData() {
+
     let txns =
       await Store.getTransactions();
 
-    txns = filterBranch(txns);
 
     txns =
-      getKPITransactions(txns);
+      filterBranch(txns);
+
+
+    /* IMPORTANT:
+       SERVICE CHART JUGA IKUT TIMEFRAME
+    */
+
+    txns =
+      getPeriodTransactions(
+        txns
+      );
+
 
     const map = {};
 
-    txns.forEach((t) => {
-      const name =
-        t.serviceName ||
-        "Unknown Service";
 
-      if (!map[name]) {
-        map[name] = 0;
+    txns.forEach(
+      (t) => {
+
+        const name =
+          t.serviceName ||
+          "Unknown Service";
+
+
+        if (
+          !map[name]
+        ) {
+
+          map[name] =
+            0;
+        }
+
+
+        map[name] +=
+          currentMetric ===
+            "revenue"
+
+            ? Number(
+              t.price || 0
+            )
+
+            : 1;
       }
+    );
 
-      map[name] +=
-        currentMetric === "revenue"
-          ? Number(t.price || 0)
-          : 1;
-    });
 
     const entries =
-      Object.entries(map).sort(
+      Object.entries(
+        map
+      ).sort(
         (a, b) =>
-          b[1] - a[1],
+          b[1] - a[1]
       );
+
 
     const labels =
       entries.map(
-        (x) => x[0],
+        (x) => x[0]
       );
+
 
     const data =
       entries.map(
-        (x) => x[1],
+        (x) => x[1]
       );
+
 
     const colors =
       labels.map(
@@ -1209,12 +1715,16 @@ const Dashboard = (() => {
           i %
           _chartColors()
             .length
-          ],
+          ]
       );
 
+
     return {
+
       labels,
+
       data,
+
       colors,
     };
   }
@@ -1224,40 +1734,59 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderPromoPerformance() {
+
     let txns =
       await Store.getTransactions();
 
-    txns = filterBranch(txns);
 
     txns =
-      getKPITransactions(txns);
+      filterBranch(txns);
+
+
+    txns =
+      getPeriodTransactions(
+        txns
+      );
+
 
     const promoTxns =
       txns.filter(
-        isPromoTransaction,
+        isPromoTransaction
       );
+
 
     const normalTxns =
       txns.filter(
         (t) =>
-          !isPromoTransaction(t),
+          !isPromoTransaction(
+            t
+          )
       );
 
+
     const promoRevenue =
-      sumRevenue(promoTxns);
+      sumRevenue(
+        promoTxns
+      );
+
 
     const normalRevenue =
-      sumRevenue(normalTxns);
+      sumRevenue(
+        normalTxns
+      );
+
 
     const promoDiscount =
       promoTxns.reduce(
         (sum, t) =>
           sum +
           Number(
-            t.discountAmount || 0,
+            t.discountAmount ||
+            0
           ),
-        0,
+        0
       );
+
 
     const normalAverage =
       normalTxns.length
@@ -1265,149 +1794,221 @@ const Dashboard = (() => {
         normalTxns.length
         : 0;
 
+
     const promoAverage =
       promoTxns.length
         ? promoRevenue /
         promoTxns.length
         : 0;
 
+
+    /* ----------------------------------------------------------
+       OPTIONAL KPI ELEMENTS
+       ---------------------------------------------------------- */
+
     _setText(
       "promoRevenue",
       Store.formatCurrency(
-        promoRevenue,
-      ),
+        promoRevenue
+      )
     );
+
 
     _setText(
       "nonPromoRevenue",
       Store.formatCurrency(
-        normalRevenue,
-      ),
+        normalRevenue
+      )
     );
+
 
     _setText(
       "promoTransactionCount",
-      promoTxns.length,
+      promoTxns.length
     );
+
 
     _setText(
       "nonPromoTransactionCount",
-      normalTxns.length,
+      normalTxns.length
     );
+
 
     _setText(
       "promoAverageTicket",
       Store.formatCurrency(
-        promoAverage,
-      ),
+        promoAverage
+      )
     );
+
 
     _setText(
       "nonPromoAverageTicket",
       Store.formatCurrency(
-        normalAverage,
-      ),
+        normalAverage
+      )
     );
+
 
     _setText(
       "promoDiscountTotal",
       Store.formatCurrency(
-        promoDiscount,
-      ),
+        promoDiscount
+      )
     );
+
+
+    /* ==========================================================
+       PROMO PERFORMANCE TABLE
+       ========================================================== */
 
     const container =
       document.getElementById(
-        "promoPerformance",
+        "promoPerformance"
       );
+
 
     if (!container) return;
 
+
     let promos = [];
 
+
     try {
+
       promos =
         await Store.getPromos();
+
     } catch (error) {
+
       console.error(
         "Promo fetch error:",
-        error,
+        error
       );
     }
 
+
     const promoMap = {};
 
-    promoTxns.forEach((t) => {
-      const promoId =
-        t.promoId;
 
-      if (!promoId) return;
+    promoTxns.forEach(
+      (t) => {
 
-      if (!promoMap[promoId]) {
-        promoMap[promoId] = {
-          transactions: 0,
-          revenue: 0,
-          discount: 0,
-        };
+        const promoId =
+          t.promoId;
+
+
+        if (!promoId) return;
+
+
+        if (
+          !promoMap[
+          promoId
+          ]
+        ) {
+
+          promoMap[
+            promoId
+          ] = {
+
+            transactions:
+              0,
+
+            revenue:
+              0,
+
+            discount:
+              0,
+          };
+        }
+
+
+        promoMap[
+          promoId
+        ].transactions++;
+
+
+        promoMap[
+          promoId
+        ].revenue +=
+          Number(
+            t.price || 0
+          );
+
+
+        promoMap[
+          promoId
+        ].discount +=
+          Number(
+            t.discountAmount ||
+            0
+          );
       }
+    );
 
-      promoMap[promoId]
-        .transactions++;
 
-      promoMap[promoId].revenue +=
-        Number(t.price || 0);
+    const rows =
+      promos
+        .filter(
+          (p) =>
+            promoMap[
+            p.id
+            ]
+        )
+        .map(
+          (p) => {
 
-      promoMap[promoId].discount +=
-        Number(
-          t.discountAmount || 0,
-        );
-    });
+            const item =
+              promoMap[
+              p.id
+              ];
 
-    const rows = promos
-      .filter(
-        (p) =>
-          promoMap[p.id],
-      )
-      .map((p) => {
-        const item =
-          promoMap[p.id];
 
-        return `
-          <tr>
-            <td data-label="Promotion">
-              <span class="discount-tag">
-                🎉 ${escapeHtml(p.name)}
-              </span>
-            </td>
+            return `
+              <tr>
 
-            <td data-label="Transactions">
-              ${item.transactions}
-            </td>
+                <td data-label="Promotion">
 
-            <td data-label="Revenue">
-              ${Store.formatCurrency(
-          item.revenue,
-        )}
-            </td>
+                  <span class="discount-tag">
+                    🎉 ${escapeHtml(
+              p.name
+            )}
+                  </span>
 
-            <td data-label="Discount">
-              ${Store.formatCurrency(
-          item.discount,
-        )}
-            </td>
+                </td>
 
-            <td data-label="Avg Ticket">
-              ${Store.formatCurrency(
-          item.revenue /
-          item.transactions,
-        )}
-            </td>
-          </tr>
-        `;
-      })
-      .join("");
+                <td data-label="Transactions">
+                  ${item.transactions}
+                </td>
+
+                <td data-label="Revenue">
+                  ${Store.formatCurrency(
+              item.revenue
+            )}
+                </td>
+
+                <td data-label="Discount">
+                  ${Store.formatCurrency(
+              item.discount
+            )}
+                </td>
+
+                <td data-label="Avg Ticket">
+                  ${Store.formatCurrency(
+              item.revenue /
+              item.transactions
+            )}
+                </td>
+
+              </tr>
+            `;
+          }
+        )
+        .join("");
+
 
     if (!rows) {
+
       container.innerHTML = `
         <div class="empty-state">
           No promotion transactions
@@ -1418,10 +2019,14 @@ const Dashboard = (() => {
       return;
     }
 
+
     container.innerHTML = `
       <div class="table-responsive">
+
         <table class="data-table">
+
           <thead>
+
             <tr>
               <th>Promotion</th>
               <th>Transactions</th>
@@ -1429,35 +2034,243 @@ const Dashboard = (() => {
               <th>Discount</th>
               <th>Avg Ticket</th>
             </tr>
+
           </thead>
 
           <tbody>
             ${rows}
           </tbody>
+
         </table>
+
       </div>
     `;
   }
 
   /* ============================================================
-     BRANCH
+     FILTER HELPERS
      ============================================================ */
 
   function filterBranch(data) {
+
     if (
-      currentBranch === "all"
+      currentBranch ===
+      "all"
     ) {
+
       return data;
     }
+
 
     return data.filter(
       (t) =>
         String(
-          t.branch || "",
+          t.branch || ""
         ).toLowerCase() ===
         String(
-          currentBranch,
-        ).toLowerCase(),
+          currentBranch
+        ).toLowerCase()
+    );
+  }
+
+
+  /* ============================================================
+     PERIOD TRANSACTIONS
+     ============================================================ */
+
+  function getPeriodTransactions(
+    data
+  ) {
+
+    const today =
+      Store.getTodayStr();
+
+
+    /* ==========================================================
+       DAILY
+       ========================================================== */
+
+    if (
+      currentFilter ===
+      "daily"
+    ) {
+
+      return data.filter(
+        (t) =>
+          t.date ===
+          today
+      );
+    }
+
+
+    /* ==========================================================
+       WEEKLY
+       ========================================================== */
+
+    if (
+      currentFilter ===
+      "weekly"
+    ) {
+
+      const now =
+        new Date();
+
+
+      const day =
+        now.getDay();
+
+
+      /*
+        Monday = awal minggu
+
+        Sunday = 0
+        Monday = 1
+        Tuesday = 2
+        ...
+      */
+
+      const diff =
+        day === 0
+          ? -6
+          : 1 - day;
+
+
+      const start =
+        new Date(
+          now
+        );
+
+
+      start.setDate(
+        now.getDate() +
+        diff
+      );
+
+
+      start.setHours(
+        0,
+        0,
+        0,
+        0
+      );
+
+
+      return data.filter(
+        (t) => {
+
+          const d =
+            new Date(
+              `${t.date}T00:00:00`
+            );
+
+
+          return (
+            d >= start &&
+            d <= now
+          );
+        }
+      );
+    }
+
+
+    /* ==========================================================
+       MONTHLY
+       ========================================================== */
+
+    if (
+      currentFilter ===
+      "monthly"
+    ) {
+
+      const start =
+        today.substring(
+          0,
+          7
+        ) + "-01";
+
+
+      return data.filter(
+        (t) =>
+          t.date >=
+          start &&
+          t.date <=
+          today
+      );
+    }
+
+
+    /* ==========================================================
+       YEARLY
+       ========================================================== */
+
+    if (
+      currentFilter ===
+      "yearly"
+    ) {
+
+      const start =
+        today.substring(
+          0,
+          4
+        ) + "-01-01";
+
+
+      return data.filter(
+        (t) =>
+          t.date >=
+          start &&
+          t.date <=
+          today
+      );
+    }
+
+
+    return data;
+  }
+
+  /* ============================================================
+     PROMO HELPER
+     ============================================================ */
+
+  function isPromoTransaction(
+    t
+  ) {
+
+    return Boolean(
+
+      t.promoId ||
+
+      Number(
+        t.promoDiscount ||
+        0
+      ) > 0 ||
+
+      Number(
+        t.discountAmount ||
+        0
+      ) > 0
+
+    );
+  }
+
+  /* ============================================================
+     REVENUE HELPER
+     ============================================================ */
+
+  function sumRevenue(
+    transactions
+  ) {
+
+    return transactions.reduce(
+      (
+        total,
+        t
+      ) =>
+        total +
+        Number(
+          t.price || 0
+        ),
+      0
     );
   }
 
@@ -1466,82 +2279,78 @@ const Dashboard = (() => {
      ============================================================ */
 
   function getPeriodLabel() {
+
     if (
-      currentFilter === "daily"
+      currentFilter ===
+      "daily"
     ) {
+
       return "Today";
     }
 
-    if (
-      currentFilter === "weekly"
-    ) {
-      return "Last 12 Weeks";
-    }
 
     if (
-      currentFilter === "monthly"
+      currentFilter ===
+      "weekly"
     ) {
-      return "Last 12 Months";
+
+      return "This Week";
     }
 
+
     if (
-      currentFilter === "yearly"
+      currentFilter ===
+      "monthly"
     ) {
-      return "Last 5 Years";
+
+      return "This Month";
     }
+
+
+    if (
+      currentFilter ===
+      "yearly"
+    ) {
+
+      return "This Year";
+    }
+
 
     return "Selected Period";
   }
 
   /* ============================================================
-     PROMO
-     ============================================================ */
-
-  function isPromoTransaction(t) {
-    return Boolean(
-      t.promoId ||
-      Number(
-        t.promoDiscount || 0,
-      ) > 0 ||
-      Number(
-        t.discountAmount || 0,
-      ) > 0,
-    );
-  }
-
-  /* ============================================================
-     REVENUE
-     ============================================================ */
-
-  function sumRevenue(
-    transactions,
-  ) {
-    return transactions.reduce(
-      (total, t) =>
-        total +
-        Number(t.price || 0),
-      0,
-    );
-  }
-
-  /* ============================================================
-     COLORS
+     CHART COLORS
      ============================================================ */
 
   function _chartColors() {
+
     return [
+
       "#e30022",
+
       "#ff1a3d",
+
       "#990017",
+
       "#b0b0b0",
+
       "#ffffff",
+
       "#808080",
+
       "#4d4d4d",
+
       "#ff4d66",
+
       "#cc001f",
+
       "#e60000",
+
       "#cccccc",
+
       "#333333",
+
     ];
   }
 
@@ -1551,28 +2360,36 @@ const Dashboard = (() => {
 
   function _gradient(
     canvas,
-    color,
+    color
   ) {
+
     const ctx =
-      canvas.getContext("2d");
+      canvas.getContext(
+        "2d"
+      );
+
 
     const gradient =
       ctx.createLinearGradient(
         0,
         0,
         0,
-        canvas.height || 300,
+        canvas.height ||
+        300
       );
+
 
     gradient.addColorStop(
       0,
-      color + "66",
+      color + "66"
     );
+
 
     gradient.addColorStop(
       1,
-      color + "00",
+      color + "00"
     );
+
 
     return gradient;
   }
@@ -1582,47 +2399,75 @@ const Dashboard = (() => {
      ============================================================ */
 
   function _shortCurrency(
-    value,
+    value
   ) {
-    const n =
-      Number(value || 0);
 
-    if (n >= 1000000000) {
+    const n =
+      Number(
+        value || 0
+      );
+
+
+    if (
+      n >= 1000000000
+    ) {
+
       return (
         "Rp " +
         (
-          n / 1000000000
+          n /
+          1000000000
         )
           .toFixed(1)
-          .replace(".0", "") +
+          .replace(
+            ".0",
+            ""
+          ) +
         "B"
       );
     }
 
-    if (n >= 1000000) {
+
+    if (
+      n >= 1000000
+    ) {
+
       return (
         "Rp " +
         (
-          n / 1000000
+          n /
+          1000000
         )
           .toFixed(1)
-          .replace(".0", "") +
+          .replace(
+            ".0",
+            ""
+          ) +
         "M"
       );
     }
 
-    if (n >= 1000) {
+
+    if (
+      n >= 1000
+    ) {
+
       return (
         "Rp " +
-        (n / 1000).toFixed(0) +
+        (
+          n /
+          1000
+        )
+          .toFixed(0) +
         "K"
       );
     }
 
+
     return (
       "Rp " +
       n.toLocaleString(
-        "id-ID",
+        "id-ID"
       )
     );
   }
@@ -1631,17 +2476,32 @@ const Dashboard = (() => {
      DATE STRING
      ============================================================ */
 
-  function _dateStr(d) {
+  function _dateStr(
+    d
+  ) {
+
     return (
+
       d.getFullYear() +
+
       "-" +
+
       String(
-        d.getMonth() + 1,
-      ).padStart(2, "0") +
+        d.getMonth() + 1
+      ).padStart(
+        2,
+        "0"
+      ) +
+
       "-" +
+
       String(
-        d.getDate(),
-      ).padStart(2, "0")
+        d.getDate()
+      ).padStart(
+        2,
+        "0"
+      )
+
     );
   }
 
@@ -1651,13 +2511,19 @@ const Dashboard = (() => {
 
   function _setText(
     id,
-    value,
+    value
   ) {
+
     const el =
-      document.getElementById(id);
+      document.getElementById(
+        id
+      );
+
 
     if (el) {
-      el.textContent = value;
+
+      el.textContent =
+        value;
     }
   }
 
@@ -1666,9 +2532,12 @@ const Dashboard = (() => {
      ============================================================ */
 
   return {
+
     render,
 
     refresh:
       refreshDashboard,
+
   };
+
 })();
