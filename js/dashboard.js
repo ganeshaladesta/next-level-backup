@@ -15,7 +15,7 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     DASHBOARD STATE
+     STATE
      ============================================================ */
 
   let currentFilter = "monthly";
@@ -26,6 +26,8 @@ const Dashboard = (() => {
 
   let selectedStartDate = "";
   let selectedEndDate = "";
+
+  let transactionCache = [];
 
   let initialized = false;
   let rendering = false;
@@ -59,7 +61,7 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     PUBLIC
+     PUBLIC RENDER
      ============================================================ */
 
   async function render() {
@@ -77,78 +79,131 @@ const Dashboard = (() => {
         initialized = true;
       }
 
+
+      /* ========================================================
+         LOAD TRANSACTIONS
+         ======================================================== */
+
+      try {
+
+        const result =
+          await Store.getTransactions();
+
+        transactionCache =
+          Array.isArray(result)
+            ? result
+            : [];
+
+        console.log(
+          "Dashboard transactions:",
+          transactionCache.length,
+          transactionCache,
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Dashboard transaction load error:",
+          error,
+        );
+
+        transactionCache = [];
+
+      }
+
+
       normalizeInitialDateInputs();
 
       updateFilterUI();
 
 
-      /* --------------------------------------------------------
+      /* ========================================================
          PROMO BANNER
-         -------------------------------------------------------- */
+         ======================================================== */
 
       try {
+
         await renderPromoBanner();
+
       } catch (error) {
+
         console.error(
           "Promo banner error:",
           error,
         );
+
       }
 
 
-      /* --------------------------------------------------------
+      /* ========================================================
          KPI
-         -------------------------------------------------------- */
+         ======================================================== */
 
       try {
+
         await renderSummaryCards();
+
       } catch (error) {
+
         console.error(
           "Summary cards error:",
           error,
         );
+
       }
 
 
-      /* --------------------------------------------------------
+      /* ========================================================
          CHARTS
-         -------------------------------------------------------- */
+         ======================================================== */
 
       try {
+
         await renderCharts();
+
       } catch (error) {
+
         console.error(
           "Charts error:",
           error,
         );
+
       }
 
 
-      /* --------------------------------------------------------
-         PROMO PERFORMANCE
-         -------------------------------------------------------- */
+      /* ========================================================
+         PROMOTION PERFORMANCE
+         ======================================================== */
 
       try {
+
         await renderPromoPerformance();
+
       } catch (error) {
+
         console.error(
           "Promo performance error:",
           error,
         );
+
       }
 
 
-      /* --------------------------------------------------------
-         MANAGER INSIGHTS
-         -------------------------------------------------------- */
+      /* ========================================================
+         MANAGEMENT INSIGHTS
+         ======================================================== */
 
       try {
+
         await renderManagerInsights();
+
       } catch (error) {
+
         console.error(
           "Manager insights error:",
           error,
         );
+
       }
 
     } catch (error) {
@@ -161,7 +216,9 @@ const Dashboard = (() => {
     } finally {
 
       rendering = false;
+
     }
+
   }
 
 
@@ -187,11 +244,12 @@ const Dashboard = (() => {
     setupCompare();
 
     setupDatePicker();
+
   }
 
 
   /* ============================================================
-     QUICK FILTER
+     QUICK FILTERS
      ============================================================ */
 
   function setupQuickFilters() {
@@ -200,42 +258,48 @@ const Dashboard = (() => {
       .querySelectorAll(
         ".filter-btn[data-filter]",
       )
-      .forEach((button) => {
+      .forEach(
+        (button) => {
 
-        button.addEventListener(
-          "click",
-          async () => {
+          button.addEventListener(
+            "click",
+            async () => {
 
-            document
-              .querySelectorAll(
-                ".filter-btn[data-filter]",
-              )
-              .forEach((item) => {
+              document
+                .querySelectorAll(
+                  ".filter-btn[data-filter]",
+                )
+                .forEach(
+                  (item) => {
 
-                item.classList.remove(
-                  "active",
+                    item.classList.remove(
+                      "active",
+                    );
+
+                  },
                 );
 
-              });
+
+              button.classList.add(
+                "active",
+              );
 
 
-            button.classList.add(
-              "active",
-            );
+              currentFilter =
+                button.dataset.filter;
 
 
-            currentFilter =
-              button.dataset.filter;
+              clearCustomDateRange();
 
 
-            clearCustomDateRange();
+              await render();
 
+            },
+          );
 
-            await render();
-          },
-        );
+        },
+      );
 
-      });
   }
 
 
@@ -249,39 +313,45 @@ const Dashboard = (() => {
       .querySelectorAll(
         ".chart-type-btn",
       )
-      .forEach((button) => {
+      .forEach(
+        (button) => {
 
-        button.addEventListener(
-          "click",
-          async () => {
+          button.addEventListener(
+            "click",
+            async () => {
 
-            document
-              .querySelectorAll(
-                ".chart-type-btn",
-              )
-              .forEach((item) => {
+              document
+                .querySelectorAll(
+                  ".chart-type-btn",
+                )
+                .forEach(
+                  (item) => {
 
-                item.classList.remove(
-                  "active",
+                    item.classList.remove(
+                      "active",
+                    );
+
+                  },
                 );
 
-              });
+
+              button.classList.add(
+                "active",
+              );
 
 
-            button.classList.add(
-              "active",
-            );
+              currentChartType =
+                button.dataset.chartType;
 
 
-            currentChartType =
-              button.dataset.chartType;
+              await renderCharts();
 
+            },
+          );
 
-            await renderCharts();
-          },
-        );
+        },
+      );
 
-      });
   }
 
 
@@ -295,6 +365,7 @@ const Dashboard = (() => {
       document.getElementById(
         "dashMetricFilter",
       );
+
 
     if (!element) {
       return;
@@ -310,8 +381,10 @@ const Dashboard = (() => {
 
 
         await render();
+
       },
     );
+
   }
 
 
@@ -326,12 +399,15 @@ const Dashboard = (() => {
         "dashBranchFilter",
       );
 
+
     if (!element) {
       return;
     }
 
 
-    element.value = "all";
+    currentBranch =
+      element.value ||
+      "all";
 
 
     BRANCHES.forEach(
@@ -383,8 +459,10 @@ const Dashboard = (() => {
 
 
         await render();
+
       },
     );
+
   }
 
 
@@ -399,9 +477,15 @@ const Dashboard = (() => {
         "dashCompareFilter",
       );
 
+
     if (!element) {
       return;
     }
+
+
+    currentCompare =
+      element.value ||
+      "none";
 
 
     element.addEventListener(
@@ -414,8 +498,10 @@ const Dashboard = (() => {
 
 
         await render();
+
       },
     );
+
   }
 
 
@@ -430,15 +516,18 @@ const Dashboard = (() => {
         "dashDateStart",
       );
 
+
     const end =
       document.getElementById(
         "dashDateEnd",
       );
 
+
     const apply =
       document.getElementById(
         "dashDateApply",
       );
+
 
     const clear =
       document.getElementById(
@@ -456,12 +545,30 @@ const Dashboard = (() => {
       () => {
 
         if (start.value) {
+
           end.min =
             start.value;
+
         }
 
 
-        clearDateError();
+        if (
+          start.value &&
+          end.value &&
+          end.value <
+          start.value
+        ) {
+
+          showDateError(
+            "End date cannot be earlier than start date.",
+          );
+
+        } else {
+
+          clearDateError();
+
+        }
+
       },
     );
 
@@ -481,11 +588,12 @@ const Dashboard = (() => {
             "End date cannot be earlier than start date.",
           );
 
-          return;
+        } else {
+
+          clearDateError();
+
         }
 
-
-        clearDateError();
       },
     );
 
@@ -498,6 +606,7 @@ const Dashboard = (() => {
 
           const startValue =
             start.value;
+
 
           const endValue =
             end.value;
@@ -513,6 +622,7 @@ const Dashboard = (() => {
             );
 
             return;
+
           }
 
 
@@ -526,11 +636,13 @@ const Dashboard = (() => {
             );
 
             return;
+
           }
 
 
           selectedStartDate =
             startValue;
+
 
           selectedEndDate =
             endValue;
@@ -560,11 +672,9 @@ const Dashboard = (() => {
 
           clearCustomDateRange();
 
-
           setQuickFilterActive(
             currentFilter,
           );
-
 
           await render();
 
@@ -572,11 +682,12 @@ const Dashboard = (() => {
       );
 
     }
+
   }
 
 
   /* ============================================================
-     INITIAL DATE INPUTS
+     DATE PICKER HELPERS
      ============================================================ */
 
   function normalizeInitialDateInputs() {
@@ -585,6 +696,7 @@ const Dashboard = (() => {
       document.getElementById(
         "dashDateStart",
       );
+
 
     const end =
       document.getElementById(
@@ -601,12 +713,9 @@ const Dashboard = (() => {
       end.min =
         start.value;
     }
+
   }
 
-
-  /* ============================================================
-     CUSTOM RANGE
-     ============================================================ */
 
   function hasCustomDateRange() {
 
@@ -614,6 +723,7 @@ const Dashboard = (() => {
       selectedStartDate &&
       selectedEndDate,
     );
+
   }
 
 
@@ -628,6 +738,7 @@ const Dashboard = (() => {
         "dashDateStart",
       );
 
+
     const end =
       document.getElementById(
         "dashDateEnd",
@@ -640,15 +751,18 @@ const Dashboard = (() => {
 
 
     if (end) {
+
       end.value = "";
 
       end.removeAttribute(
         "min",
       );
+
     }
 
 
     clearDateError();
+
   }
 
 
@@ -660,15 +774,18 @@ const Dashboard = (() => {
       .querySelectorAll(
         ".filter-btn[data-filter]",
       )
-      .forEach((button) => {
+      .forEach(
+        (button) => {
 
-        button.classList.toggle(
-          "active",
-          button.dataset.filter ===
-          filter,
-        );
+          button.classList.toggle(
+            "active",
+            button.dataset.filter ===
+            filter,
+          );
 
-      });
+        },
+      );
+
   }
 
 
@@ -686,6 +803,7 @@ const Dashboard = (() => {
       element.textContent =
         message;
     }
+
   }
 
 
@@ -698,13 +816,15 @@ const Dashboard = (() => {
 
 
     if (element) {
-      element.textContent = "";
+      element.textContent =
+        "";
     }
+
   }
 
 
   /* ============================================================
-     FILTER UI
+     UI STATE
      ============================================================ */
 
   function updateFilterUI() {
@@ -725,6 +845,7 @@ const Dashboard = (() => {
       "dashCompareLabel",
       getComparisonLabel(),
     );
+
   }
 
 
@@ -745,35 +866,37 @@ const Dashboard = (() => {
     }
 
 
-    let promos = [];
+    let active = [];
 
 
     try {
 
-      promos =
+      active =
         await Store.getActivePromos();
 
     } catch (error) {
 
       console.error(
-        "Active promo error:",
+        "Active promotion error:",
         error,
       );
 
+      banner.innerHTML = "";
 
       banner.style.display =
         "none";
 
-
       return;
+
     }
 
 
     if (
       !Array.isArray(
-        promos,
+        active,
       ) ||
-      promos.length === 0
+      active.length ===
+      0
     ) {
 
       banner.innerHTML = "";
@@ -781,13 +904,13 @@ const Dashboard = (() => {
       banner.style.display =
         "none";
 
-
       return;
+
     }
 
 
     banner.innerHTML =
-      promos
+      active
         .map(
           (promo) => `
 
@@ -810,9 +933,10 @@ const Dashboard = (() => {
           )}% Off
 
                 ${promo.description
-              ? ` · ${escapeHtml(
+              ? " · " +
+              escapeHtml(
                 promo.description,
-              )}`
+              )
               : ""
             }
 
@@ -827,47 +951,27 @@ const Dashboard = (() => {
 
     banner.style.display =
       "flex";
+
   }
 
 
   /* ============================================================
-     SAFE TRANSACTION LOADER
+     SAFE TRANSACTIONS
      ============================================================ */
 
   function getSafeTransactions() {
 
-    try {
+    return Array.isArray(
+      transactionCache,
+    )
+      ? transactionCache
+      : [];
 
-      const result =
-        Store.getTransactions();
-
-
-      if (
-        Array.isArray(
-          result,
-        )
-      ) {
-        return result;
-      }
-
-
-      return [];
-
-    } catch (error) {
-
-      console.error(
-        "Store.getTransactions() error:",
-        error,
-      );
-
-
-      return [];
-    }
   }
 
 
   /* ============================================================
-     FILTER BY BRANCH
+     BRANCH FILTER
      ============================================================ */
 
   function filterBranch(
@@ -910,6 +1014,7 @@ const Dashboard = (() => {
           .toLowerCase() ===
         branch,
     );
+
   }
 
 
@@ -935,6 +1040,7 @@ const Dashboard = (() => {
           value.getTime(),
         )
       ) {
+
         return "";
       }
 
@@ -942,6 +1048,7 @@ const Dashboard = (() => {
       return toDateString(
         value,
       );
+
     }
 
 
@@ -956,14 +1063,14 @@ const Dashboard = (() => {
     }
 
 
-    const iso =
+    const isoMatch =
       raw.match(
         /^(\d{4}-\d{2}-\d{2})/,
       );
 
 
-    if (iso) {
-      return iso[1];
+    if (isoMatch) {
+      return isoMatch[1];
     }
 
 
@@ -974,23 +1081,23 @@ const Dashboard = (() => {
 
 
     if (
-      !Number.isNaN(
+      Number.isNaN(
         parsed.getTime(),
       )
     ) {
-
-      return toDateString(
-        parsed,
-      );
+      return "";
     }
 
 
-    return "";
+    return toDateString(
+      parsed,
+    );
+
   }
 
 
   /* ============================================================
-     FILTER RANGE
+     RANGE FILTER
      ============================================================ */
 
   function filterRange(
@@ -1030,8 +1137,10 @@ const Dashboard = (() => {
           date <=
           range.end
         );
+
       },
     );
+
   }
 
 
@@ -1054,6 +1163,7 @@ const Dashboard = (() => {
           selectedEndDate,
 
       };
+
     }
 
 
@@ -1067,12 +1177,15 @@ const Dashboard = (() => {
     ) {
 
       return {
+
         start:
           today,
 
         end:
           today,
+
       };
+
     }
 
 
@@ -1084,6 +1197,7 @@ const Dashboard = (() => {
       return getCurrentWeekRange(
         today,
       );
+
     }
 
 
@@ -1104,6 +1218,7 @@ const Dashboard = (() => {
           today,
 
       };
+
     }
 
 
@@ -1119,11 +1234,12 @@ const Dashboard = (() => {
         today,
 
     };
+
   }
 
 
   /* ============================================================
-     CURRENT WEEK
+     WEEKLY RANGE
      1-7
      8-14
      15-21
@@ -1175,15 +1291,8 @@ const Dashboard = (() => {
     } else {
 
       startDay = 29;
+
     }
-
-
-    const start =
-      new Date(
-        current.getFullYear(),
-        current.getMonth(),
-        startDay,
-      );
 
 
     const lastDay =
@@ -1194,7 +1303,15 @@ const Dashboard = (() => {
       ).getDate();
 
 
-    let end =
+    const start =
+      new Date(
+        current.getFullYear(),
+        current.getMonth(),
+        startDay,
+      );
+
+
+    const end =
       new Date(
         current.getFullYear(),
         current.getMonth(),
@@ -1203,18 +1320,6 @@ const Dashboard = (() => {
           lastDay,
         ),
       );
-
-
-    if (
-      end >
-      current
-    ) {
-
-      end =
-        new Date(
-          current,
-        );
-    }
 
 
     return {
@@ -1230,6 +1335,7 @@ const Dashboard = (() => {
         ),
 
     };
+
   }
 
 
@@ -1260,6 +1366,7 @@ const Dashboard = (() => {
         selected.start,
         selected.end,
       );
+
     }
 
 
@@ -1272,10 +1379,12 @@ const Dashboard = (() => {
         selected.start,
         selected.end,
       );
+
     }
 
 
     return null;
+
   }
 
 
@@ -1311,7 +1420,10 @@ const Dashboard = (() => {
     const previousStart =
       addDays(
         previousEnd,
-        -(totalDays - 1),
+        -(
+          totalDays -
+          1
+        ),
       );
 
 
@@ -1328,6 +1440,7 @@ const Dashboard = (() => {
         ),
 
     };
+
   }
 
 
@@ -1373,6 +1486,7 @@ const Dashboard = (() => {
         ),
 
     };
+
   }
 
 
@@ -1392,6 +1506,7 @@ const Dashboard = (() => {
       transactions,
       getSelectedRange(),
     );
+
   }
 
 
@@ -1420,11 +1535,12 @@ const Dashboard = (() => {
       transactions,
       range,
     );
+
   }
 
 
   /* ============================================================
-     SUMMARY CARDS
+     KPI
      ============================================================ */
 
   async function renderSummaryCards() {
@@ -1539,13 +1655,13 @@ const Dashboard = (() => {
 
 
     const revenue =
-      sumSales(
+      sumRevenue(
         selected,
       );
 
 
     const comparisonRevenue =
-      sumSales(
+      sumRevenue(
         comparison,
       );
 
@@ -1554,9 +1670,10 @@ const Dashboard = (() => {
       selected.length;
 
 
-    const average =
+    const averageTicket =
       count
-        ? revenue / count
+        ? revenue /
+        count
         : 0;
 
 
@@ -1579,7 +1696,7 @@ const Dashboard = (() => {
     setText(
       "dashAverageTicket",
       Store.formatCurrency(
-        average,
+        averageTicket,
       ),
     );
 
@@ -1601,6 +1718,7 @@ const Dashboard = (() => {
         comparisonRevenue,
       ),
     );
+
   }
 
 
@@ -1615,7 +1733,7 @@ const Dashboard = (() => {
   ) {
 
     const revenue =
-      sumSales(
+      sumRevenue(
         currentData,
       );
 
@@ -1660,57 +1778,18 @@ const Dashboard = (() => {
     }
 
 
-    const all =
-      filterBranch(
-        getSafeTransactions(),
+    const comparisonRange =
+      getPreviousPeriodRange(
+        range.start,
+        range.end,
       );
-
-
-    let comparisonRange;
-
-
-    if (
-      prefix ===
-      "today"
-    ) {
-
-      const previous =
-        addDays(
-          parseDate(
-            range.start,
-          ),
-          -1,
-        );
-
-
-      comparisonRange = {
-
-        start:
-          toDateString(
-            previous,
-          ),
-
-        end:
-          toDateString(
-            previous,
-          ),
-
-      };
-
-    } else {
-
-      comparisonRange =
-        getPreviousPeriodRange(
-          range.start,
-          range.end,
-        );
-
-    }
 
 
     const comparison =
       filterRange(
-        all,
+        filterBranch(
+          getSafeTransactions(),
+        ),
         comparisonRange,
       );
 
@@ -1719,11 +1798,12 @@ const Dashboard = (() => {
       `${prefix}Change`,
       calculateGrowth(
         revenue,
-        sumSales(
+        sumRevenue(
           comparison,
         ),
       ),
     );
+
   }
 
 
@@ -1735,14 +1815,12 @@ const Dashboard = (() => {
 
     updateChartTitles();
 
-
     await renderTrendChart();
-
 
     await renderServiceChart();
 
-
     await renderServiceComparison();
+
   }
 
 
@@ -1811,61 +1889,65 @@ const Dashboard = (() => {
       );
 
 
-    const datasets = [];
+    const datasets = [
 
+      {
 
-    datasets.push({
+        label:
+          getPeriodLabel(),
 
-      label:
-        getPeriodLabel(),
-
-      data:
-        selectedValues,
-
-      borderColor:
-        "#e30022",
-
-      backgroundColor:
-        makeGradient(
-          canvas,
-          "#e30022",
-        ),
-
-      borderWidth:
-        2.5,
-
-      tension:
-        0.35,
-
-      fill:
-        true,
-
-      spanGaps:
-        false,
-
-      pointRadius:
-        getPointRadius(
+        data:
           selectedValues,
-          3,
-        ),
 
-      pointHoverRadius:
-        6,
+        borderColor:
+          "#e30022",
 
-      pointBackgroundColor:
-        "#e30022",
+        backgroundColor:
+          makeGradient(
+            canvas,
+            "#e30022",
+          ),
 
-      pointBorderColor:
-        "#ffffff",
+        borderWidth:
+          2.5,
 
-      pointBorderWidth:
-        2,
+        tension:
+          0.35,
 
-    });
+        fill:
+          true,
+
+        spanGaps:
+          false,
+
+        pointRadius:
+          getPointRadius(
+            selectedValues,
+            3,
+          ),
+
+        pointHoverRadius:
+          6,
+
+        pointBackgroundColor:
+          "#e30022",
+
+        pointBorderColor:
+          "#ffffff",
+
+        pointBorderWidth:
+          2,
+
+      },
+
+    ];
 
 
     if (
-      comparisonBuckets.length
+      comparisonBuckets.length >
+      0 &&
+      currentCompare !==
+      "none"
     ) {
 
       const comparisonValues =
@@ -1887,7 +1969,7 @@ const Dashboard = (() => {
           "#60a5fa",
 
         backgroundColor:
-          "rgba(96,165,250,0.05)",
+          "rgba(96,165,250,0.04)",
 
         borderWidth:
           2,
@@ -1926,12 +2008,17 @@ const Dashboard = (() => {
           1.5,
 
       });
+
     }
 
 
-    destroyChart(
-      "revenue",
-    );
+    if (revenueChart) {
+
+      revenueChart.destroy();
+
+      revenueChart = null;
+
+    }
 
 
     const chartDatasets =
@@ -1951,14 +2038,12 @@ const Dashboard = (() => {
               dataset.data,
 
             backgroundColor:
-              index ===
-                0
+              index === 0
                 ? "rgba(227,0,34,0.85)"
                 : "rgba(96,165,250,0.72)",
 
             borderColor:
-              index ===
-                0
+              index === 0
                 ? "#e30022"
                 : "#60a5fa",
 
@@ -2007,6 +2092,7 @@ const Dashboard = (() => {
     renderTrendLegend(
       datasets,
     );
+
   }
 
 
@@ -2098,9 +2184,13 @@ const Dashboard = (() => {
       );
 
 
-    destroyChart(
-      "service",
-    );
+    if (serviceChart) {
+
+      serviceChart.destroy();
+
+      serviceChart = null;
+
+    }
 
 
     serviceChart =
@@ -2169,8 +2259,10 @@ const Dashboard = (() => {
                     "circle",
 
                   font: {
+
                     size:
                       10,
+
                   },
 
                 },
@@ -2204,8 +2296,10 @@ const Dashboard = (() => {
                       const percentage =
                         total
                           ? (
-                            (value /
-                              total) *
+                            (
+                              value /
+                              total
+                            ) *
                             100
                           ).toFixed(
                             1,
@@ -2226,6 +2320,7 @@ const Dashboard = (() => {
 
 
                       return `${context.label}: ${value} transactions (${percentage}%)`;
+
                     },
 
                 },
@@ -2238,11 +2333,12 @@ const Dashboard = (() => {
 
         },
       );
+
   }
 
 
   /* ============================================================
-     SERVICE COMPARISON
+     SERVICE COMPARISON BAR
      ============================================================ */
 
   async function renderServiceComparison() {
@@ -2284,7 +2380,6 @@ const Dashboard = (() => {
           ...Object.keys(
             selectedMap,
           ),
-
           ...Object.keys(
             comparisonMap,
           ),
@@ -2394,9 +2489,13 @@ const Dashboard = (() => {
     }
 
 
-    destroyChart(
-      "bar",
-    );
+    if (barChart) {
+
+      barChart.destroy();
+
+      barChart = null;
+
+    }
 
 
     barChart =
@@ -2421,6 +2520,7 @@ const Dashboard = (() => {
 
         },
       );
+
   }
 
 
@@ -2450,6 +2550,7 @@ const Dashboard = (() => {
         end,
         transactions,
       );
+
     }
 
 
@@ -2462,6 +2563,7 @@ const Dashboard = (() => {
         end,
         transactions,
       );
+
     }
 
 
@@ -2470,6 +2572,7 @@ const Dashboard = (() => {
       end,
       transactions,
     );
+
   }
 
 
@@ -2535,6 +2638,7 @@ const Dashboard = (() => {
           cursor,
           1,
         );
+
     }
 
 
@@ -2572,11 +2676,13 @@ const Dashboard = (() => {
         ...bucket,
 
         value:
-          map[bucket.key] ||
-          0,
+          map[
+          bucket.key
+          ] || 0,
 
       }),
     );
+
   }
 
 
@@ -2632,6 +2738,7 @@ const Dashboard = (() => {
           new Date(
             finish,
           );
+
       }
 
 
@@ -2668,6 +2775,7 @@ const Dashboard = (() => {
           weekEnd,
           1,
         );
+
     }
 
 
@@ -2711,6 +2819,7 @@ const Dashboard = (() => {
             metricValue(
               transaction,
             );
+
         }
 
       },
@@ -2718,6 +2827,7 @@ const Dashboard = (() => {
 
 
     return buckets;
+
   }
 
 
@@ -2782,13 +2892,10 @@ const Dashboard = (() => {
           cursor.toLocaleDateString(
             "en-US",
             {
-
               month:
                 "short",
-
               year:
                 "numeric",
-
             },
           ),
 
@@ -2804,6 +2911,7 @@ const Dashboard = (() => {
           cursor.getMonth() + 1,
           1,
         );
+
     }
 
 
@@ -2839,6 +2947,7 @@ const Dashboard = (() => {
             metricValue(
               transaction,
             );
+
         }
 
       },
@@ -2851,16 +2960,18 @@ const Dashboard = (() => {
         ...bucket,
 
         value:
-          map[bucket.key] ||
-          0,
+          map[
+          bucket.key
+          ] || 0,
 
       }),
     );
+
   }
 
 
   /* ============================================================
-     ALIGN COMPARISON
+     COMPARISON ALIGNMENT
      ============================================================ */
 
   function alignComparison(
@@ -2875,6 +2986,7 @@ const Dashboard = (() => {
             .value
           : 0,
     );
+
   }
 
 
@@ -2901,8 +3013,10 @@ const Dashboard = (() => {
 
 
         map[service] =
-          (map[service] ||
-            0) +
+          (
+            map[service] ||
+            0
+          ) +
           metricValue(
             transaction,
           );
@@ -2912,21 +3026,7 @@ const Dashboard = (() => {
 
 
     return map;
-  }
 
-
-  /* ============================================================
-     SALES VALUE
-     ============================================================ */
-
-  function salesValue(
-    transaction,
-  ) {
-
-    return Number(
-      transaction.price ||
-      0,
-    );
   }
 
 
@@ -2942,52 +3042,82 @@ const Dashboard = (() => {
       currentMetric ===
       "count"
     ) {
+
       return 1;
+
     }
 
 
-    return salesValue(
-      transaction,
+    return Number(
+      transaction.price ||
+      0,
     );
+
   }
 
 
   /* ============================================================
-     SUM SALES
+     REVENUE
      ============================================================ */
 
-  function sumSales(
+  function sumRevenue(
     transactions,
   ) {
+
+    if (
+      !Array.isArray(
+        transactions,
+      )
+    ) {
+
+      return 0;
+
+    }
+
 
     return transactions.reduce(
       (
         total,
         transaction,
       ) =>
+
         total +
-        salesValue(
-          transaction,
+        Number(
+          transaction.price ||
+          0,
         ),
 
       0,
     );
+
   }
 
 
   /* ============================================================
-     SUM DISCOUNT
+     DISCOUNT
      ============================================================ */
 
   function sumDiscount(
     transactions,
   ) {
 
+    if (
+      !Array.isArray(
+        transactions,
+      )
+    ) {
+
+      return 0;
+
+    }
+
+
     return transactions.reduce(
       (
         total,
         transaction,
       ) =>
+
         total +
         Number(
           transaction.discountAmount ||
@@ -2996,6 +3126,7 @@ const Dashboard = (() => {
 
       0,
     );
+
   }
 
 
@@ -3014,14 +3145,17 @@ const Dashboard = (() => {
       Number(
         transaction.promoDiscount ||
         0,
-      ) > 0 ||
+      ) >
+      0 ||
 
       Number(
         transaction.discountAmount ||
         0,
-      ) > 0
+      ) >
+      0
 
     );
+
   }
 
 
@@ -3057,13 +3191,13 @@ const Dashboard = (() => {
 
 
     const promoRevenue =
-      sumSales(
+      sumRevenue(
         promoTransactions,
       );
 
 
     const normalRevenue =
-      sumSales(
+      sumRevenue(
         normalTransactions,
       );
 
@@ -3073,7 +3207,7 @@ const Dashboard = (() => {
       normalRevenue;
 
 
-    const contribution =
+    const promoContribution =
       totalRevenue
         ? (
           promoRevenue /
@@ -3115,7 +3249,7 @@ const Dashboard = (() => {
 
     setText(
       "promoContribution",
-      `${contribution.toFixed(
+      `${promoContribution.toFixed(
         1,
       )}%`,
     );
@@ -3169,7 +3303,8 @@ const Dashboard = (() => {
 
 
     if (
-      !promoTransactions.length
+      promoTransactions.length ===
+      0
     ) {
 
       container.innerHTML = `
@@ -3184,6 +3319,7 @@ const Dashboard = (() => {
       `;
 
       return;
+
     }
 
 
@@ -3195,24 +3331,26 @@ const Dashboard = (() => {
       promos =
         await Store.getPromos();
 
-
-      if (
-        !Array.isArray(
-          promos,
-        )
-      ) {
-        promos = [];
-      }
-
     } catch (error) {
 
       console.error(
-        "Promo list error:",
+        "Promo fetch error:",
         error,
       );
 
+      promos = [];
+
+    }
+
+
+    if (
+      !Array.isArray(
+        promos,
+      )
+    ) {
 
       promos = [];
+
     }
 
 
@@ -3222,22 +3360,20 @@ const Dashboard = (() => {
     promoTransactions.forEach(
       (transaction) => {
 
-        if (
-          !transaction.promoId
-        ) {
+        const promoId =
+          transaction.promoId;
+
+
+        if (!promoId) {
           return;
         }
 
 
-        const id =
-          transaction.promoId;
-
-
         if (
-          !promoMap[id]
+          !promoMap[promoId]
         ) {
 
-          promoMap[id] = {
+          promoMap[promoId] = {
 
             transactions:
               0,
@@ -3253,19 +3389,24 @@ const Dashboard = (() => {
         }
 
 
-        promoMap[id]
-          .transactions += 1;
+        promoMap[
+          promoId
+        ].transactions +=
+          1;
 
 
-        promoMap[id]
-          .revenue +=
-          salesValue(
-            transaction,
+        promoMap[
+          promoId
+        ].revenue +=
+          Number(
+            transaction.price ||
+            0,
           );
 
 
-        promoMap[id]
-          .discount +=
+        promoMap[
+          promoId
+        ].discount +=
           Number(
             transaction.discountAmount ||
             0,
@@ -3279,20 +3420,26 @@ const Dashboard = (() => {
       promos
         .filter(
           (promo) =>
-            promoMap[promo.id],
+            promoMap[
+            promo.id
+            ],
         )
         .sort(
           (a, b) =>
-            promoMap[b.id]
-              .revenue -
-            promoMap[a.id]
-              .revenue,
+            promoMap[
+              b.id
+            ].revenue -
+            promoMap[
+              a.id
+            ].revenue,
         )
         .map(
           (promo) => {
 
             const item =
-              promoMap[promo.id];
+              promoMap[
+              promo.id
+              ];
 
 
             const average =
@@ -3355,6 +3502,7 @@ const Dashboard = (() => {
               </tr>
 
             `;
+
           },
         )
         .join("");
@@ -3375,6 +3523,7 @@ const Dashboard = (() => {
       `;
 
       return;
+
     }
 
 
@@ -3424,11 +3573,12 @@ const Dashboard = (() => {
       </div>
 
     `;
+
   }
 
 
   /* ============================================================
-     MANAGER INSIGHTS
+     MANAGEMENT INSIGHTS
      ============================================================ */
 
   async function renderManagerInsights() {
@@ -3485,17 +3635,18 @@ const Dashboard = (() => {
       `;
 
       return;
+
     }
 
 
     const revenue =
-      sumSales(
+      sumRevenue(
         selected,
       );
 
 
     const comparisonRevenue =
-      sumSales(
+      sumRevenue(
         comparison,
       );
 
@@ -3535,7 +3686,7 @@ const Dashboard = (() => {
 
 
     const promoRevenue =
-      sumSales(
+      sumRevenue(
         promoTransactions,
       );
 
@@ -3571,70 +3722,69 @@ const Dashboard = (() => {
 
     if (
       currentCompare !==
-      "none"
+      "none" &&
+      growth !==
+      null
     ) {
 
-      if (
-        growth !== null
-      ) {
+      insights.push({
 
-        insights.push({
+        icon:
+          growth >= 0
+            ? "📈"
+            : "📉",
 
-          icon:
-            growth >= 0
-              ? "📈"
-              : "📉",
-
-          title:
-            growth >= 0
-              ? `Revenue up ${growth.toFixed(
-                1,
-              )}%`
-              : `Revenue down ${Math.abs(
-                growth,
-              ).toFixed(
-                1,
-              )}%`,
-
-          text:
-            `Compared with ${getComparisonLabel()}.`,
-
-        });
-
-      }
-
-
-      if (
-        averageGrowth !==
-        null
-      ) {
-
-        insights.push({
-
-          icon:
-            averageGrowth >= 0
-              ? "🎯"
-              : "⚠️",
-
-          title:
-            `Average ticket ${averageGrowth >=
-              0
-              ? "up"
-              : "down"
-            } ${Math.abs(
-              averageGrowth,
+        title:
+          growth >= 0
+            ? `Revenue up ${growth.toFixed(
+              1,
+            )}%`
+            : `Revenue down ${Math.abs(
+              growth,
             ).toFixed(
               1,
             )}%`,
 
-          text:
-            `Current average: ${Store.formatCurrency(
-              average,
-            )}.`,
+        text:
+          `Compared with ${getComparisonLabel()}.`,
 
-        });
+      });
 
-      }
+    }
+
+
+    if (
+      currentCompare !==
+      "none" &&
+      averageGrowth !==
+      null
+    ) {
+
+      insights.push({
+
+        icon:
+          averageGrowth >=
+            0
+            ? "🎯"
+            : "⚠️",
+
+        title:
+          `Average ticket ${averageGrowth >=
+            0
+            ? "up"
+            : "down"
+          } ${Math.abs(
+            averageGrowth,
+          ).toFixed(
+            1,
+          )}%`,
+
+        text:
+          `Current average: ${Store.formatCurrency(
+            average,
+          )}.`,
+
+      });
 
     }
 
@@ -3679,21 +3829,6 @@ const Dashboard = (() => {
 
       });
 
-    } else {
-
-      insights.push({
-
-        icon:
-          "💡",
-
-        title:
-          "No promo-driven revenue",
-
-        text:
-          "Consider whether current promotions are reaching customers.",
-
-      });
-
     }
 
 
@@ -3711,7 +3846,7 @@ const Dashboard = (() => {
           "Performance is stable",
 
         text:
-          "No significant movement detected for the selected period.",
+          "No comparison selected. Use Compare With to analyze movement.",
 
       });
 
@@ -3762,16 +3897,72 @@ const Dashboard = (() => {
           `,
         )
         .join("");
+
   }
 
 
   /* ============================================================
-     CHART OPTIONS
+     CHART TITLES
+     ============================================================ */
+
+  function updateChartTitles() {
+
+    const isRevenue =
+      currentMetric ===
+      "revenue";
+
+
+    setText(
+      "dashRevenueChartTitle",
+      isRevenue
+        ? "📈 Revenue Trend"
+        : "📈 Transaction Trend",
+    );
+
+
+    setText(
+      "dashRevenueChartSubtitle",
+      currentCompare ===
+        "none"
+        ? "Selected period performance"
+        : `Selected period vs ${getComparisonLabel()}`,
+    );
+
+
+    setText(
+      "dashBarChartTitle",
+      isRevenue
+        ? "📊 Service Comparison"
+        : "📊 Transactions by Service",
+    );
+
+
+    setText(
+      "dashBarChartSubtitle",
+      currentCompare ===
+        "none"
+        ? "Top services in selected period"
+        : "Selected period vs comparison",
+    );
+
+
+    setText(
+      "dashServiceChartTitle",
+      isRevenue
+        ? "🍩 Revenue by Service"
+        : "🍩 Transactions by Service",
+    );
+
+  }
+
+
+  /* ============================================================
+     TREND OPTIONS
      ============================================================ */
 
   function trendOptions() {
 
-    const revenue =
+    const isRevenue =
       currentMetric ===
       "revenue";
 
@@ -3836,22 +4027,17 @@ const Dashboard = (() => {
                   value ===
                   undefined
                 ) {
+
                   return "";
+
                 }
 
 
-                if (
-                  revenue
-                ) {
-
-                  return `${context.dataset.label}: ${Store.formatCurrency(
+                return isRevenue
+                  ? `${context.dataset.label}: ${Store.formatCurrency(
                     value,
-                  )}`;
-
-                }
-
-
-                return `${context.dataset.label}: ${value} transactions`;
+                  )}`
+                  : `${context.dataset.label}: ${value} transactions`;
 
               },
 
@@ -3878,7 +4064,7 @@ const Dashboard = (() => {
 
             callback:
               (value) =>
-                revenue
+                isRevenue
                   ? shortCurrency(
                     value,
                   )
@@ -3931,6 +4117,7 @@ const Dashboard = (() => {
       },
 
     };
+
   }
 
 
@@ -3940,7 +4127,7 @@ const Dashboard = (() => {
 
   function serviceComparisonOptions() {
 
-    const revenue =
+    const isRevenue =
       currentMetric ===
       "revenue";
 
@@ -4001,18 +4188,11 @@ const Dashboard = (() => {
             label:
               (context) => {
 
-                if (
-                  revenue
-                ) {
-
-                  return `${context.dataset.label}: ${Store.formatCurrency(
+                return isRevenue
+                  ? `${context.dataset.label}: ${Store.formatCurrency(
                     context.parsed.y,
-                  )}`;
-
-                }
-
-
-                return `${context.dataset.label}: ${context.parsed.y} transactions`;
+                  )}`
+                  : `${context.dataset.label}: ${context.parsed.y} transactions`;
 
               },
 
@@ -4039,7 +4219,7 @@ const Dashboard = (() => {
 
             callback:
               (value) =>
-                revenue
+                isRevenue
                   ? shortCurrency(
                     value,
                   )
@@ -4086,6 +4266,7 @@ const Dashboard = (() => {
       },
 
     };
+
   }
 
 
@@ -4109,93 +4290,37 @@ const Dashboard = (() => {
     if (
       days <= 14
     ) {
+
       return 15;
+
     }
 
 
     if (
       days <= 31
     ) {
+
       return 10;
+
     }
 
 
     if (
       days <= 180
     ) {
+
       return 12;
+
     }
 
 
     return 14;
+
   }
 
 
   /* ============================================================
-     CHART TITLES
-     ============================================================ */
-
-  function updateChartTitles() {
-
-    const revenue =
-      currentMetric ===
-      "revenue";
-
-
-    setText(
-      "dashRevenueChartTitle",
-
-      revenue
-        ? "📈 Revenue Trend"
-        : "📈 Transaction Trend",
-    );
-
-
-    setText(
-      "dashRevenueChartSubtitle",
-
-      currentCompare ===
-        "none"
-
-        ? "Selected period performance"
-
-        : `Selected period vs ${getComparisonLabel()}`,
-    );
-
-
-    setText(
-      "dashBarChartTitle",
-
-      revenue
-        ? "📊 Service Comparison"
-        : "📊 Transactions by Service",
-    );
-
-
-    setText(
-      "dashBarChartSubtitle",
-
-      currentCompare ===
-        "none"
-
-        ? "Top services in selected period"
-
-        : "Selected period vs comparison",
-    );
-
-
-    setText(
-      "dashServiceChartTitle",
-
-      revenue
-        ? "🍩 Revenue by Service"
-        : "🍩 Transactions by Service",
-    );
-  }
-
-
-  /* ============================================================
-     LEGEND
+     CUSTOM LEGEND
      ============================================================ */
 
   function renderTrendLegend(
@@ -4222,11 +4347,8 @@ const Dashboard = (() => {
           ) => {
 
             const color =
-              index ===
-                0
-
+              index === 0
                 ? "#e30022"
-
                 : "#60a5fa";
 
 
@@ -4246,133 +4368,16 @@ const Dashboard = (() => {
               </span>
 
             `;
+
           },
         )
         .join("");
+
   }
 
 
   /* ============================================================
-     DESTROY CHART
-     ============================================================ */
-
-  function destroyChart(
-    type,
-  ) {
-
-    if (
-      type ===
-      "revenue"
-    ) {
-
-      if (revenueChart) {
-
-        revenueChart.destroy();
-
-        revenueChart = null;
-
-      }
-
-    }
-
-
-    if (
-      type ===
-      "service"
-    ) {
-
-      if (serviceChart) {
-
-        serviceChart.destroy();
-
-        serviceChart = null;
-
-      }
-
-    }
-
-
-    if (
-      type ===
-      "bar"
-    ) {
-
-      if (barChart) {
-
-        barChart.destroy();
-
-        barChart = null;
-
-      }
-
-    }
-  }
-
-
-  /* ============================================================
-     GRADIENT
-     ============================================================ */
-
-  function makeGradient(
-    canvas,
-    color,
-  ) {
-
-    const context =
-      canvas.getContext(
-        "2d",
-      );
-
-
-    const gradient =
-      context.createLinearGradient(
-        0,
-        0,
-        0,
-        canvas.height ||
-        300,
-      );
-
-
-    gradient.addColorStop(
-      0,
-      `${color}55`,
-    );
-
-
-    gradient.addColorStop(
-      1,
-      `${color}00`,
-    );
-
-
-    return gradient;
-  }
-
-
-  /* ============================================================
-     POINT RADIUS
-     ============================================================ */
-
-  function getPointRadius(
-    values,
-    base,
-  ) {
-
-    return values.map(
-      (value) =>
-        value ===
-          null
-
-          ? 0
-
-          : base,
-    );
-  }
-
-
-  /* ============================================================
-     GROWTH
+     GROWTH CALCULATION
      ============================================================ */
 
   function calculateGrowth(
@@ -4401,11 +4406,14 @@ const Dashboard = (() => {
         currentValue ===
         0
       ) {
+
         return 0;
+
       }
 
 
       return null;
+
     }
 
 
@@ -4419,6 +4427,7 @@ const Dashboard = (() => {
       ) *
       100
     );
+
   }
 
 
@@ -4464,11 +4473,13 @@ const Dashboard = (() => {
 
 
       return;
+
     }
 
 
     if (
-      value > 0
+      value >
+      0
     ) {
 
       element.textContent =
@@ -4485,11 +4496,13 @@ const Dashboard = (() => {
 
 
       return;
+
     }
 
 
     if (
-      value < 0
+      value <
+      0
     ) {
 
       element.textContent =
@@ -4506,6 +4519,7 @@ const Dashboard = (() => {
 
 
       return;
+
     }
 
 
@@ -4516,6 +4530,7 @@ const Dashboard = (() => {
     element.classList.add(
       "neutral",
     );
+
   }
 
 
@@ -4534,6 +4549,7 @@ const Dashboard = (() => {
       )} → ${formatDate(
         selectedEndDate,
       )}`;
+
     }
 
 
@@ -4543,6 +4559,7 @@ const Dashboard = (() => {
     ) {
 
       return "Today";
+
     }
 
 
@@ -4552,6 +4569,7 @@ const Dashboard = (() => {
     ) {
 
       return "This Week";
+
     }
 
 
@@ -4561,10 +4579,12 @@ const Dashboard = (() => {
     ) {
 
       return "This Year";
+
     }
 
 
     return "This Month";
+
   }
 
 
@@ -4578,7 +4598,9 @@ const Dashboard = (() => {
       currentCompare ===
       "none"
     ) {
+
       return "No comparison";
+
     }
 
 
@@ -4587,7 +4609,9 @@ const Dashboard = (() => {
 
 
     if (!range) {
+
       return "No comparison";
+
     }
 
 
@@ -4596,6 +4620,7 @@ const Dashboard = (() => {
     )} → ${formatDate(
       range.end,
     )}`;
+
   }
 
 
@@ -4615,6 +4640,7 @@ const Dashboard = (() => {
       return Store.formatCurrency(
         value,
       );
+
     }
 
 
@@ -4623,6 +4649,7 @@ const Dashboard = (() => {
     ).toLocaleString(
       "id-ID",
     )} transactions`;
+
   }
 
 
@@ -4658,6 +4685,7 @@ const Dashboard = (() => {
           ) +
         "B"
       );
+
     }
 
 
@@ -4679,6 +4707,7 @@ const Dashboard = (() => {
           ) +
         "M"
       );
+
     }
 
 
@@ -4696,6 +4725,7 @@ const Dashboard = (() => {
           .toFixed(0) +
         "K"
       );
+
     }
 
 
@@ -4705,6 +4735,7 @@ const Dashboard = (() => {
         "id-ID",
       )
     );
+
   }
 
 
@@ -4729,6 +4760,7 @@ const Dashboard = (() => {
         return new Date(
           "invalid",
         );
+
       }
 
 
@@ -4737,12 +4769,14 @@ const Dashboard = (() => {
         value.getMonth(),
         value.getDate(),
       );
+
     }
 
 
     const raw =
       String(
-        value || "",
+        value ||
+        "",
       ).trim();
 
 
@@ -4751,6 +4785,7 @@ const Dashboard = (() => {
       return new Date(
         "invalid",
       );
+
     }
 
 
@@ -4773,6 +4808,7 @@ const Dashboard = (() => {
           match[3],
         ),
       );
+
     }
 
 
@@ -4791,6 +4827,7 @@ const Dashboard = (() => {
       return new Date(
         "invalid",
       );
+
     }
 
 
@@ -4799,6 +4836,7 @@ const Dashboard = (() => {
       parsed.getMonth(),
       parsed.getDate(),
     );
+
   }
 
 
@@ -4827,6 +4865,7 @@ const Dashboard = (() => {
         "0",
       )
     );
+
   }
 
 
@@ -4852,11 +4891,12 @@ const Dashboard = (() => {
 
 
     return result;
+
   }
 
 
   /* ============================================================
-     DIFFERENCE DAYS
+     DIFF DAYS
      ============================================================ */
 
   function diffDays(
@@ -4886,6 +4926,7 @@ const Dashboard = (() => {
     ) {
 
       return 0;
+
     }
 
 
@@ -4896,6 +4937,7 @@ const Dashboard = (() => {
       ) /
       86400000,
     );
+
   }
 
 
@@ -4919,11 +4961,12 @@ const Dashboard = (() => {
 
       },
     );
+
   }
 
 
   /* ============================================================
-     DATE LABEL
+     NORMAL DATE DISPLAY
      ============================================================ */
 
   function formatDate(
@@ -4943,6 +4986,7 @@ const Dashboard = (() => {
     ) {
 
       return "—";
+
     }
 
 
@@ -4961,6 +5005,7 @@ const Dashboard = (() => {
 
       },
     );
+
   }
 
 
@@ -4973,7 +5018,8 @@ const Dashboard = (() => {
   ) {
 
     return String(
-      value ?? "",
+      value ??
+      "",
     )
 
       .replace(
@@ -5000,6 +5046,7 @@ const Dashboard = (() => {
         /'/g,
         "&#039;",
       );
+
   }
 
 
@@ -5022,7 +5069,9 @@ const Dashboard = (() => {
 
       element.textContent =
         value;
+
     }
+
   }
 
 
