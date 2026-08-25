@@ -549,11 +549,12 @@ canvas {
   position: relative;
 
   width: 100%;
+  max-width: 100%;
 
   background:
     linear-gradient(180deg,
-      rgba(20, 20, 23, 0.98),
-      rgba(15, 15, 17, 0.98));
+      rgba(20, 20, 23, 0.98) 0%,
+      rgba(15, 15, 17, 0.98) 100%);
 
   border:
     1px solid #27272a;
@@ -593,12 +594,15 @@ canvas {
     24px;
 
   margin-bottom:
-    26px;
+    24px;
 }
 
 .dashboard-control-header>div:first-child {
   min-width:
     0;
+
+  flex:
+    1;
 }
 
 .dashboard-control-eyebrow {
@@ -616,6 +620,9 @@ canvas {
 
   letter-spacing:
     0.9px;
+
+  line-height:
+    1;
 
   text-transform:
     uppercase;
@@ -710,26 +717,32 @@ canvas {
   display:
     grid;
 
+  width:
+    100%;
+
+  min-width:
+    0;
+
   grid-template-columns:
-    minmax(310px, 1.45fr) minmax(360px, 1.65fr) minmax(150px, 0.8fr) minmax(150px, 0.8fr) minmax(150px, 0.8fr);
+    minmax(285px, 1.35fr) minmax(350px, 1.55fr) minmax(145px, 0.75fr) minmax(145px, 0.75fr) minmax(145px, 0.75fr);
 
   grid-template-areas:
     "period date metric branch compare"
     "visual visual visual visual visual";
 
-  gap:
+  column-gap:
+    14px;
+
+  row-gap:
     18px;
 
   align-items:
     start;
-
-  width:
-    100%;
 }
 
 
 /* ------------------------------------------------------------
-   GRID MAPPING
+   GRID AREA MAPPING
    ------------------------------------------------------------ */
 
 .dashboard-control-grid .control-group:nth-child(1) {
@@ -768,6 +781,9 @@ canvas {
    ------------------------------------------------------------ */
 
 .control-group {
+  width:
+    100%;
+
   min-width:
     0;
 
@@ -791,11 +807,11 @@ canvas {
   font-size:
     0.72rem;
 
-  line-height:
-    1;
-
   font-weight:
     700;
+
+  line-height:
+    1;
 
   letter-spacing:
     0.55px;
@@ -813,6 +829,9 @@ canvas {
   width:
     100%;
 
+  min-width:
+    0;
+
   display:
     grid;
 
@@ -820,9 +839,9 @@ canvas {
     repeat(4, minmax(0, 1fr));
 
   gap:
-    7px;
+    6px;
 
-  min-height:
+  height:
     44px;
 }
 
@@ -837,10 +856,10 @@ canvas {
     44px;
 
   padding:
-    0 10px;
+    0 8px;
 
   display:
-    inline-flex;
+    flex;
 
   align-items:
     center;
@@ -850,6 +869,9 @@ canvas {
 
   border-radius:
     10px;
+
+  font-size:
+    0.76rem;
 
   white-space:
     nowrap;
@@ -867,31 +889,37 @@ canvas {
    ============================================================ */
 
 .date-range-control {
-  width:
-    100%;
-
   display:
     grid;
 
-  grid-template-columns:
-    minmax(115px, 1fr) 18px minmax(115px, 1fr) 76px 70px;
+  width:
+    100%;
 
-  gap:
-    7px;
-
-  align-items:
-    center;
-
-  min-height:
-    44px;
-}
-
-.date-field {
   min-width:
     0;
 
+  height:
+    44px;
+
+  grid-template-columns:
+    minmax(82px, 1fr) 18px minmax(82px, 1fr) 64px 58px;
+
+  column-gap:
+    6px;
+
+  align-items:
+    center;
+}
+
+.date-field {
+  position:
+    relative;
+
   width:
     100%;
+
+  min-width:
+    0;
 
   height:
     44px;
@@ -901,9 +929,6 @@ canvas {
 
   align-items:
     center;
-
-  position:
-    relative;
 }
 
 .date-field span {
@@ -912,6 +937,9 @@ canvas {
 }
 
 .date-range-arrow {
+  width:
+    18px;
+
   height:
     44px;
 
@@ -928,69 +956,75 @@ canvas {
     #71717a;
 
   font-size:
-    0.85rem;
+    0.82rem;
+
+  user-select:
+    none;
 }
 
 
 /* ============================================================
-   DATE / TIME INPUT
+   DATE INPUT
    ============================================================ */
 
-input[type="date"],
-input[type="time"] {
+.dashboard-control-card .date-field input[type="date"] {
   width:
+    100%;
+
+  min-width:
+    0;
+
+  max-width:
     100%;
 
   height:
     44px;
 
-  min-height:
-    44px;
-
   padding:
-    0 38px 0 12px;
+    0 34px 0 11px;
 
   border-radius:
     10px;
 
   border:
-    1px solid #2f2f33;
+    1px solid #343438;
 
   background:
-    #111113;
+    #101012;
 
   color:
-    #f4f4f5;
+    #ffffff;
 
   color-scheme:
     dark;
 
   font-size:
-    0.82rem;
+    0.78rem;
 
   font-weight:
-    500;
+    600;
 
   outline:
     none;
 
+  cursor:
+    pointer;
+
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-input[type="date"]:hover,
-input[type="time"]:hover {
+.dashboard-control-card .date-field input[type="date"]:hover {
   border-color:
-    #4a4a50;
+    #505057;
 
   background:
     #161618;
 }
 
-input[type="date"]:focus,
-input[type="time"]:focus {
+.dashboard-control-card .date-field input[type="date"]:focus {
   border-color:
     var(--primary);
 
@@ -998,79 +1032,105 @@ input[type="time"]:focus {
     #141416;
 
   box-shadow:
-    0 0 0 3px rgba(227, 0, 34, 0.14);
+    0 0 0 3px rgba(227, 0, 34, 0.12);
 }
 
 
-/* ------------------------------------------------------------
-   DATE / TIME ICON
-   ------------------------------------------------------------ */
+/* ============================================================
+   DATE ICON — FORCE WHITE
+   ============================================================ */
 
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator {
-  filter:
-    invert(1) brightness(1.8) contrast(1.1);
-
+.dashboard-control-card .date-field input[type="date"]::-webkit-calendar-picker-indicator {
   opacity:
-    1;
+    0;
+
+  position:
+    absolute;
+
+  right:
+    6px;
 
   width:
-    17px;
+    22px;
 
   height:
-    17px;
+    22px;
 
   cursor:
     pointer;
-
-  padding:
-    1px;
-
-  border-radius:
-    4px;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator:hover,
-input[type="time"]::-webkit-calendar-picker-indicator:hover {
-  filter:
-    invert(1) brightness(2.4);
-
-  background:
-    rgba(227, 0, 34, 0.15);
 }
 
 
-/* ------------------------------------------------------------
-   TRANSACTION DATE / TIME
-   ------------------------------------------------------------ */
+/* Custom white calendar icon */
+.date-field::after {
+  content:
+    "";
 
-#txnTime,
-#txnDate,
-#promoStart,
-#promoEnd,
-#historyFilterDate {
+  position:
+    absolute;
+
+  right:
+    8px;
+
+  top:
+    50%;
+
+  width:
+    16px;
+
+  height:
+    16px;
+
+  transform:
+    translateY(-50%);
+
+  pointer-events:
+    none;
+
+  background-repeat:
+    no-repeat;
+
+  background-position:
+    center;
+
+  background-size:
+    contain;
+
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='17' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+}
+
+
+/* ============================================================
+   APPLY / CLEAR
+   ============================================================ */
+
+.btn-apply-date {
   width:
     100%;
 
   height:
     44px;
 
-  min-height:
-    44px;
+  min-width:
+    0;
 
   padding:
-    0 42px 0 13px;
+    0 8px;
 
-  color-scheme:
-    dark;
+  border-radius:
+    10px;
+
+  font-size:
+    0.78rem;
+
+  font-weight:
+    700;
+
+  white-space:
+    nowrap;
 }
 
-
-/* ------------------------------------------------------------
-   APPLY / CLEAR
-   ------------------------------------------------------------ */
-
-.btn-apply-date,
 .btn-clear-date {
   width:
     100%;
@@ -1078,14 +1138,20 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   height:
     44px;
 
+  min-width:
+    0;
+
   padding:
-    0 10px;
+    0 6px;
 
   border-radius:
     10px;
 
   font-size:
-    0.78rem;
+    0.76rem;
+
+  font-weight:
+    600;
 
   white-space:
     nowrap;
@@ -1100,6 +1166,12 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   width:
     100%;
 
+  min-width:
+    0;
+
+  max-width:
+    100%;
+
   height:
     44px;
 
@@ -1107,22 +1179,22 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
     44px;
 
   padding:
-    0 34px 0 12px;
+    0 32px 0 12px;
 
   border-radius:
     10px;
 
   border:
-    1px solid #2f2f33;
+    1px solid #343438;
 
   background-color:
-    #111113;
+    #101012;
 
   color:
-    #f4f4f5;
+    #ffffff;
 
   font-size:
-    0.82rem;
+    0.8rem;
 
   font-weight:
     600;
@@ -1135,13 +1207,13 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 
   transition:
     border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .dashboard-control-card .dashboard-select:hover {
   border-color:
-    #4a4a50;
+    #505057;
 
   background-color:
     #161618;
@@ -1155,40 +1227,12 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
     0 0 0 3px rgba(227, 0, 34, 0.12);
 }
 
-.dashboard-select option,
-.chart-filter select option,
-.form-group select option,
-.history-filters select option {
-  color:
-    #f4f4f5 !important;
-
-  background:
-    #18181b !important;
-
-  font-size:
-    0.9rem;
-
-  font-weight:
-    500;
-}
-
-.dashboard-select option:checked,
-.chart-filter select option:checked,
-.form-group select option:checked,
-.history-filters select option:checked {
+.dashboard-control-card .dashboard-select option {
   color:
     #ffffff !important;
 
   background:
-    #e30022 !important;
-}
-
-select option:disabled {
-  color:
-    #71717a !important;
-
-  background:
-    #121214 !important;
+    #18181b !important;
 }
 
 
@@ -1197,9 +1241,6 @@ select option:disabled {
    ============================================================ */
 
 .dashboard-control-grid .control-group:nth-child(6) {
-  width:
-    100%;
-
   padding-top:
     2px;
 }
@@ -1223,7 +1264,7 @@ select option:disabled {
     40px;
 
   padding:
-    0 16px;
+    0 15px;
 
   display:
     inline-flex;
@@ -1238,12 +1279,17 @@ select option:disabled {
     10px;
 }
 
+
+/* ============================================================
+   ERROR
+   ============================================================ */
+
 .control-error {
   min-height:
     16px;
 
   margin-top:
-    1px;
+    2px;
 
   color:
     #f87171;
@@ -1284,19 +1330,19 @@ select option:disabled {
 }
 
 .filter-btn:hover {
-  background:
-    var(--border-light);
-
   color:
     var(--text);
+
+  background:
+    #18181b;
 }
 
 .filter-btn.active {
+  color:
+    #ffffff;
+
   background:
     var(--primary);
-
-  color:
-    #fff;
 
   border-color:
     var(--primary);
@@ -2310,6 +2356,95 @@ select option:disabled {
 
 
 /* ============================================================
+   DATE/TIME FORMS
+   ============================================================ */
+
+.form-group input[type="date"],
+.form-group input[type="time"] {
+  width:
+    100%;
+
+  height:
+    44px;
+
+  min-height:
+    44px;
+
+  padding:
+    0 42px 0 13px;
+
+  border-radius:
+    10px;
+
+  border:
+    1px solid #2f2f33;
+
+  background:
+    #111113;
+
+  color:
+    #ffffff;
+
+  color-scheme:
+    dark;
+
+  font-size:
+    0.84rem;
+
+  outline:
+    none;
+
+  cursor:
+    pointer;
+}
+
+.form-group input[type="date"]:focus,
+.form-group input[type="time"]:focus {
+  border-color:
+    var(--primary);
+
+  box-shadow:
+    0 0 0 3px rgba(227, 0, 34, 0.14);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter:
+    invert(1) brightness(2) contrast(1.15);
+
+  opacity:
+    1;
+
+  cursor:
+    pointer;
+
+  width:
+    18px;
+
+  height:
+    18px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  filter:
+    invert(1) brightness(2.5) contrast(1.2);
+}
+
+#txnDate,
+#txnTime,
+#promoStart,
+#promoEnd,
+#historyFilterDate {
+  color-scheme:
+    dark;
+
+  color:
+    #ffffff;
+}
+
+
+/* ============================================================
    BUTTONS
    ============================================================ */
 
@@ -2690,7 +2825,7 @@ select option:disabled {
 
 
 /* ============================================================
-   STATUS BADGES
+   STATUS
    ============================================================ */
 
 .status-badge {
@@ -3080,18 +3215,27 @@ select option:disabled {
 
 
 /* ============================================================
-   RESPONSIVE — 1400
+   RESPONSIVE — 1450
    ============================================================ */
 
-@media (max-width: 1400px) {
+@media (max-width: 1450px) {
 
   .dashboard-control-grid {
 
     grid-template-columns:
-      minmax(280px, 1.35fr) minmax(330px, 1.5fr) minmax(140px, 0.75fr) minmax(140px, 0.75fr) minmax(140px, 0.75fr);
+      minmax(260px, 1.3fr) minmax(330px, 1.45fr) minmax(135px, 0.7fr) minmax(135px, 0.7fr) minmax(135px, 0.7fr);
 
-    gap:
-      14px;
+    column-gap:
+      11px;
+  }
+
+  .date-range-control {
+
+    grid-template-columns:
+      minmax(75px, 1fr) 16px minmax(75px, 1fr) 60px 54px;
+
+    column-gap:
+      5px;
   }
 
   .quick-filter-group {
@@ -3102,26 +3246,25 @@ select option:disabled {
   .quick-filter-group .filter-btn {
 
     padding:
-      0 7px;
+      0 6px;
 
     font-size:
-      0.76rem;
+      0.72rem;
   }
 
-  .date-range-control {
-
-    grid-template-columns:
-      minmax(105px, 1fr) 16px minmax(105px, 1fr) 72px 65px;
+  .btn-apply-date,
+  .btn-clear-date {
+    font-size:
+      0.72rem;
   }
-
 }
 
 
 /* ============================================================
-   RESPONSIVE — 1180
+   RESPONSIVE — 1200
    ============================================================ */
 
-@media (max-width: 1180px) {
+@media (max-width: 1200px) {
 
   .dashboard-control-grid {
 
@@ -3129,14 +3272,19 @@ select option:disabled {
       repeat(3, minmax(0, 1fr));
 
     grid-template-areas:
-
       "period period period"
-
       "date date date"
-
       "metric branch compare"
-
       "visual visual visual";
+  }
+
+  .date-range-control {
+
+    grid-template-columns:
+      minmax(110px, 1fr) 18px minmax(110px, 1fr) 74px 64px;
+
+    column-gap:
+      6px;
   }
 
   .summary-cards {
@@ -3171,7 +3319,6 @@ select option:disabled {
     border-right:
       none;
   }
-
 }
 
 
@@ -3251,7 +3398,6 @@ select option:disabled {
       1fr;
 
     grid-template-areas:
-
       "period"
       "date"
       "metric"
@@ -3259,17 +3405,17 @@ select option:disabled {
       "compare"
       "visual";
 
-    gap:
+    row-gap:
       16px;
   }
 
   .quick-filter-group {
 
-    display:
-      grid;
-
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
+
+    height:
+      auto;
 
     min-height:
       auto;
@@ -3278,20 +3424,34 @@ select option:disabled {
   .date-range-control {
 
     grid-template-columns:
-      1fr 18px 1fr;
+      minmax(0, 1fr) 18px minmax(0, 1fr);
 
-    gap:
+    column-gap:
       7px;
+
+    height:
+      auto;
+
+    min-height:
+      44px;
   }
 
   .btn-apply-date {
+
     grid-column:
       1;
+
+    margin-top:
+      8px;
   }
 
   .btn-clear-date {
+
     grid-column:
       3;
+
+    margin-top:
+      8px;
   }
 
 
@@ -3404,7 +3564,7 @@ select option:disabled {
   }
 
 
-  /* FORM */
+  /* FORMS */
 
   .form-row,
   .form-row-inline {
@@ -3430,6 +3590,7 @@ select option:disabled {
   }
 
   .history-filters .form-group {
+
     min-width:
       auto;
   }
@@ -3509,7 +3670,6 @@ select option:disabled {
     display:
       none;
   }
-
 }
 
 
@@ -3608,6 +3768,9 @@ select option:disabled {
 
     width:
       100%;
+
+    margin-top:
+      0;
   }
 
   input[type="date"],
@@ -3645,5 +3808,4 @@ select option:disabled {
     text-align:
       center;
   }
-
 }
