@@ -1,6 +1,6 @@
 /* ============================================================
    NEXT LEVEL BEAUTY BAR
-   Dashboard
+   MANAGEMENT DASHBOARD
    ============================================================ */
 
 const Dashboard = (() => {
@@ -12,6 +12,10 @@ const Dashboard = (() => {
   let currentBranch = "all";
   let currentChartType = "line";
   let currentMetric = "revenue";
+  let currentCompare = "none";
+
+  let selectedStartDate = "";
+  let selectedEndDate = "";
 
   let initialized = false;
 
@@ -22,22 +26,36 @@ const Dashboard = (() => {
     "Bandung",
   ];
 
-  /* ============================================================
-     PUBLIC RENDER
-     ============================================================ */
+  const COLORS = [
+    "#e30022",
+    "#ff1a3d",
+    "#990017",
+    "#60a5fa",
+    "#4ade80",
+    "#facc15",
+    "#a78bfa",
+    "#22d3ee",
+    "#fb7185",
+    "#c084fc",
+    "#94a3b8",
+    "#ffffff",
+  ];
+
+  /* ==========================================================
+     PUBLIC
+     ========================================================== */
 
   async function render() {
     try {
       if (!initialized) {
-        _setup();
+        setup();
         initialized = true;
       }
 
-      await renderPromoBanner();
-      await renderSummaryCards();
-      await renderCharts();
-      await renderPromoPerformance();
+      normalizeInitialDates();
 
+      await renderPromoBanner();
+      await renderDashboard();
     } catch (error) {
       console.error(
         "Dashboard render error:",
@@ -46,76 +64,83 @@ const Dashboard = (() => {
     }
   }
 
-  /* ============================================================
+  async function refresh() {
+    await renderDashboard();
+  }
+
+  /* ==========================================================
      SETUP
-     ============================================================ */
+     ========================================================== */
 
-  function _setup() {
+  function setup() {
+    setupQuickFilters();
+    setupChartType();
+    setupMetric();
+    setupBranch();
+    setupCompare();
+    setupDatePicker();
+  }
 
-    /* ----------------------------------------------------------
-       TIMEFRAME
-       ---------------------------------------------------------- */
+  /* ==========================================================
+     QUICK FILTER
+     ========================================================== */
 
+  function setupQuickFilters() {
     document
       .querySelectorAll(
         ".filter-btn[data-filter]",
       )
       .forEach((btn) => {
-
         btn.addEventListener(
           "click",
           async () => {
-
             document
               .querySelectorAll(
                 ".filter-btn[data-filter]",
               )
-              .forEach((b) => {
-                b.classList.remove(
+              .forEach((item) => {
+                item.classList.remove(
                   "active",
                 );
               });
 
-            btn.classList.add(
-              "active",
-            );
+            btn.classList.add("active");
 
             currentFilter =
               btn.dataset.filter;
 
-            await refreshDashboard();
+            clearCustomDateRange();
+
+            await renderDashboard();
           },
         );
       });
+  }
 
+  /* ==========================================================
+     CHART TYPE
+     ========================================================== */
 
-    /* ----------------------------------------------------------
-       CHART TYPE
-       ---------------------------------------------------------- */
-
+  function setupChartType() {
     document
       .querySelectorAll(
         ".chart-type-btn",
       )
       .forEach((btn) => {
-
         btn.addEventListener(
           "click",
           async () => {
-
             document
               .querySelectorAll(
                 ".chart-type-btn",
               )
-              .forEach((b) => {
-                b.classList.remove(
+              .forEach((item) => {
+                item.classList.remove(
                   "active",
                 );
               });
 
-            btn.classList.add(
-              "active",
-            );
+            btn.classList.add("active");
 
             currentChartType =
               btn.dataset.chartType;
@@ -124,791 +149,937 @@ const Dashboard = (() => {
           },
         );
       });
+  }
 
+  /* ==========================================================
+     METRIC
+     ========================================================== */
 
-    /* ----------------------------------------------------------
-       METRIC
-       ---------------------------------------------------------- */
-
-    const metricFilter =
+  function setupMetric() {
+    const el =
       document.getElementById(
         "dashMetricFilter",
       );
 
-    if (metricFilter) {
+    if (!el) return;
 
-      metricFilter.addEventListener(
-        "change",
-        async (e) => {
+    el.addEventListener(
+      "change",
+      async (event) => {
+        currentMetric =
+          event.target.value;
 
-          currentMetric =
-            e.target.value;
+        await renderDashboard();
+      },
+    );
+  }
 
-          await refreshDashboard();
-        },
-      );
-    }
+  /* ==========================================================
+     BRANCH
+     ========================================================== */
 
-
-    /* ----------------------------------------------------------
-       BRANCH
-       ---------------------------------------------------------- */
-
-    const branchFilter =
+  function setupBranch() {
+    const el =
       document.getElementById(
         "dashBranchFilter",
       );
 
-    if (branchFilter) {
+    if (!el) return;
 
-      BRANCHES.forEach(
-        (branch) => {
+    el.value = "all";
 
-          if (
-            ![
-              ...branchFilter.options,
-            ].some(
-              (option) =>
-                option.value ===
-                branch,
-            )
-          ) {
+    BRANCHES.forEach((branch) => {
+      if (
+        !Array.from(el.options).some(
+          (option) =>
+            option.value === branch,
+        )
+      ) {
+        const option =
+          document.createElement(
+            "option",
+          );
 
-            const option =
-              document.createElement(
-                "option",
-              );
+        option.value = branch;
+        option.textContent = branch;
 
-            option.value =
-              branch;
+        el.appendChild(option);
+      }
+    });
 
-            option.textContent =
-              branch;
+    el.addEventListener(
+      "change",
+      async (event) => {
+        currentBranch =
+          event.target.value;
 
-            branchFilter.appendChild(
-              option,
-            );
-          }
-        },
+        await renderDashboard();
+      },
+    );
+  }
+
+  /* ==========================================================
+     COMPARE
+     ========================================================== */
+
+  function setupCompare() {
+    const el =
+      document.getElementById(
+        "dashCompareFilter",
       );
 
+    if (!el) return;
 
-      branchFilter.addEventListener(
-        "change",
-        async (e) => {
+    el.addEventListener(
+      "change",
+      async (event) => {
+        currentCompare =
+          event.target.value;
 
-          currentBranch =
-            e.target.value;
+        await renderDashboard();
+      },
+    );
+  }
 
-          await refreshDashboard();
+  /* ==========================================================
+     DATE PICKER
+     ========================================================== */
+
+  function setupDatePicker() {
+    const start =
+      document.getElementById(
+        "dashDateStart",
+      );
+
+    const end =
+      document.getElementById(
+        "dashDateEnd",
+      );
+
+    const apply =
+      document.getElementById(
+        "dashDateApply",
+      );
+
+    const clear =
+      document.getElementById(
+        "dashDateClear",
+      );
+
+    if (!start || !end) {
+      return;
+    }
+
+    start.addEventListener(
+      "change",
+      () => {
+        if (start.value) {
+          end.min = start.value;
+        }
+
+        clearDateError();
+      },
+    );
+
+    end.addEventListener(
+      "change",
+      () => {
+        clearDateError();
+
+        if (
+          start.value &&
+          end.value &&
+          end.value < start.value
+        ) {
+          showDateError(
+            "End date cannot be earlier than start date.",
+          );
+        }
+      },
+    );
+
+    if (apply) {
+      apply.addEventListener(
+        "click",
+        async () => {
+          const startValue =
+            start.value;
+
+          const endValue =
+            end.value;
+
+          if (!startValue || !endValue) {
+            showDateError(
+              "Please select both dates.",
+            );
+
+            return;
+          }
+
+          if (endValue < startValue) {
+            showDateError(
+              "End date cannot be earlier than start date.",
+            );
+
+            return;
+          }
+
+          selectedStartDate =
+            startValue;
+
+          selectedEndDate =
+            endValue;
+
+          setQuickFilterActive(
+            null,
+          );
+
+          await renderDashboard();
+        },
+      );
+    }
+
+    if (clear) {
+      clear.addEventListener(
+        "click",
+        async () => {
+          clearCustomDateRange();
+
+          const activeButton =
+            document.querySelector(
+              `.filter-btn[data-filter="${currentFilter}"]`,
+            );
+
+          if (activeButton) {
+            setQuickFilterActive(
+              currentFilter,
+            );
+          } else {
+            setQuickFilterActive(
+              "monthly",
+            );
+          }
+
+          await renderDashboard();
         },
       );
     }
   }
 
-  /* ============================================================
-     REFRESH
-     ============================================================ */
+  /* ==========================================================
+     INITIAL DATE
+     ========================================================== */
 
-  async function refreshDashboard() {
+  function normalizeInitialDates() {
+    const today =
+      Store.getTodayStr();
 
-    await renderSummaryCards();
+    const start =
+      document.getElementById(
+        "dashDateStart",
+      );
 
-    await renderCharts();
+    const end =
+      document.getElementById(
+        "dashDateEnd",
+      );
 
-    await renderPromoPerformance();
+    if (!start || !end) {
+      return;
+    }
+
+    if (
+      !start.value &&
+      !end.value
+    ) {
+      start.value = "";
+      end.value = "";
+    }
+
+    updateFilterStatus();
   }
 
-  /* ============================================================
+  /* ==========================================================
+     DATE RANGE STATE
+     ========================================================== */
+
+  function hasCustomDateRange() {
+    return Boolean(
+      selectedStartDate &&
+      selectedEndDate,
+    );
+  }
+
+  function clearCustomDateRange() {
+    selectedStartDate = "";
+    selectedEndDate = "";
+
+    const start =
+      document.getElementById(
+        "dashDateStart",
+      );
+
+    const end =
+      document.getElementById(
+        "dashDateEnd",
+      );
+
+    if (start) {
+      start.value = "";
+    }
+
+    if (end) {
+      end.value = "";
+      end.removeAttribute("min");
+    }
+
+    clearDateError();
+  }
+
+  function setQuickFilterActive(
+    filter,
+  ) {
+    document
+      .querySelectorAll(
+        ".filter-btn[data-filter]",
+      )
+      .forEach((btn) => {
+        btn.classList.toggle(
+          "active",
+          btn.dataset.filter ===
+          filter,
+        );
+      });
+  }
+
+  function showDateError(
+    message,
+  ) {
+    const el =
+      document.getElementById(
+        "dashDateError",
+      );
+
+    if (el) {
+      el.textContent = message;
+    }
+  }
+
+  function clearDateError() {
+    const el =
+      document.getElementById(
+        "dashDateError",
+      );
+
+    if (el) {
+      el.textContent = "";
+    }
+  }
+
+  /* ==========================================================
+     DASHBOARD RENDER
+     ========================================================== */
+
+  async function renderDashboard() {
+    updateFilterStatus();
+
+    await renderSummaryCards();
+    await renderCharts();
+    await renderPromoPerformance();
+    await renderManagerInsights();
+  }
+
+  /* ==========================================================
+     FILTER STATUS
+     ========================================================== */
+
+  function updateFilterStatus() {
+    const status =
+      document.getElementById(
+        "dashboardFilterStatus",
+      );
+
+    const label =
+      document.getElementById(
+        "dashPeriodLabel",
+      );
+
+    if (hasCustomDateRange()) {
+      const text =
+        `${formatDateLabel(
+          selectedStartDate,
+        )} → ${formatDateLabel(
+          selectedEndDate,
+        )}`;
+
+      setText(
+        "dashboardFilterStatus",
+        text,
+      );
+
+      setText(
+        "dashPeriodLabel",
+        text,
+      );
+
+      return;
+    }
+
+    const labelText =
+      getPeriodLabel();
+
+    setText(
+      "dashboardFilterStatus",
+      labelText,
+    );
+
+    setText(
+      "dashPeriodLabel",
+      labelText,
+    );
+  }
+
+  /* ==========================================================
      PROMO BANNER
-     ============================================================ */
+     ========================================================== */
 
   async function renderPromoBanner() {
-
     const banner =
       document.getElementById(
         "promoBanner",
       );
 
-    if (!banner) {
-      return;
-    }
+    if (!banner) return;
 
-    const active =
-      await Store.getActivePromos();
+    try {
+      const active =
+        await Store.getActivePromos();
 
-    if (
-      !active ||
-      active.length === 0
-    ) {
+      if (
+        !active ||
+        active.length === 0
+      ) {
+        banner.innerHTML = "";
+        banner.style.display =
+          "none";
 
-      banner.innerHTML = "";
+        return;
+      }
+
+      banner.innerHTML =
+        active
+          .map(
+            (promo) => `
+              <div class="promo-badge-item">
+                <span class="promo-badge-icon">
+                  🎉
+                </span>
+
+                <span>
+                  <strong>
+                    ${escapeHtml(
+              promo.name,
+            )}
+                  </strong>
+                  — ${Number(
+              promo.discount || 0,
+            )}% Off
+                  ${promo.description
+                ? ` · ${escapeHtml(
+                  promo.description,
+                )}`
+                : ""
+              }
+                </span>
+              </div>
+            `,
+          )
+          .join("");
 
       banner.style.display =
-        "none";
-
-      return;
+        "flex";
+    } catch (error) {
+      console.error(
+        "Promo banner error:",
+        error,
+      );
     }
-
-    banner.innerHTML =
-      active
-        .map(
-          (p) => `
-            <div class="promo-badge-item">
-
-              <span class="promo-badge-icon">
-                🎉
-              </span>
-
-              <span>
-
-                <strong>
-                  ${escapeHtml(
-            p.name,
-          )}
-                </strong>
-
-                — ${Number(
-            p.discount || 0,
-          )}% Off
-
-                ${p.description
-              ? " · " +
-              escapeHtml(
-                p.description,
-              )
-              : ""
-            }
-
-              </span>
-
-            </div>
-          `,
-        )
-        .join("");
-
-    banner.style.display =
-      "flex";
   }
 
-  /* ============================================================
-     SUMMARY / KPI
-     
-     ORDER:
-     TODAY
-     THIS WEEK
-     THIS MONTH
-     THIS YEAR
-     
-     NOTE:
-     KPI tidak mengikuti currentFilter.
-     Masing-masing card selalu menunjukkan
-     periodenya sendiri.
-     ============================================================ */
+  /* ==========================================================
+     KPI
+     ========================================================== */
 
   async function renderSummaryCards() {
-
     let all =
-      await Store.getTransactions();
-
-    all =
-      filterBranch(all);
+      await getTransactions();
 
     const today =
       Store.getTodayStr();
 
-    const todayDate =
-      new Date(
-        `${today}T00:00:00`,
-      );
-
-
-    /* ==========================================================
-       TODAY
-       ========================================================== */
-
-    const todayTxns =
+    const todayData =
       all.filter(
         (t) =>
           t.date === today,
       );
 
-
-    /* ==========================================================
-       THIS WEEK
-
-       Weekly system:
-
-       1 - 7
-       8 - 14
-       15 - 21
-       22 - 28
-       29 - end of month
-       ========================================================== */
-
-    const currentDay =
-      todayDate.getDate();
-
-    let weekStartDay;
-
-    if (
-      currentDay <= 7
-    ) {
-
-      weekStartDay = 1;
-
-    } else if (
-      currentDay <= 14
-    ) {
-
-      weekStartDay = 8;
-
-    } else if (
-      currentDay <= 21
-    ) {
-
-      weekStartDay = 15;
-
-    } else if (
-      currentDay <= 28
-    ) {
-
-      weekStartDay = 22;
-
-    } else {
-
-      weekStartDay = 29;
-    }
-
-
-    const weekStart =
-      new Date(
-        todayDate.getFullYear(),
-        todayDate.getMonth(),
-        weekStartDay,
+    const weekRange =
+      getCurrentBucketRange(
+        today,
       );
 
-
-    const weekEnd =
-      new Date(
-        todayDate.getFullYear(),
-        todayDate.getMonth() + 1,
-        0,
+    const weekData =
+      filterByRange(
+        all,
+        weekRange,
       );
-
-
-    const weekStartStr =
-      _dateStr(
-        weekStart,
-      );
-
-    const weekEndStr =
-      _dateStr(
-        weekEnd,
-      );
-
-
-    const weekTxns =
-      all.filter(
-        (t) =>
-          t.date >=
-          weekStartStr &&
-          t.date <=
-          weekEndStr,
-      );
-
-
-    /* ==========================================================
-       THIS MONTH
-       ========================================================== */
 
     const monthStart =
-      today.substring(
+      `${today.substring(
         0,
         7,
-      ) + "-01";
+      )}-01`;
 
-
-    const monthTxns =
+    const monthData =
       all.filter(
         (t) =>
           t.date >=
           monthStart &&
-          t.date <=
-          today,
+          t.date <= today,
       );
 
-
-    /* ==========================================================
-       THIS YEAR
-       ========================================================== */
-
     const yearStart =
-      today.substring(
+      `${today.substring(
         0,
         4,
-      ) + "-01-01";
+      )}-01-01`;
 
-
-    const yearTxns =
+    const yearData =
       all.filter(
         (t) =>
           t.date >=
           yearStart &&
-          t.date <=
-          today,
+          t.date <= today,
       );
 
-
-    /* ==========================================================
-       REVENUE
-       ========================================================== */
-
-    const todayRevenue =
-      sumRevenue(
-        todayTxns,
-      );
-
-    const weekRevenue =
-      sumRevenue(
-        weekTxns,
-      );
-
-    const monthRevenue =
-      sumRevenue(
-        monthTxns,
-      );
-
-    const yearRevenue =
-      sumRevenue(
-        yearTxns,
-      );
-
-
-    /* ==========================================================
-       CURRENT METRIC
-       ========================================================== */
-
-    const isRevenue =
-      currentMetric ===
-      "revenue";
-
-
-    /* ==========================================================
-       TODAY KPI
-       ========================================================== */
-
-    if (isRevenue) {
-
-      _setText(
-        "todayRevenue",
-        Store.formatCurrency(
-          todayRevenue,
-        ),
-      );
-
-      _setText(
-        "todayCount",
-        `${todayTxns.length} transactions`,
-      );
-
-    } else {
-
-      _setText(
-        "todayRevenue",
-        `${todayTxns.length} Transactions`,
-      );
-
-      _setText(
-        "todayCount",
-        `Revenue: ${Store.formatCurrency(
-          todayRevenue,
-        )}`,
-      );
-    }
-
-
-    /* ==========================================================
-       THIS WEEK KPI
-       ========================================================== */
-
-    if (isRevenue) {
-
-      _setText(
-        "weekRevenue",
-        Store.formatCurrency(
-          weekRevenue,
-        ),
-      );
-
-      _setText(
-        "weekCount",
-        `${weekTxns.length} transactions`,
-      );
-
-    } else {
-
-      _setText(
-        "weekRevenue",
-        `${weekTxns.length} Transactions`,
-      );
-
-      _setText(
-        "weekCount",
-        `Revenue: ${Store.formatCurrency(
-          weekRevenue,
-        )}`,
-      );
-    }
-
-
-    /* ==========================================================
-       THIS MONTH KPI
-       ========================================================== */
-
-    if (isRevenue) {
-
-      _setText(
-        "monthRevenue",
-        Store.formatCurrency(
-          monthRevenue,
-        ),
-      );
-
-      _setText(
-        "monthCount",
-        `${monthTxns.length} transactions`,
-      );
-
-    } else {
-
-      _setText(
-        "monthRevenue",
-        `${monthTxns.length} Transactions`,
-      );
-
-      _setText(
-        "monthCount",
-        `Revenue: ${Store.formatCurrency(
-          monthRevenue,
-        )}`,
-      );
-    }
-
-
-    /* ==========================================================
-       THIS YEAR KPI
-       ========================================================== */
-
-    if (isRevenue) {
-
-      _setText(
-        "yearRevenue",
-        Store.formatCurrency(
-          yearRevenue,
-        ),
-      );
-
-      _setText(
-        "yearCount",
-        `${yearTxns.length} transactions`,
-      );
-
-    } else {
-
-      _setText(
-        "yearRevenue",
-        `${yearTxns.length} Transactions`,
-      );
-
-      _setText(
-        "yearCount",
-        `Revenue: ${Store.formatCurrency(
-          yearRevenue,
-        )}`,
-      );
-    }
-
-
-    /* ==========================================================
-       SELECTED PERIOD KPI
-       
-       Kalau masih ada element lama,
-       dikosongkan supaya tidak muncul.
-       ========================================================== */
-
-    _setText(
-      "totalTransactions",
-      "",
+    renderPeriodKPI(
+      "today",
+      todayData,
     );
 
-    _setText(
-      "totalServices",
-      "",
+    renderPeriodKPI(
+      "week",
+      weekData,
     );
 
-    _setText(
-      "dashPeriodLabel",
-      getPeriodLabel(),
+    renderPeriodKPI(
+      "month",
+      monthData,
     );
 
+    renderPeriodKPI(
+      "year",
+      yearData,
+    );
 
-    /* ==========================================================
-       NEW KPI DATA
-       
-       Tetap dipertahankan karena mungkin
-       dipakai bagian dashboard lain.
-       ========================================================== */
-
-    const filtered =
-      getPeriodTransactions(
+    const selected =
+      getSelectedPeriodTransactions(
         all,
       );
 
-    const revenue =
-      sumRevenue(
-        filtered,
+    const compare =
+      getComparisonTransactions(
+        all,
       );
 
-    const count =
-      filtered.length;
+    const selectedRevenue =
+      sumRevenue(selected);
 
-    const averageTicket =
-      count > 0
-        ? revenue / count
+    const compareRevenue =
+      sumRevenue(compare);
+
+    const selectedCount =
+      selected.length;
+
+    const avgTicket =
+      selectedCount > 0
+        ? selectedRevenue /
+        selectedCount
         : 0;
 
-
     const discount =
-      filtered.reduce(
-        (total, t) =>
-          total +
-          Number(
-            t.discountAmount ||
-            0,
-          ),
-        0,
+      sumDiscount(selected);
+
+    const growth =
+      calculateGrowth(
+        selectedRevenue,
+        compareRevenue,
       );
 
-
-    const promoTransactions =
-      filtered.filter(
-        isPromoTransaction,
-      );
-
-
-    const promoRevenue =
-      sumRevenue(
-        promoTransactions,
-      );
-
-
-    const promoDiscount =
-      promoTransactions.reduce(
-        (total, t) =>
-          total +
-          Number(
-            t.discountAmount ||
-            0,
-          ),
-        0,
-      );
-
-
-    _setText(
+    setText(
       "dashTotalRevenue",
-      Store.formatCurrency(
-        revenue,
+      formatMetricValue(
+        selectedRevenue,
       ),
     );
 
-
-    _setText(
+    setText(
       "dashTotalTransactions",
-      count.toLocaleString(
+      selectedCount.toLocaleString(
         "id-ID",
       ),
     );
 
-
-    _setText(
+    setText(
       "dashAverageTicket",
       Store.formatCurrency(
-        averageTicket,
+        avgTicket,
       ),
     );
 
-
-    _setText(
+    setText(
       "dashTotalDiscount",
       Store.formatCurrency(
         discount,
       ),
     );
 
-
-    _setText(
-      "dashPromoTransactions",
-      promoTransactions.length.toLocaleString(
-        "id-ID",
-      ),
+    setGrowthElement(
+      "dashGrowth",
+      growth,
     );
 
-
-    _setText(
-      "dashPromoRevenue",
-      Store.formatCurrency(
-        promoRevenue,
-      ),
-    );
-
-
-    _setText(
-      "dashPromoDiscount",
-      Store.formatCurrency(
-        promoDiscount,
-      ),
-    );
-
-
-    /* ----------------------------------------------------------
-       CARD LABELS
-       ---------------------------------------------------------- */
-
-    _setText(
-      "todayCardLabel",
-      "Today",
-    );
-
-    _setText(
-      "weekCardLabel",
-      "This Week",
-    );
-
-    _setText(
-      "monthCardLabel",
-      "This Month",
-    );
-
-    _setText(
-      "yearCardLabel",
-      "This Year",
+    setText(
+      "dashCompareLabel",
+      getComparisonLabel(),
     );
   }
 
-  /* ============================================================
+  /* ==========================================================
+     KPI CARD
+     ========================================================== */
+
+  function renderPeriodKPI(
+    prefix,
+    transactions,
+  ) {
+    const revenue =
+      sumRevenue(
+        transactions,
+      );
+
+    const count =
+      transactions.length;
+
+    const compare =
+      getKpiComparisonData(
+        prefix,
+      );
+
+    const compareRevenue =
+      sumRevenue(compare);
+
+    const growth =
+      calculateGrowth(
+        revenue,
+        compareRevenue,
+      );
+
+    if (
+      currentMetric ===
+      "revenue"
+    ) {
+      setText(
+        `${prefix}Revenue`,
+        Store.formatCurrency(
+          revenue,
+        ),
+      );
+
+      setText(
+        `${prefix}Count`,
+        `${count} transactions`,
+      );
+    } else {
+      setText(
+        `${prefix}Revenue`,
+        `${count} Transactions`,
+      );
+
+      setText(
+        `${prefix}Count`,
+        `Revenue: ${Store.formatCurrency(
+          revenue,
+        )}`,
+      );
+    }
+
+    setGrowthElement(
+      `${prefix}Change`,
+      growth,
+    );
+  }
+
+  /* ==========================================================
+     KPI COMPARISON
+     ========================================================== */
+
+  function getKpiComparisonData(
+    prefix,
+  ) {
+    const today =
+      Store.getTodayStr();
+
+    let start = "";
+    let end = "";
+
+    if (prefix === "today") {
+      start = today;
+      end = today;
+    } else if (
+      prefix === "week"
+    ) {
+      const range =
+        getCurrentBucketRange(
+          today,
+        );
+
+      start =
+        range.start;
+
+      end =
+        range.end;
+    } else if (
+      prefix === "month"
+    ) {
+      start =
+        `${today.substring(
+          0,
+          7,
+        )}-01`;
+
+      end = today;
+    } else {
+      start =
+        `${today.substring(
+          0,
+          4,
+        )}-01-01`;
+
+      end = today;
+    }
+
+    const transactions =
+      getAllTransactionsSync();
+
+    const current =
+      filterByRange(
+        transactions,
+        {
+          start,
+          end,
+        },
+      );
+
+    const currentPeriodStart =
+      parseDate(start);
+
+    const currentPeriodEnd =
+      parseDate(end);
+
+    let compareRange;
+
+    if (
+      prefix === "today"
+    ) {
+      const d =
+        new Date(
+          currentPeriodStart,
+        );
+
+      d.setDate(
+        d.getDate() - 1,
+      );
+
+      compareRange = {
+        start:
+          dateString(d),
+        end:
+          dateString(d),
+      };
+    } else {
+      compareRange =
+        getPreviousPeriodRange(
+          start,
+          end,
+        );
+    }
+
+    return filterByRange(
+      transactions,
+      compareRange,
+    );
+  }
+
+  /* ==========================================================
      CHARTS
-     ============================================================ */
+     ========================================================== */
 
   async function renderCharts() {
+    updateChartTitles();
 
-    _updateChartTitles();
-
-    await _renderRevenueChart();
-
-    await _renderServiceChart();
-
-    await _renderBarChart();
+    await renderTrendChart();
+    await renderServiceChart();
+    await renderServiceComparison();
   }
 
-  /* ============================================================
-     CHART TITLES
-     ============================================================ */
+  /* ==========================================================
+     TREND CHART
+     ========================================================== */
 
-  function _updateChartTitles() {
-
-    const isRevenue =
-      currentMetric ===
-      "revenue";
-
-
-    const revTitle =
-      document.getElementById(
-        "dashRevenueChartTitle",
-      );
-
-    if (revTitle) {
-
-      revTitle.textContent =
-        isRevenue
-          ? "📈 Revenue Trend"
-          : "📈 Transaction Count Trend";
-    }
-
-
-    const svcTitle =
-      document.getElementById(
-        "dashServiceChartTitle",
-      );
-
-    if (svcTitle) {
-
-      svcTitle.textContent =
-        isRevenue
-          ? "🍩 Revenue by Service"
-          : "🍩 Transactions by Service";
-    }
-
-
-    const barTitle =
-      document.getElementById(
-        "dashBarChartTitle",
-      );
-
-    if (barTitle) {
-
-      barTitle.textContent =
-        isRevenue
-          ? "📊 Service Comparison (Revenue)"
-          : "📊 Service Comparison (Transactions)";
-    }
-  }
-
-  /* ============================================================
-     REVENUE / TRANSACTION TREND
-     ============================================================ */
-
-  async function _renderRevenueChart() {
-
+  async function renderTrendChart() {
     const canvas =
       document.getElementById(
         "revenueChart",
       );
 
-    if (!canvas) {
-      return;
+    if (!canvas) return;
+
+    const selected =
+      await getSelectedPeriodTransactionsAsync();
+
+    const compare =
+      await getComparisonTransactionsAsync();
+
+    const selectedRange =
+      getSelectedRange();
+
+    const compareRange =
+      getComparisonRange();
+
+    const selectedBuckets =
+      buildBuckets(
+        selectedRange.start,
+        selectedRange.end,
+        selected,
+      );
+
+    let compareBuckets = [];
+
+    if (
+      currentCompare !==
+      "none" &&
+      compareRange
+    ) {
+      compareBuckets =
+        buildBuckets(
+          compareRange.start,
+          compareRange.end,
+          compare,
+        );
     }
 
+    const labels =
+      selectedBuckets.map(
+        (bucket) =>
+          bucket.label,
+      );
 
-    const {
-      labels,
-      data,
-    } =
-      await _getRevenueData();
+    const selectedData =
+      selectedBuckets.map(
+        (bucket) =>
+          bucket.value,
+      );
 
+    const datasets = [];
 
-    if (revenueChart) {
+    const selectedColor =
+      "#e30022";
 
-      revenueChart.destroy();
+    datasets.push({
+      label:
+        getPeriodLabel(),
+      data:
+        selectedData,
+      borderColor:
+        selectedColor,
+      backgroundColor:
+        makeGradient(
+          canvas,
+          selectedColor,
+        ),
+      borderWidth:
+        2.5,
+      tension:
+        0.35,
+      fill:
+        true,
+      spanGaps:
+        false,
+      pointRadius:
+        getPointRadius(
+          selectedData,
+          3,
+        ),
+      pointHoverRadius:
+        6,
+      pointBackgroundColor:
+        selectedColor,
+      pointBorderColor:
+        "#ffffff",
+      pointBorderWidth:
+        2,
+    });
 
-      revenueChart = null;
+    if (
+      currentCompare !==
+      "none" &&
+      compareBuckets.length
+    ) {
+      const compareData =
+        alignComparisonData(
+          selectedBuckets,
+          compareBuckets,
+        );
+
+      datasets.push({
+        label:
+          getComparisonLabel(),
+        data:
+          compareData,
+        borderColor:
+          "#60a5fa",
+        backgroundColor:
+          "rgba(96,165,250,0.05)",
+        borderWidth:
+          2,
+        tension:
+          0.35,
+        fill:
+          false,
+        spanGaps:
+          false,
+        pointRadius:
+          getPointRadius(
+            compareData,
+            2,
+          ),
+        pointHoverRadius:
+          5,
+        pointBackgroundColor:
+          "#60a5fa",
+        pointBorderColor:
+          "#ffffff",
+        pointBorderWidth:
+          1.5,
+        borderDash:
+          [6, 5],
+      });
     }
 
-
-    const isLine =
-      currentChartType ===
-      "line";
-
-    const isRevenue =
-      currentMetric ===
-      "revenue";
-
-
-    const datasetLabel =
-      isRevenue
-        ? "Revenue"
-        : "Transactions";
-
+    destroyChart(
+      "revenue",
+    );
 
     revenueChart =
       new Chart(
@@ -918,148 +1089,156 @@ const Dashboard = (() => {
             currentChartType,
 
           data: {
-
             labels,
-
-            datasets: [
-              {
-
-                label:
-                  datasetLabel,
-
-                data,
-
-                spanGaps:
-                  false,
-
-                ...(isLine
-                  ? {
-
-                    borderColor:
-                      "#e30022",
-
-                    backgroundColor:
-                      _gradient(
-                        canvas,
-                        "#e30022",
-                      ),
-
-                    fill:
-                      true,
-
-                    tension:
-                      0.4,
-
-                    pointBackgroundColor:
-                      "#e30022",
-
-                    pointBorderColor:
-                      "#ffffff",
-
-                    pointBorderWidth:
-                      2,
-
-                    pointRadius:
-                      3,
-
-                    pointHoverRadius:
-                      6,
-
-                  }
-                  : {
-
-                    backgroundColor:
-                      "#e30022",
-
-                    borderRadius:
-                      8,
-
-                    borderSkipped:
-                      false,
-
-                    maxBarThickness:
-                      48,
-                  }),
-              },
-            ],
+            datasets:
+              currentChartType ===
+                "bar"
+                ? convertTrendToBarDatasets(
+                  datasets,
+                )
+                : datasets,
           },
 
           options:
-            _axisChartOptions(
-              isRevenue,
-            ),
+            getTrendChartOptions(),
         },
       );
+
+    renderTrendLegend(
+      datasets,
+    );
   }
 
-  /* ============================================================
-     SERVICE DOUGHNUT
-     ============================================================ */
+  /* ==========================================================
+     BAR DATASET CONVERSION
+     ========================================================== */
 
-  async function _renderServiceChart() {
+  function convertTrendToBarDatasets(
+    datasets,
+  ) {
+    return datasets.map(
+      (dataset, index) => ({
+        label:
+          dataset.label,
 
+        data:
+          dataset.data,
+
+        backgroundColor:
+          index === 0
+            ? "rgba(227,0,34,0.82)"
+            : "rgba(96,165,250,0.72)",
+
+        borderColor:
+          index === 0
+            ? "#e30022"
+            : "#60a5fa",
+
+        borderWidth:
+          1,
+
+        borderRadius:
+          6,
+
+        borderSkipped:
+          false,
+
+        maxBarThickness:
+          currentCompare !==
+            "none"
+            ? 34
+            : 48,
+      }),
+    );
+  }
+
+  /* ==========================================================
+     SERVICE DONUT
+     ========================================================== */
+
+  async function renderServiceChart() {
     const canvas =
       document.getElementById(
         "serviceChart",
       );
 
-    if (!canvas) {
-      return;
-    }
+    if (!canvas) return;
 
+    const selected =
+      await getSelectedPeriodTransactionsAsync();
 
-    const {
-      labels,
-      data,
-      colors,
-    } =
-      await _getServiceData();
+    const map = {};
 
+    selected.forEach(
+      (transaction) => {
+        const service =
+          transaction.serviceName ||
+          "Unknown Service";
 
-    if (serviceChart) {
+        map[service] =
+          (map[service] || 0) +
+          getMetricValue(
+            transaction,
+          );
+      },
+    );
 
-      serviceChart.destroy();
+    const entries =
+      Object.entries(map)
+        .sort(
+          (a, b) =>
+            b[1] - a[1],
+        )
+        .slice(0, 10);
 
-      serviceChart = null;
-    }
+    const labels =
+      entries.map(
+        (item) =>
+          item[0],
+      );
 
+    const data =
+      entries.map(
+        (item) =>
+          item[1],
+      );
 
-    const isRevenue =
-      currentMetric ===
-      "revenue";
+    const colors =
+      labels.map(
+        (_, index) =>
+          COLORS[
+          index %
+          COLORS.length
+          ],
+      );
 
+    destroyChart(
+      "service",
+    );
 
     serviceChart =
       new Chart(
         canvas,
         {
-
           type:
             "doughnut",
 
           data: {
-
             labels,
-
             datasets: [
               {
-
                 data,
-
                 backgroundColor:
                   colors,
-
-                borderWidth:
-                  2,
-
                 borderColor:
                   "#121214",
+                borderWidth:
+                  3,
               },
             ],
           },
 
           options: {
-
             responsive:
               true,
 
@@ -1067,17 +1246,14 @@ const Dashboard = (() => {
               false,
 
             cutout:
-              "65%",
+              "66%",
 
             plugins: {
-
               legend: {
-
                 position:
                   "bottom",
 
                 labels: {
-
                   color:
                     "#f4f4f5",
 
@@ -1092,21 +1268,47 @@ const Dashboard = (() => {
 
                   font: {
                     size:
-                      11,
+                      10,
                   },
                 },
               },
 
               tooltip: {
-
                 callbacks: {
+                  label:
+                    (context) => {
+                      const value =
+                        context.parsed;
 
-                  label: (c) =>
-                    isRevenue
-                      ? `${c.label}: ${Store.formatCurrency(
-                        c.parsed,
-                      )}`
-                      : `${c.label}: ${c.parsed} transactions`,
+                      const total =
+                        data.reduce(
+                          (
+                            sum,
+                            item,
+                          ) =>
+                            sum +
+                            item,
+                          0,
+                        );
+
+                      const percentage =
+                        total
+                          ? (
+                            (value /
+                              total) *
+                            100
+                          ).toFixed(
+                            1,
+                          )
+                          : "0.0";
+
+                      return currentMetric ===
+                        "revenue"
+                        ? `${context.label}: ${Store.formatCurrency(
+                          value,
+                        )} (${percentage}%)`
+                        : `${context.label}: ${value} transactions (${percentage}%)`;
+                    },
                 },
               },
             },
@@ -1115,143 +1317,167 @@ const Dashboard = (() => {
       );
   }
 
-  /* ============================================================
-     SERVICE BAR / LINE
-     ============================================================ */
+  /* ==========================================================
+     SERVICE COMPARISON
+     ========================================================== */
 
-  async function _renderBarChart() {
-
+  async function renderServiceComparison() {
     const canvas =
       document.getElementById(
         "barChart",
       );
 
-    if (!canvas) {
-      return;
+    if (!canvas) return;
+
+    const selected =
+      await getSelectedPeriodTransactionsAsync();
+
+    const compare =
+      await getComparisonTransactionsAsync();
+
+    const selectedMap =
+      groupByService(
+        selected,
+      );
+
+    const compareMap =
+      groupByService(
+        compare,
+      );
+
+    const allServices =
+      Array.from(
+        new Set([
+          ...Object.keys(
+            selectedMap,
+          ),
+          ...Object.keys(
+            compareMap,
+          ),
+        ]),
+      )
+        .sort(
+          (a, b) =>
+            (
+              selectedMap[b] ||
+              0
+            ) -
+            (
+              selectedMap[a] ||
+              0
+            ),
+        )
+        .slice(0, 10);
+
+    const selectedData =
+      allServices.map(
+        (service) =>
+          selectedMap[
+          service
+          ] || 0,
+      );
+
+    const compareData =
+      allServices.map(
+        (service) =>
+          compareMap[
+          service
+          ] || 0,
+      );
+
+    const datasets = [
+      {
+        label:
+          getPeriodLabel(),
+
+        data:
+          selectedData,
+
+        backgroundColor:
+          "rgba(227,0,34,0.82)",
+
+        borderColor:
+          "#e30022",
+
+        borderWidth:
+          1,
+
+        borderRadius:
+          6,
+
+        borderSkipped:
+          false,
+
+        maxBarThickness:
+          38,
+      },
+    ];
+
+    if (
+      currentCompare !==
+      "none"
+    ) {
+      datasets.push({
+        label:
+          getComparisonLabel(),
+
+        data:
+          compareData,
+
+        backgroundColor:
+          "rgba(96,165,250,0.68)",
+
+        borderColor:
+          "#60a5fa",
+
+        borderWidth:
+          1,
+
+        borderRadius:
+          6,
+
+        borderSkipped:
+          false,
+
+        maxBarThickness:
+          38,
+      });
     }
 
-
-    const {
-      labels,
-      data,
-      colors,
-    } =
-      await _getServiceData();
-
-
-    if (barChart) {
-
-      barChart.destroy();
-
-      barChart = null;
-    }
-
-
-    const isLine =
-      currentChartType ===
-      "line";
-
-    const isRevenue =
-      currentMetric ===
-      "revenue";
-
-
-    const datasetLabel =
-      isRevenue
-        ? "Revenue"
-        : "Transactions";
-
+    destroyChart(
+      "bar",
+    );
 
     barChart =
       new Chart(
         canvas,
         {
-
           type:
-            currentChartType,
+            "bar",
 
           data: {
+            labels:
+              allServices,
 
-            labels,
-
-            datasets: [
-              {
-
-                label:
-                  datasetLabel,
-
-                data,
-
-                ...(isLine
-                  ? {
-
-                    borderColor:
-                      "#e30022",
-
-                    backgroundColor:
-                      _gradient(
-                        canvas,
-                        "#e30022",
-                      ),
-
-                    fill:
-                      true,
-
-                    tension:
-                      0.4,
-
-                    pointBackgroundColor:
-                      colors,
-
-                    pointBorderColor:
-                      "#ffffff",
-
-                    pointBorderWidth:
-                      2,
-
-                    pointRadius:
-                      5,
-
-                    pointHoverRadius:
-                      7,
-
-                  }
-                  : {
-
-                    backgroundColor:
-                      colors,
-
-                    borderRadius:
-                      8,
-
-                    borderSkipped:
-                      false,
-
-                    maxBarThickness:
-                      48,
-                  }),
-              },
-            ],
+            datasets,
           },
 
           options:
-            _axisChartOptions(
-              isRevenue,
-            ),
+            getServiceBarOptions(),
         },
       );
   }
 
-  /* ============================================================
-     AXIS OPTIONS
-     ============================================================ */
+  /* ==========================================================
+     CHART OPTIONS
+     ========================================================== */
 
-  function _axisChartOptions(
-    isRevenue = true,
-  ) {
+  function getTrendChartOptions() {
+    const isRevenue =
+      currentMetric ===
+      "revenue";
 
     return {
-
       responsive:
         true,
 
@@ -1259,7 +1485,6 @@ const Dashboard = (() => {
         false,
 
       interaction: {
-
         intersect:
           false,
 
@@ -1268,89 +1493,211 @@ const Dashboard = (() => {
       },
 
       plugins: {
-
         legend: {
           display:
             false,
         },
 
         tooltip: {
+          backgroundColor:
+            "#18181b",
+
+          borderColor:
+            "#27272a",
+
+          borderWidth:
+            1,
+
+          titleColor:
+            "#fff",
+
+          bodyColor:
+            "#d4d4d8",
+
+          padding:
+            10,
 
           callbacks: {
+            label:
+              (context) => {
+                const value =
+                  context.parsed.y;
 
-            label: (c) => {
+                if (
+                  value ===
+                  null ||
+                  value ===
+                  undefined
+                ) {
+                  return "";
+                }
 
-              const value =
-                c.parsed.y;
-
-              if (
-                value ===
-                null ||
-                value ===
-                undefined
-              ) {
-                return "";
-              }
-
-              return isRevenue
-                ? Store.formatCurrency(
-                  value,
-                )
-                : `${value} transactions`;
-            },
+                return isRevenue
+                  ? `${context.dataset.label}: ${Store.formatCurrency(
+                    value,
+                  )}`
+                  : `${context.dataset.label}: ${value} transactions`;
+              },
           },
         },
       },
 
       scales: {
-
         y: {
-
           beginAtZero:
             true,
 
           ticks: {
-
             color:
               "#a1a1aa",
 
-            callback: (v) =>
-              isRevenue
-                ? _shortCurrency(
-                  v,
-                )
-                : Number.isInteger(
-                  v,
-                )
-                  ? `${v}`
-                  : null,
+            font: {
+              size:
+                10,
+            },
+
+            callback:
+              (value) =>
+                isRevenue
+                  ? shortCurrency(
+                    value,
+                  )
+                  : value,
           },
 
           grid: {
-
             color:
-              "rgba(255,255,255,0.05)",
+              "rgba(255,255,255,0.045)",
           },
         },
 
         x: {
-
           ticks: {
-
             color:
               "#a1a1aa",
+
+            maxRotation:
+              0,
+
+            minRotation:
+              0,
 
             autoSkip:
               true,
 
             maxTicksLimit:
-              currentFilter ===
-                "weekly"
-                ? 12
-                : undefined,
+              getXAxisTickLimit(),
+          },
+
+          grid: {
+            display:
+              false,
+          },
+        },
+      },
+    };
+  }
+
+  function getServiceBarOptions() {
+    const isRevenue =
+      currentMetric ===
+      "revenue";
+
+    return {
+      responsive:
+        true,
+
+      maintainAspectRatio:
+        false,
+
+      interaction: {
+        intersect:
+          false,
+
+        mode:
+          "index",
+      },
+
+      plugins: {
+        legend: {
+          display:
+            currentCompare !==
+            "none",
+
+          labels: {
+            color:
+              "#a1a1aa",
+
+            usePointStyle:
+              true,
+
+            pointStyle:
+              "circle",
+
+            font: {
+              size:
+                10,
+            },
+          },
+        },
+
+        tooltip: {
+          backgroundColor:
+            "#18181b",
+
+          callbacks: {
+            label:
+              (context) =>
+                isRevenue
+                  ? `${context.dataset.label}: ${Store.formatCurrency(
+                    context.parsed.y,
+                  )}`
+                  : `${context.dataset.label}: ${context.parsed.y} transactions`,
+          },
+        },
+      },
+
+      scales: {
+        y: {
+          beginAtZero:
+            true,
+
+          ticks: {
+            color:
+              "#a1a1aa",
+
+            font: {
+              size:
+                10,
+            },
+
+            callback:
+              (value) =>
+                isRevenue
+                  ? shortCurrency(
+                    value,
+                  )
+                  : value,
+          },
+
+          grid: {
+            color:
+              "rgba(255,255,255,0.045)",
+          },
+        },
+
+        x: {
+          ticks: {
+            color:
+              "#a1a1aa",
+
+            font: {
+              size:
+                9,
+            },
 
             maxRotation:
-              0,
+              35,
 
             minRotation:
               0,
@@ -1365,716 +1712,1208 @@ const Dashboard = (() => {
     };
   }
 
-  /* ============================================================
-     REVENUE DATA
-     ============================================================ */
+  function getXAxisTickLimit() {
+    const range =
+      getSelectedRange();
 
-  async function _getRevenueData() {
-
-    let all =
-      await Store.getTransactions();
-
-    all =
-      filterBranch(all);
-
-
-    const today =
-      new Date();
-
-
-    const isRevenue =
-      currentMetric ===
-      "revenue";
-
-
-    const labels = [];
-
-    const data = [];
-
-
-    const monthNames = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-
-
-    /* ==========================================================
-       DAILY
-       30 DAYS
-       ========================================================== */
-
-    if (
-      currentFilter ===
-      "daily"
-    ) {
-
-      const map = {};
-
-
-      for (
-        let i = 29;
-        i >= 0;
-        i--
-      ) {
-
-        const d =
-          new Date(
-            today,
-          );
-
-        d.setDate(
-          d.getDate() -
-          i,
-        );
-
-
-        const key =
-          _dateStr(d);
-
-
-        labels.push(
-          `${d.getDate()} ${monthNames[d.getMonth()]}`,
-        );
-
-
-        map[key] = 0;
-      }
-
-
-      all.forEach(
-        (t) => {
-
-          if (
-            map[t.date] !==
-            undefined
-          ) {
-
-            map[t.date] +=
-              isRevenue
-                ? Number(
-                  t.price ||
-                  0,
-                )
-                : 1;
-          }
-        },
+    const days =
+      diffDays(
+        range.start,
+        range.end,
       );
 
-
-      return {
-
-        labels,
-
-        data:
-          Object.values(
-            map,
-          ),
-      };
+    if (days <= 14) {
+      return days;
     }
 
+    if (days <= 31) {
+      return 10;
+    }
 
-    /* ==========================================================
-       WEEKLY
-       ========================================================== */
+    if (days <= 100) {
+      return 12;
+    }
 
-    if (
-      currentFilter ===
-      "weekly"
-    ) {
+    return 14;
+  }
 
-      return _getWeeklyRevenueData(
-        all,
-        today,
-        isRevenue,
-        monthNames,
+  /* ==========================================================
+     TREND DATA
+     ========================================================== */
+
+  function buildBuckets(
+    start,
+    end,
+    transactions,
+  ) {
+    const days =
+      diffDays(
+        start,
+        end,
+      );
+
+    let mode =
+      "daily";
+
+    if (days > 31 && days <= 180) {
+      mode =
+        "weekly";
+    } else if (days > 180) {
+      mode =
+        "monthly";
+    }
+
+    if (days <= 31) {
+      return buildDailyBuckets(
+        start,
+        end,
+        transactions,
       );
     }
 
-
-    /* ==========================================================
-       MONTHLY
-       ========================================================== */
-
-    if (
-      currentFilter ===
-      "monthly"
-    ) {
-
-      const map = {};
-
-
-      for (
-        let i = 11;
-        i >= 0;
-        i--
-      ) {
-
-        const d =
-          new Date(
-            today.getFullYear(),
-            today.getMonth() -
-            i,
-            1,
-          );
-
-
-        const key =
-          `${d.getFullYear()}-${String(
-            d.getMonth() + 1,
-          ).padStart(2, "0")}`;
-
-
-        labels.push(
-          `${monthNames[d.getMonth()]} ${d.getFullYear()}`,
-        );
-
-
-        map[key] = 0;
-      }
-
-
-      all.forEach(
-        (t) => {
-
-          const key =
-            String(
-              t.date,
-            ).substring(
-              0,
-              7,
-            );
-
-
-          if (
-            map[key] !==
-            undefined
-          ) {
-
-            map[key] +=
-              isRevenue
-                ? Number(
-                  t.price ||
-                  0,
-                )
-                : 1;
-          }
-        },
+    if (mode === "weekly") {
+      return buildWeeklyBuckets(
+        start,
+        end,
+        transactions,
       );
-
-
-      return {
-
-        labels,
-
-        data:
-          Object.values(
-            map,
-          ),
-      };
     }
 
+    return buildMonthlyBuckets(
+      start,
+      end,
+      transactions,
+    );
+  }
 
-    /* ==========================================================
-       YEARLY
-       ========================================================== */
+  /* ==========================================================
+     DAILY BUCKETS
+     ========================================================== */
+
+  function buildDailyBuckets(
+    start,
+    end,
+    transactions,
+  ) {
+    const buckets = [];
 
     const map = {};
 
+    let current =
+      parseDate(start);
 
-    for (
-      let i = 4;
-      i >= 0;
-      i--
+    const finish =
+      parseDate(end);
+
+    while (
+      current <=
+      finish
     ) {
+      const key =
+        dateString(
+          current,
+        );
 
-      const year =
-        today.getFullYear() -
-        i;
+      map[key] = 0;
 
+      buckets.push({
+        key,
+        label:
+          formatShortDate(
+            current,
+          ),
+        value:
+          0,
+      });
 
-      labels.push(
-        String(year),
-      );
-
-
-      map[
-        String(year)
-      ] = 0;
+      current =
+        addDays(
+          current,
+          1,
+        );
     }
 
-
-    all.forEach(
-      (t) => {
-
+    transactions.forEach(
+      (transaction) => {
         const key =
           String(
-            t.date,
-          ).substring(
-            0,
-            4,
+            transaction.date ||
+            "",
           );
 
-
         if (
-          map[key] !==
-          undefined
+          Object.prototype.hasOwnProperty.call(
+            map,
+            key,
+          )
         ) {
-
           map[key] +=
-            isRevenue
-              ? Number(
-                t.price ||
-                0,
-              )
-              : 1;
+            getMetricValue(
+              transaction,
+            );
         }
       },
     );
 
+    return buckets.map(
+      (bucket) => ({
+        ...bucket,
+        value:
+          map[bucket.key],
+      }),
+    );
+  }
+
+  /* ==========================================================
+     WEEKLY BUCKETS
+     
+     SAME BUCKET FOR LINE + BAR
+     ========================================================== */
+
+  function buildWeeklyBuckets(
+    start,
+    end,
+    transactions,
+  ) {
+    const buckets = [];
+
+    let cursor =
+      parseDate(start);
+
+    const finish =
+      parseDate(end);
+
+    while (
+      cursor <=
+      finish
+    ) {
+      const weekStart =
+        new Date(
+          cursor,
+        );
+
+      const weekEnd =
+        addDays(
+          weekStart,
+          6,
+        );
+
+      if (
+        weekEnd >
+        finish
+      ) {
+        weekEnd.setTime(
+          finish.getTime(),
+        );
+      }
+
+      buckets.push({
+        key:
+          dateString(
+            weekStart,
+          ),
+
+        start:
+          dateString(
+            weekStart,
+          ),
+
+        end:
+          dateString(
+            weekEnd,
+          ),
+
+        label:
+          `${formatShortDate(
+            weekStart,
+          )}`,
+
+        value:
+          0,
+      });
+
+      cursor =
+        addDays(
+          weekEnd,
+          1,
+        );
+    }
+
+    transactions.forEach(
+      (transaction) => {
+        const date =
+          parseDate(
+            transaction.date,
+          );
+
+        const bucket =
+          buckets.find(
+            (item) =>
+              date >=
+              parseDate(
+                item.start,
+              ) &&
+              date <=
+              parseDate(
+                item.end,
+              ),
+          );
+
+        if (bucket) {
+          bucket.value +=
+            getMetricValue(
+              transaction,
+            );
+        }
+      },
+    );
+
+    return buckets;
+  }
+
+  /* ==========================================================
+     MONTHLY BUCKETS
+     ========================================================== */
+
+  function buildMonthlyBuckets(
+    start,
+    end,
+    transactions,
+  ) {
+    const buckets = [];
+
+    const map = {};
+
+    let cursor =
+      new Date(
+        parseDate(
+          start,
+        ).getFullYear(),
+        parseDate(
+          start,
+        ).getMonth(),
+        1,
+      );
+
+    const finish =
+      new Date(
+        parseDate(
+          end,
+        ).getFullYear(),
+        parseDate(
+          end,
+        ).getMonth(),
+        1,
+      );
+
+    while (
+      cursor <=
+      finish
+    ) {
+      const key =
+        `${cursor.getFullYear()}-${String(
+          cursor.getMonth() + 1,
+        ).padStart(
+          2,
+          "0",
+        )}`;
+
+      map[key] = 0;
+
+      buckets.push({
+        key,
+        label:
+          cursor.toLocaleDateString(
+            "en-US",
+            {
+              month:
+                "short",
+              year:
+                "numeric",
+            },
+          ),
+        value:
+          0,
+      });
+
+      cursor =
+        new Date(
+          cursor.getFullYear(),
+          cursor.getMonth() + 1,
+          1,
+        );
+    }
+
+    transactions.forEach(
+      (transaction) => {
+        const key =
+          String(
+            transaction.date ||
+            "",
+          ).substring(
+            0,
+            7,
+          );
+
+        if (
+          Object.prototype.hasOwnProperty.call(
+            map,
+            key,
+          )
+        ) {
+          map[key] +=
+            getMetricValue(
+              transaction,
+            );
+        }
+      },
+    );
+
+    return buckets.map(
+      (bucket) => ({
+        ...bucket,
+        value:
+          map[bucket.key],
+      }),
+    );
+  }
+
+  /* ==========================================================
+     COMPARISON ALIGNMENT
+     ========================================================== */
+
+  function alignComparisonData(
+    selectedBuckets,
+    compareBuckets,
+  ) {
+    if (
+      selectedBuckets.length ===
+      compareBuckets.length
+    ) {
+      return compareBuckets.map(
+        (bucket) =>
+          bucket.value,
+      );
+    }
+
+    const result = [];
+
+    for (
+      let i = 0;
+      i <
+      selectedBuckets.length;
+      i++
+    ) {
+      result.push(
+        compareBuckets[
+          i
+        ]
+          ? compareBuckets[i]
+            .value
+          : null,
+      );
+    }
+
+    return result;
+  }
+
+  /* ==========================================================
+     FILTER TRANSACTIONS
+     ========================================================== */
+
+  async function getTransactions() {
+    let transactions =
+      await Store.getTransactions();
+
+    return filterBranch(
+      transactions,
+    );
+  }
+
+  function getAllTransactionsSync() {
+    /*
+     * Store.getTransactions() is async.
+     * KPI comparison uses its own cached-less fallback
+     * through an empty array when unavailable.
+     *
+     * Main dashboard calculations use async versions.
+     */
+    return [];
+  }
+
+  async function getSelectedPeriodTransactionsAsync() {
+    const all =
+      await getTransactions();
+
+    return filterByRange(
+      all,
+      getSelectedRange(),
+    );
+  }
+
+  async function getComparisonTransactionsAsync() {
+    const all =
+      await getTransactions();
+
+    const range =
+      getComparisonRange();
+
+    if (!range) {
+      return [];
+    }
+
+    return filterByRange(
+      all,
+      range,
+    );
+  }
+
+  function getSelectedPeriodTransactions(
+    all,
+  ) {
+    return filterByRange(
+      all,
+      getSelectedRange(),
+    );
+  }
+
+  function getSelectedRange() {
+    if (
+      hasCustomDateRange()
+    ) {
+      return {
+        start:
+          selectedStartDate,
+        end:
+          selectedEndDate,
+      };
+    }
+
+    return getPresetRange(
+      currentFilter,
+    );
+  }
+
+  function getComparisonRange() {
+    if (
+      currentCompare ===
+      "none"
+    ) {
+      return null;
+    }
+
+    const selected =
+      getSelectedRange();
+
+    if (
+      currentCompare ===
+      "previous_period"
+    ) {
+      return getPreviousPeriodRange(
+        selected.start,
+        selected.end,
+      );
+    }
+
+    if (
+      currentCompare ===
+      "previous_year"
+    ) {
+      return getPreviousYearRange(
+        selected.start,
+        selected.end,
+      );
+    }
+
+    return null;
+  }
+
+  function getComparisonTransactions(
+    all,
+  ) {
+    const range =
+      getComparisonRange();
+
+    if (!range) {
+      return [];
+    }
+
+    return filterByRange(
+      all,
+      range,
+    );
+  }
+
+  function filterByRange(
+    transactions,
+    range,
+  ) {
+    if (
+      !range ||
+      !range.start ||
+      !range.end
+    ) {
+      return [];
+    }
+
+    return transactions.filter(
+      (transaction) => {
+        if (!transaction.date) {
+          return false;
+        }
+
+        const date =
+          String(
+            transaction.date,
+          );
+
+        return (
+          date >=
+          range.start &&
+          date <=
+          range.end
+        );
+      },
+    );
+  }
+
+  function filterBranch(
+    transactions,
+  ) {
+    if (
+      currentBranch ===
+      "all"
+    ) {
+      return transactions;
+    }
+
+    return transactions.filter(
+      (transaction) =>
+        String(
+          transaction.branch ||
+          "",
+        ).toLowerCase() ===
+        currentBranch.toLowerCase(),
+    );
+  }
+
+  /* ==========================================================
+     PRESET RANGES
+     ========================================================== */
+
+  function getPresetRange(
+    filter,
+  ) {
+    const today =
+      parseDate(
+        Store.getTodayStr(),
+      );
+
+    if (
+      filter ===
+      "daily"
+    ) {
+      return {
+        start:
+          dateString(
+            today,
+          ),
+        end:
+          dateString(
+            today,
+          ),
+      };
+    }
+
+    if (
+      filter ===
+      "weekly"
+    ) {
+      return getCurrentBucketRange(
+        Store.getTodayStr(),
+      );
+    }
+
+    if (
+      filter ===
+      "yearly"
+    ) {
+      return {
+        start:
+          `${today.getFullYear()}-01-01`,
+        end:
+          dateString(
+            today,
+          ),
+      };
+    }
 
     return {
+      start:
+        `${today.getFullYear()}-${String(
+          today.getMonth() + 1,
+        ).padStart(
+          2,
+          "0",
+        )}-01`,
 
-      labels,
-
-      data:
-        Object.values(
-          map,
+      end:
+        dateString(
+          today,
         ),
     };
   }
 
-  /* ============================================================
-     WEEKLY DATA
-     
-     BUCKET:
-     1-7
-     8-14
-     15-21
-     22-28
-     29-END MONTH
+  /* ==========================================================
+     WEEKLY BUCKET RANGE
+     ========================================================== */
 
-     EMPTY BUCKET = null
-     ADA DATA = VALUE
-     ============================================================ */
-
-  function _getWeeklyRevenueData(
-    all,
-    today,
-    isRevenue,
-    monthNames,
+  function getCurrentBucketRange(
+    date,
   ) {
+    const d =
+      parseDate(date);
 
-    const tempBuckets = [];
+    const day =
+      d.getDate();
 
+    let startDay =
+      1;
 
-    for (
-      let monthOffset = -5;
-      monthOffset <= 1;
-      monthOffset++
+    if (day <= 7) {
+      startDay = 1;
+    } else if (
+      day <= 14
     ) {
+      startDay = 8;
+    } else if (
+      day <= 21
+    ) {
+      startDay = 15;
+    } else if (
+      day <= 28
+    ) {
+      startDay = 22;
+    } else {
+      startDay = 29;
+    }
 
-      const monthDate =
-        new Date(
-          today.getFullYear(),
-          today.getMonth() +
-          monthOffset,
-          1,
+    const start =
+      new Date(
+        d.getFullYear(),
+        d.getMonth(),
+        startDay,
+      );
+
+    const lastDay =
+      new Date(
+        d.getFullYear(),
+        d.getMonth() + 1,
+        0,
+      ).getDate();
+
+    const endDay =
+      Math.min(
+        startDay + 6,
+        lastDay,
+      );
+
+    const end =
+      new Date(
+        d.getFullYear(),
+        d.getMonth(),
+        endDay,
+      );
+
+    /*
+     * KPI weekly = only through today,
+     * not future dates.
+     */
+
+    if (
+      dateString(end) >
+      Store.getTodayStr()
+    ) {
+      return {
+        start:
+          dateString(
+            start,
+          ),
+
+        end:
+          Store.getTodayStr(),
+      };
+    }
+
+    return {
+      start:
+        dateString(
+          start,
+        ),
+
+      end:
+        dateString(
+          end,
+        ),
+    };
+  }
+
+  /* ==========================================================
+     PREVIOUS PERIOD
+     ========================================================== */
+
+  function getPreviousPeriodRange(
+    start,
+    end,
+  ) {
+    const startDate =
+      parseDate(start);
+
+    const endDate =
+      parseDate(end);
+
+    const length =
+      diffDays(
+        start,
+        end,
+      ) + 1;
+
+    const previousEnd =
+      addDays(
+        startDate,
+        -1,
+      );
+
+    const previousStart =
+      addDays(
+        previousEnd,
+        -(length - 1),
+      );
+
+    return {
+      start:
+        dateString(
+          previousStart,
+        ),
+
+      end:
+        dateString(
+          previousEnd,
+        ),
+    };
+  }
+
+  /* ==========================================================
+     PREVIOUS YEAR
+     ========================================================== */
+
+  function getPreviousYearRange(
+    start,
+    end,
+  ) {
+    const s =
+      parseDate(start);
+
+    const e =
+      parseDate(end);
+
+    return {
+      start:
+        dateString(
+          new Date(
+            s.getFullYear() - 1,
+            s.getMonth(),
+            s.getDate(),
+          ),
+        ),
+
+      end:
+        dateString(
+          new Date(
+            e.getFullYear() - 1,
+            e.getMonth(),
+            e.getDate(),
+          ),
+        ),
+    };
+  }
+
+  /* ==========================================================
+     KPI COMPARISON
+     ========================================================== */
+
+  async function renderKpiGrowth(
+    prefix,
+    range,
+  ) {
+    const all =
+      await getTransactions();
+
+    const current =
+      filterByRange(
+        all,
+        range,
+      );
+
+    let compareRange;
+
+    if (
+      prefix ===
+      "today"
+    ) {
+      const d =
+        parseDate(
+          range.start,
         );
 
+      const previous =
+        addDays(
+          d,
+          -1,
+        );
 
-      const year =
-        monthDate.getFullYear();
+      compareRange = {
+        start:
+          dateString(
+            previous,
+          ),
+        end:
+          dateString(
+            previous,
+          ),
+      };
+    } else {
+      compareRange =
+        getPreviousPeriodRange(
+          range.start,
+          range.end,
+        );
+    }
 
+    const compare =
+      filterByRange(
+        all,
+        compareRange,
+      );
 
-      const month =
-        monthDate.getMonth();
+    const currentRevenue =
+      sumRevenue(current);
 
+    const compareRevenue =
+      sumRevenue(compare);
 
-      const lastDay =
-        new Date(
-          year,
-          month + 1,
-          0,
-        ).getDate();
+    setGrowthElement(
+      `${prefix}Change`,
+      calculateGrowth(
+        currentRevenue,
+        compareRevenue,
+      ),
+    );
+  }
 
+  /* ==========================================================
+     FORMAT KPI
+     ========================================================== */
 
-      const starts = [
-        1,
-        8,
-        15,
-        22,
-        29,
-      ];
-
-
-      starts.forEach(
-        (day) => {
-
-          if (
-            day >
-            lastDay
-          ) {
-            return;
-          }
-
-
-          const start =
-            new Date(
-              year,
-              month,
-              day,
-            );
-
-
-          let endDay =
-            day + 6;
-
-
-          if (
-            endDay >
-            lastDay
-          ) {
-
-            endDay =
-              lastDay;
-          }
-
-
-          const end =
-            new Date(
-              year,
-              month,
-              endDay,
-            );
-
-
-          tempBuckets.push({
-
-            start,
-
-            end,
-
-            key:
-              _dateStr(
-                start,
-              ),
-
-            value:
-              0,
-          });
-        },
+  function formatMetricValue(
+    value,
+  ) {
+    if (
+      currentMetric ===
+      "revenue"
+    ) {
+      return Store.formatCurrency(
+        value,
       );
     }
 
-
-    const todayTime =
-      today.getTime();
-
-
-    const validBuckets =
-      tempBuckets
-        .filter(
-          (b) =>
-            b.start.getTime() <=
-            todayTime,
-        )
-        .sort(
-          (a, b) =>
-            a.start -
-            b.start,
-        );
-
-
-    const selectedBuckets =
-      validBuckets.slice(
-        -12,
-      );
-
-
-    /* ----------------------------------------------------------
-       TRANSACTIONS → BUCKET
-       ---------------------------------------------------------- */
-
-    all.forEach(
-      (t) => {
-
-        if (!t.date) {
-          return;
-        }
-
-
-        const date =
-          new Date(
-            `${t.date}T00:00:00`,
-          );
-
-
-        if (
-          Number.isNaN(
-            date.getTime(),
-          )
-        ) {
-          return;
-        }
-
-
-        const bucket =
-          selectedBuckets.find(
-            (b) =>
-              date >=
-              b.start &&
-              date <=
-              b.end,
-          );
-
-
-        if (!bucket) {
-          return;
-        }
-
-
-        bucket.value +=
-          isRevenue
-            ? Number(
-              t.price ||
-              0,
-            )
-            : 1;
-      },
-    );
-
-
-    /* ----------------------------------------------------------
-       LABELS
-       ---------------------------------------------------------- */
-
-    const labels =
-      selectedBuckets.map(
-        (bucket) => {
-
-          const d =
-            bucket.start;
-
-          return `${d.getDate()} ${monthNames[d.getMonth()]}`;
-        },
-      );
-
-
-    /* ----------------------------------------------------------
-       DATA
-
-       IMPORTANT:
-
-       EMPTY = null
-
-       Jadi Chart.js tidak membuat
-       titik merah di minggu kosong.
-
-       Contoh:
-
-       1 Jul  = 0
-       8 Jul  = 50.000
-       15 Jul = 0
-
-       hasil:
-
-       null
-       50000
-       null
-       ---------------------------------------------------------- */
-
-    const data =
-      selectedBuckets.map(
-        (bucket) =>
-          bucket.value > 0
-            ? bucket.value
-            : null,
-      );
-
-
-    return {
-
-      labels,
-
-      data,
-    };
+    return `${Number(
+      value || 0,
+    ).toLocaleString(
+      "id-ID",
+    )} transactions`;
   }
 
-  /* ============================================================
-     SERVICE DATA
-     ============================================================ */
+  /* ==========================================================
+     MANAGER INSIGHTS
+     ========================================================== */
 
-  async function _getServiceData() {
-
-    let txns =
-      await Store.getTransactions();
-
-
-    txns =
-      filterBranch(
-        txns,
+  async function renderManagerInsights() {
+    const container =
+      document.getElementById(
+        "managerInsights",
       );
 
+    if (!container) return;
 
-    txns =
-      getPeriodTransactions(
-        txns,
+    const selected =
+      await getSelectedPeriodTransactionsAsync();
+
+    const compare =
+      await getComparisonTransactionsAsync();
+
+    if (!selected.length) {
+      container.innerHTML = `
+        <div class="insight-item">
+          <div class="insight-icon">
+            📌
+          </div>
+
+          <div>
+            <strong>
+              No transaction data
+            </strong>
+
+            <span>
+              There is no transaction data
+              for the selected period.
+            </span>
+          </div>
+        </div>
+      `;
+
+      return;
+    }
+
+    const selectedRevenue =
+      sumRevenue(selected);
+
+    const compareRevenue =
+      sumRevenue(compare);
+
+    const selectedAverage =
+      selected.length
+        ? selectedRevenue /
+        selected.length
+        : 0;
+
+    const compareAverage =
+      compare.length
+        ? compareRevenue /
+        compare.length
+        : 0;
+
+    const growth =
+      calculateGrowth(
+        selectedRevenue,
+        compareRevenue,
       );
-
-
-    const map = {};
-
-
-    txns.forEach(
-      (t) => {
-
-        const name =
-          t.serviceName ||
-          "Unknown Service";
-
-
-        if (!map[name]) {
-          map[name] = 0;
-        }
-
-
-        map[name] +=
-          currentMetric ===
-            "revenue"
-            ? Number(
-              t.price ||
-              0,
-            )
-            : 1;
-      },
-    );
-
-
-    const entries =
-      Object.entries(
-        map,
-      ).sort(
-        (a, b) =>
-          b[1] -
-          a[1],
-      );
-
-
-    const labels =
-      entries.map(
-        (x) =>
-          x[0],
-      );
-
-
-    const data =
-      entries.map(
-        (x) =>
-          x[1],
-      );
-
-
-    const palette =
-      _chartColors();
-
-
-    const colors =
-      labels.map(
-        (_, i) =>
-          palette[
-          i %
-          palette.length
-          ],
-      );
-
-
-    return {
-
-      labels,
-
-      data,
-
-      colors,
-    };
-  }
-
-  /* ============================================================
-     PROMO PERFORMANCE
-     ============================================================ */
-
-  async function renderPromoPerformance() {
-
-    let txns =
-      await Store.getTransactions();
-
-
-    txns =
-      filterBranch(
-        txns,
-      );
-
-
-    txns =
-      getPeriodTransactions(
-        txns,
-      );
-
 
     const promoTxns =
-      txns.filter(
+      selected.filter(
         isPromoTransaction,
       );
-
-
-    const normalTxns =
-      txns.filter(
-        (t) =>
-          !isPromoTransaction(
-            t,
-          ),
-      );
-
 
     const promoRevenue =
       sumRevenue(
         promoTxns,
       );
 
+    const promoContribution =
+      selectedRevenue
+        ? (promoRevenue /
+          selectedRevenue) *
+        100
+        : 0;
+
+    const serviceMap =
+      groupByService(
+        selected,
+      );
+
+    const topService =
+      Object.entries(
+        serviceMap,
+      ).sort(
+        (a, b) =>
+          b[1] - a[1],
+      )[0];
+
+    const insights = [];
+
+    if (
+      growth !== null &&
+      growth !== 0
+    ) {
+      insights.push({
+        icon:
+          growth > 0
+            ? "📈"
+            : "📉",
+
+        title:
+          growth > 0
+            ? `Revenue increased ${Math.abs(
+              growth,
+            ).toFixed(
+              1,
+            )}%`
+            : `Revenue decreased ${Math.abs(
+              growth,
+            ).toFixed(
+              1,
+            )}%`,
+
+        text:
+          `Compared with ${getComparisonLabel()}.`,
+      });
+    }
+
+    if (topService) {
+      insights.push({
+        icon:
+          "🏆",
+
+        title:
+          `${topService[0]} is the top service`,
+
+        text:
+          `${formatMetricValue(
+            topService[1],
+          )} generated in the selected period.`,
+      });
+    }
+
+    if (
+      currentCompare !==
+      "none" &&
+      compare.length
+    ) {
+      const ticketGrowth =
+        calculateGrowth(
+          selectedAverage,
+          compareAverage,
+        );
+
+      if (
+        ticketGrowth !==
+        null
+      ) {
+        insights.push({
+          icon:
+            ticketGrowth >= 0
+              ? "🎯"
+              : "⚠️",
+
+          title:
+            `Average ticket ${ticketGrowth >= 0
+              ? "increased"
+              : "decreased"
+            } ${Math.abs(
+              ticketGrowth,
+            ).toFixed(
+              1,
+            )}%`,
+
+          text:
+            `Current average: ${Store.formatCurrency(
+              selectedAverage,
+            )}.`,
+        });
+      }
+    }
+
+    if (
+      promoContribution > 0
+    ) {
+      insights.push({
+        icon:
+          "🎉",
+
+        title:
+          `Promo contributes ${promoContribution.toFixed(
+            1,
+          )}% of revenue`,
+
+        text:
+          `${promoTxns.length} transactions used promotions.`,
+      });
+    } else {
+      insights.push({
+        icon:
+          "💡",
+
+        title:
+          "No promo revenue detected",
+
+        text:
+          "No promotion-linked transaction was recorded in this period.",
+      });
+    }
+
+    container.innerHTML =
+      insights
+        .slice(0, 4)
+        .map(
+          (insight) => `
+            <div class="insight-item">
+              <div class="insight-icon">
+                ${insight.icon}
+              </div>
+
+              <div>
+                <strong>
+                  ${escapeHtml(
+            insight.title,
+          )}
+                </strong>
+
+                <span>
+                  ${escapeHtml(
+            insight.text,
+          )}
+                </span>
+              </div>
+            </div>
+          `,
+        )
+        .join("");
+  }
+
+  /* ==========================================================
+     PROMO PERFORMANCE
+     ========================================================== */
+
+  async function renderPromoPerformance() {
+    const selected =
+      await getSelectedPeriodTransactionsAsync();
+
+    const compare =
+      await getComparisonTransactionsAsync();
+
+    const promoTxns =
+      selected.filter(
+        isPromoTransaction,
+      );
+
+    const normalTxns =
+      selected.filter(
+        (t) =>
+          !isPromoTransaction(
+            t,
+          ),
+      );
+
+    const promoRevenue =
+      sumRevenue(
+        promoTxns,
+      );
 
     const normalRevenue =
       sumRevenue(
         normalTxns,
       );
 
+    const totalRevenue =
+      promoRevenue +
+      normalRevenue;
 
-    const promoDiscount =
-      promoTxns.reduce(
-        (sum, t) =>
-          sum +
-          Number(
-            t.discountAmount ||
-            0,
-          ),
-        0,
-      );
-
-
-    const normalAverage =
-      normalTxns.length
-        ? normalRevenue /
-        normalTxns.length
+    const promoContribution =
+      totalRevenue
+        ? (promoRevenue /
+          totalRevenue) *
+        100
         : 0;
-
 
     const promoAverage =
       promoTxns.length
@@ -2082,214 +2921,217 @@ const Dashboard = (() => {
         promoTxns.length
         : 0;
 
+    const normalAverage =
+      normalTxns.length
+        ? normalRevenue /
+        normalTxns.length
+        : 0;
 
-    _setText(
+    const promoDiscount =
+      sumDiscount(
+        promoTxns,
+      );
+
+    setText(
       "promoRevenue",
       Store.formatCurrency(
         promoRevenue,
       ),
     );
 
-
-    _setText(
+    setText(
       "nonPromoRevenue",
       Store.formatCurrency(
         normalRevenue,
       ),
     );
 
+    setText(
+      "promoContribution",
+      `${promoContribution.toFixed(
+        1,
+      )}%`,
+    );
 
-    _setText(
+    setText(
       "promoTransactionCount",
-      promoTxns.length,
+      promoTxns.length.toLocaleString(
+        "id-ID",
+      ),
     );
 
-
-    _setText(
+    setText(
       "nonPromoTransactionCount",
-      normalTxns.length,
+      normalTxns.length.toLocaleString(
+        "id-ID",
+      ),
     );
 
-
-    _setText(
+    setText(
       "promoAverageTicket",
       Store.formatCurrency(
         promoAverage,
       ),
     );
 
-
-    _setText(
+    setText(
       "nonPromoAverageTicket",
       Store.formatCurrency(
         normalAverage,
       ),
     );
 
-
-    _setText(
+    setText(
       "promoDiscountTotal",
       Store.formatCurrency(
         promoDiscount,
       ),
     );
 
+    await renderPromoTable(
+      promoTxns,
+    );
+  }
 
+  /* ==========================================================
+     PROMO TABLE
+     ========================================================== */
+
+  async function renderPromoTable(
+    transactions,
+  ) {
     const container =
       document.getElementById(
         "promoPerformance",
       );
 
-
-    if (!container) {
-      return;
-    }
-
+    if (!container) return;
 
     let promos = [];
 
-
     try {
-
       promos =
         await Store.getPromos();
-
     } catch (error) {
-
       console.error(
         "Promo fetch error:",
         error,
       );
-    }
 
+      container.innerHTML =
+        `<div class="empty-state">
+          Unable to load promotion data.
+        </div>`;
+
+      return;
+    }
 
     const promoMap = {};
 
-
-    promoTxns.forEach(
-      (t) => {
-
-        const promoId =
-          t.promoId;
-
-
-        if (!promoId) {
+    transactions.forEach(
+      (transaction) => {
+        if (!transaction.promoId) {
           return;
         }
 
+        const promoId =
+          transaction.promoId;
 
         if (
           !promoMap[promoId]
         ) {
-
           promoMap[promoId] = {
-
             transactions:
               0,
-
             revenue:
               0,
-
             discount:
               0,
           };
         }
 
-
         promoMap[
           promoId
-        ].transactions++;
-
+        ].transactions += 1;
 
         promoMap[
           promoId
         ].revenue +=
           Number(
-            t.price ||
+            transaction.price ||
             0,
           );
-
 
         promoMap[
           promoId
         ].discount +=
           Number(
-            t.discountAmount ||
+            transaction.discountAmount ||
             0,
           );
       },
     );
 
-
     const rows =
       promos
         .filter(
-          (p) =>
-            promoMap[p.id],
+          (promo) =>
+            promoMap[promo.id],
         )
-        .map(
-          (p) => {
-
-            const item =
-              promoMap[p.id];
-
-
-            return `
-              <tr>
-
-                <td data-label="Promotion">
-
-                  <span class="discount-tag">
-
-                    🎉
-                    ${escapeHtml(
-              p.name,
-            )}
-
-                  </span>
-
-                </td>
-
-                <td data-label="Transactions">
-
-                  ${item.transactions}
-
-                </td>
-
-                <td data-label="Revenue">
-
-                  ${Store.formatCurrency(
-              item.revenue,
-            )}
-
-                </td>
-
-                <td data-label="Discount">
-
-                  ${Store.formatCurrency(
-              item.discount,
-            )}
-
-                </td>
-
-                <td data-label="Avg Ticket">
-
-                  ${Store.formatCurrency(
-              item.revenue /
-              item.transactions,
-            )}
-
-                </td>
-
-              </tr>
-            `;
-          },
+        .sort(
+          (a, b) =>
+            promoMap[b.id]
+              .revenue -
+            promoMap[a.id]
+              .revenue,
         )
+        .map((promo) => {
+          const item =
+            promoMap[promo.id];
+
+          const avg =
+            item.transactions
+              ? item.revenue /
+              item.transactions
+              : 0;
+
+          return `
+            <tr>
+              <td data-label="Promotion">
+                <span class="discount-tag">
+                  🎉 ${escapeHtml(
+            promo.name,
+          )}
+                </span>
+              </td>
+
+              <td data-label="Transactions">
+                ${item.transactions}
+              </td>
+
+              <td data-label="Revenue">
+                ${Store.formatCurrency(
+            item.revenue,
+          )}
+              </td>
+
+              <td data-label="Discount">
+                ${Store.formatCurrency(
+            item.discount,
+          )}
+              </td>
+
+              <td data-label="Avg Ticket">
+                ${Store.formatCurrency(
+            avg,
+          )}
+              </td>
+            </tr>
+          `;
+        })
         .join("");
 
-
     if (!rows) {
-
       container.innerHTML = `
         <div class="empty-state">
           No promotion transactions
@@ -2300,420 +3142,446 @@ const Dashboard = (() => {
       return;
     }
 
-
     container.innerHTML = `
       <div class="table-responsive">
-
         <table class="data-table">
-
           <thead>
-
             <tr>
-
-              <th>
-                Promotion
-              </th>
-
-              <th>
-                Transactions
-              </th>
-
-              <th>
-                Revenue
-              </th>
-
-              <th>
-                Discount
-              </th>
-
-              <th>
-                Avg Ticket
-              </th>
-
+              <th>Promotion</th>
+              <th>Transactions</th>
+              <th>Revenue</th>
+              <th>Discount</th>
+              <th>Avg Ticket</th>
             </tr>
-
           </thead>
 
           <tbody>
-
             ${rows}
-
           </tbody>
-
         </table>
-
       </div>
     `;
   }
 
-  /* ============================================================
-     FILTER HELPERS
-     ============================================================ */
-
-  function filterBranch(
-    data,
-  ) {
-
-    if (
-      currentBranch ===
-      "all"
-    ) {
-      return data;
-    }
-
-
-    return data.filter(
-      (t) =>
-        String(
-          t.branch || "",
-        ).toLowerCase() ===
-        String(
-          currentBranch,
-        ).toLowerCase(),
-    );
-  }
-
-  /* ============================================================
-     PERIOD TRANSACTIONS
-     ============================================================ */
-
-  function getPeriodTransactions(
-    data,
-  ) {
-
-    const today =
-      Store.getTodayStr();
-
-
-    /* ----------------------------------------------------------
-       DAILY
-       ---------------------------------------------------------- */
-
-    if (
-      currentFilter ===
-      "daily"
-    ) {
-
-      return data.filter(
-        (t) =>
-          t.date ===
-          today,
-      );
-    }
-
-
-    /* ----------------------------------------------------------
-       WEEKLY
-
-       1-7
-       8-14
-       15-21
-       22-28
-       29-end
-       ---------------------------------------------------------- */
-
-    if (
-      currentFilter ===
-      "weekly"
-    ) {
-
-      const now =
-        new Date();
-
-
-      const year =
-        now.getFullYear();
-
-
-      const month =
-        now.getMonth();
-
-
-      const day =
-        now.getDate();
-
-
-      let startDay;
-
-
-      if (
-        day <= 7
-      ) {
-
-        startDay =
-          1;
-
-      } else if (
-        day <= 14
-      ) {
-
-        startDay =
-          8;
-
-      } else if (
-        day <= 21
-      ) {
-
-        startDay =
-          15;
-
-      } else if (
-        day <= 28
-      ) {
-
-        startDay =
-          22;
-
-      } else {
-
-        startDay =
-          29;
-      }
-
-
-      const start =
-        new Date(
-          year,
-          month,
-          startDay,
-        );
-
-
-      start.setHours(
-        0,
-        0,
-        0,
-        0,
-      );
-
-
-      const end =
-        new Date(
-          year,
-          month + 1,
-          0,
-        );
-
-
-      end.setHours(
-        23,
-        59,
-        59,
-        999,
-      );
-
-
-      return data.filter(
-        (t) => {
-
-          const d =
-            new Date(
-              `${t.date}T00:00:00`,
-            );
-
-
-          return (
-            d >= start &&
-            d <= end
-          );
-        },
-      );
-    }
-
-
-    /* ----------------------------------------------------------
-       MONTHLY
-       ---------------------------------------------------------- */
-
-    if (
-      currentFilter ===
-      "monthly"
-    ) {
-
-      const start =
-        today.substring(
-          0,
-          7,
-        ) + "-01";
-
-
-      return data.filter(
-        (t) =>
-          t.date >=
-          start &&
-          t.date <=
-          today,
-      );
-    }
-
-
-    /* ----------------------------------------------------------
-       YEARLY
-       ---------------------------------------------------------- */
-
-    if (
-      currentFilter ===
-      "yearly"
-    ) {
-
-      const start =
-        today.substring(
-          0,
-          4,
-        ) + "-01-01";
-
-
-      return data.filter(
-        (t) =>
-          t.date >=
-          start &&
-          t.date <=
-          today,
-      );
-    }
-
-
-    return data;
-  }
-
-  /* ============================================================
-     PROMO HELPER
-     ============================================================ */
-
-  function isPromoTransaction(
-    t,
-  ) {
-
-    return Boolean(
-
-      t.promoId ||
-
-      Number(
-        t.promoDiscount ||
-        0,
-      ) > 0 ||
-
-      Number(
-        t.discountAmount ||
-        0,
-      ) > 0
-
-    );
-  }
-
-  /* ============================================================
-     REVENUE HELPER
-     ============================================================ */
-
-  function sumRevenue(
+  /* ==========================================================
+     GROUP SERVICE
+     ========================================================== */
+
+  function groupByService(
     transactions,
   ) {
+    const map = {};
 
+    transactions.forEach(
+      (transaction) => {
+        const service =
+          transaction.serviceName ||
+          "Unknown Service";
+
+        map[service] =
+          (map[service] || 0) +
+          getMetricValue(
+            transaction,
+          );
+      },
+    );
+
+    return map;
+  }
+
+  /* ==========================================================
+     METRIC VALUE
+     ========================================================== */
+
+  function getMetricValue(
+    transaction,
+  ) {
+    if (
+      currentMetric ===
+      "count"
+    ) {
+      return 1;
+    }
+
+    return Number(
+      transaction.price ||
+      0,
+    );
+  }
+
+  /* ==========================================================
+     DISCOUNT
+     ========================================================== */
+
+  function sumDiscount(
+    transactions,
+  ) {
     return transactions.reduce(
-      (total, t) =>
-        total +
+      (sum, transaction) =>
+        sum +
         Number(
-          t.price ||
+          transaction.discountAmount ||
           0,
         ),
       0,
     );
   }
 
-  /* ============================================================
-     PERIOD LABEL
-     ============================================================ */
+  /* ==========================================================
+     REVENUE
+     ========================================================== */
+
+  function sumRevenue(
+    transactions,
+  ) {
+    return transactions.reduce(
+      (sum, transaction) =>
+        sum +
+        Number(
+          transaction.price ||
+          0,
+        ),
+      0,
+    );
+  }
+
+  /* ==========================================================
+     PROMO
+     ========================================================== */
+
+  function isPromoTransaction(
+    transaction,
+  ) {
+    return Boolean(
+      transaction.promoId ||
+      Number(
+        transaction.promoDiscount ||
+        0,
+      ) > 0 ||
+      Number(
+        transaction.discountAmount ||
+        0,
+      ) > 0,
+    );
+  }
+
+  /* ==========================================================
+     GROWTH
+     ========================================================== */
+
+  function calculateGrowth(
+    current,
+    previous,
+  ) {
+    const currentValue =
+      Number(current || 0);
+
+    const previousValue =
+      Number(previous || 0);
+
+    if (
+      previousValue === 0
+    ) {
+      if (
+        currentValue === 0
+      ) {
+        return 0;
+      }
+
+      return null;
+    }
+
+    return (
+      ((currentValue -
+        previousValue) /
+        previousValue) *
+      100
+    );
+  }
+
+  /* ==========================================================
+     GROWTH UI
+     ========================================================== */
+
+  function setGrowthElement(
+    id,
+    value,
+  ) {
+    const el =
+      document.getElementById(
+        id,
+      );
+
+    if (!el) return;
+
+    el.classList.remove(
+      "positive",
+      "negative",
+      "neutral",
+    );
+
+    if (value === null) {
+      el.textContent =
+        "New";
+
+      el.classList.add(
+        "positive",
+      );
+
+      return;
+    }
+
+    if (
+      Number(value) > 0
+    ) {
+      el.textContent =
+        `↑ ${Math.abs(
+          value,
+        ).toFixed(
+          1,
+        )}%`;
+
+      el.classList.add(
+        "positive",
+      );
+
+      return;
+    }
+
+    if (
+      Number(value) < 0
+    ) {
+      el.textContent =
+        `↓ ${Math.abs(
+          value,
+        ).toFixed(
+          1,
+        )}%`;
+
+      el.classList.add(
+        "negative",
+      );
+
+      return;
+    }
+
+    el.textContent =
+      "—";
+
+    el.classList.add(
+      "neutral",
+    );
+  }
+
+  /* ==========================================================
+     LABELS
+     ========================================================== */
 
   function getPeriodLabel() {
+    if (
+      hasCustomDateRange()
+    ) {
+      return `${formatDateLabel(
+        selectedStartDate,
+      )} → ${formatDateLabel(
+        selectedEndDate,
+      )}`;
+    }
 
     if (
       currentFilter ===
       "daily"
     ) {
-
       return "Today";
     }
-
 
     if (
       currentFilter ===
       "weekly"
     ) {
-
       return "This Week";
     }
-
-
-    if (
-      currentFilter ===
-      "monthly"
-    ) {
-
-      return "This Month";
-    }
-
 
     if (
       currentFilter ===
       "yearly"
     ) {
-
       return "This Year";
     }
 
-
-    return "Selected Period";
+    return "This Month";
   }
 
-  /* ============================================================
-     CHART COLORS
-     ============================================================ */
+  function getComparisonLabel() {
+    if (
+      currentCompare ===
+      "none"
+    ) {
+      return "No comparison";
+    }
 
-  function _chartColors() {
+    const range =
+      getComparisonRange();
 
-    return [
+    if (!range) {
+      return "No comparison";
+    }
 
-      "#e30022",
+    if (
+      currentCompare ===
+      "previous_year"
+    ) {
+      return `${formatDateLabel(
+        range.start,
+      )} → ${formatDateLabel(
+        range.end,
+      )}`;
+    }
 
-      "#ff1a3d",
-
-      "#990017",
-
-      "#b0b0b0",
-
-      "#ffffff",
-
-      "#808080",
-
-      "#4d4d4d",
-
-      "#ff4d66",
-
-      "#cc001f",
-
-      "#e60000",
-
-      "#cccccc",
-
-      "#333333",
-
-    ];
+    return `${formatDateLabel(
+      range.start,
+    )} → ${formatDateLabel(
+      range.end,
+    )}`;
   }
 
-  /* ============================================================
+  /* ==========================================================
+     CHART TITLES
+     ========================================================== */
+
+  function updateChartTitles() {
+    const isRevenue =
+      currentMetric ===
+      "revenue";
+
+    setText(
+      "dashRevenueChartTitle",
+      isRevenue
+        ? "📈 Revenue Trend"
+        : "📈 Transaction Trend",
+    );
+
+    setText(
+      "dashRevenueChartSubtitle",
+      currentCompare ===
+        "none"
+        ? "Selected period performance"
+        : `Selected period vs ${getComparisonLabel()}`,
+    );
+
+    setText(
+      "dashBarChartTitle",
+      isRevenue
+        ? "📊 Service Comparison"
+        : "📊 Transactions by Service",
+    );
+
+    setText(
+      "dashBarChartSubtitle",
+      currentCompare ===
+        "none"
+        ? "Top services in selected period"
+        : "Selected period vs comparison",
+    );
+
+    setText(
+      "dashServiceChartTitle",
+      isRevenue
+        ? "🍩 Revenue by Service"
+        : "🍩 Transactions by Service",
+    );
+  }
+
+  /* ==========================================================
+     TREND LEGEND
+     ========================================================== */
+
+  function renderTrendLegend(
+    datasets,
+  ) {
+    const container =
+      document.getElementById(
+        "trendLegend",
+      );
+
+    if (!container) return;
+
+    container.innerHTML =
+      datasets
+        .map(
+          (dataset, index) => {
+            const color =
+              index === 0
+                ? "#e30022"
+                : "#60a5fa";
+
+            return `
+              <span class="custom-legend-item">
+                <span
+                  class="custom-legend-dot"
+                  style="background:${color}"
+                ></span>
+
+                ${escapeHtml(
+              dataset.label,
+            )}
+              </span>
+            `;
+          },
+        )
+        .join("");
+  }
+
+  /* ==========================================================
+     CHART DESTROY
+     ========================================================== */
+
+  function destroyChart(
+    type,
+  ) {
+    if (
+      type ===
+      "revenue"
+    ) {
+      if (revenueChart) {
+        revenueChart.destroy();
+        revenueChart = null;
+      }
+    }
+
+    if (
+      type ===
+      "service"
+    ) {
+      if (serviceChart) {
+        serviceChart.destroy();
+        serviceChart = null;
+      }
+    }
+
+    if (
+      type ===
+      "bar"
+    ) {
+      if (barChart) {
+        barChart.destroy();
+        barChart = null;
+      }
+    }
+  }
+
+  /* ==========================================================
      GRADIENT
-     ============================================================ */
+     ========================================================== */
 
-  function _gradient(
+  function makeGradient(
     canvas,
     color,
   ) {
-
     const ctx =
       canvas.getContext(
         "2d",
       );
-
 
     const gradient =
       ctx.createLinearGradient(
@@ -2724,41 +3592,204 @@ const Dashboard = (() => {
         300,
       );
 
-
     gradient.addColorStop(
       0,
-      color + "66",
+      `${color}55`,
     );
-
 
     gradient.addColorStop(
       1,
-      color + "00",
+      `${color}00`,
     );
-
 
     return gradient;
   }
 
-  /* ============================================================
-     SHORT CURRENCY
-     ============================================================ */
+  /* ==========================================================
+     POINT RADIUS
+     ========================================================== */
 
-  function _shortCurrency(
+  function getPointRadius(
+    data,
+    base,
+  ) {
+    if (
+      !Array.isArray(data)
+    ) {
+      return base;
+    }
+
+    return data.map(
+      (value) =>
+        value === null
+          ? 0
+          : base,
+    );
+  }
+
+  /* ==========================================================
+     DATE UTILITIES
+     ========================================================== */
+
+  function parseDate(
     value,
   ) {
+    if (
+      value instanceof Date
+    ) {
+      return new Date(
+        value.getFullYear(),
+        value.getMonth(),
+        value.getDate(),
+      );
+    }
 
+    const parts =
+      String(value || "")
+        .split("-")
+        .map(Number);
+
+    if (
+      parts.length !==
+      3 ||
+      parts.some(
+        (item) =>
+          Number.isNaN(item),
+      )
+    ) {
+      return new Date(
+        "invalid",
+      );
+    }
+
+    return new Date(
+      parts[0],
+      parts[1] - 1,
+      parts[2],
+    );
+  }
+
+  function dateString(
+    date,
+  ) {
+    return (
+      date.getFullYear() +
+      "-" +
+      String(
+        date.getMonth() + 1,
+      ).padStart(
+        2,
+        "0",
+      ) +
+      "-" +
+      String(
+        date.getDate(),
+      ).padStart(
+        2,
+        "0",
+      )
+    );
+  }
+
+  function addDays(
+    date,
+    amount,
+  ) {
+    const result =
+      new Date(
+        date,
+      );
+
+    result.setDate(
+      result.getDate() +
+      amount,
+    );
+
+    return result;
+  }
+
+  function diffDays(
+    start,
+    end,
+  ) {
+    const a =
+      parseDate(start);
+
+    const b =
+      parseDate(end);
+
+    return Math.floor(
+      (
+        b.getTime() -
+        a.getTime()
+      ) /
+      86400000,
+    );
+  }
+
+  function formatShortDate(
+    date,
+  ) {
+    return date.toLocaleDateString(
+      "en-US",
+      {
+        day:
+          "numeric",
+        month:
+          "short",
+      },
+    );
+  }
+
+  function formatDateLabel(
+    date,
+  ) {
+    if (!date) {
+      return "—";
+    }
+
+    const parsed =
+      parseDate(
+        date,
+      );
+
+    if (
+      Number.isNaN(
+        parsed.getTime(),
+      )
+    ) {
+      return date;
+    }
+
+    return parsed.toLocaleDateString(
+      "en-GB",
+      {
+        day:
+          "2-digit",
+        month:
+          "short",
+        year:
+          "numeric",
+      },
+    );
+  }
+
+  /* ==========================================================
+     SHORT CURRENCY
+     ========================================================== */
+
+  function shortCurrency(
+    value,
+  ) {
     const n =
       Number(
         value || 0,
       );
 
-
     if (
       n >=
       1000000000
     ) {
-
       return (
         "Rp " +
         (
@@ -2774,12 +3805,10 @@ const Dashboard = (() => {
       );
     }
 
-
     if (
       n >=
       1000000
     ) {
-
       return (
         "Rp " +
         (
@@ -2795,12 +3824,10 @@ const Dashboard = (() => {
       );
     }
 
-
     if (
       n >=
       1000
     ) {
-
       return (
         "Rp " +
         (
@@ -2812,7 +3839,6 @@ const Dashboard = (() => {
       );
     }
 
-
     return (
       "Rp " +
       n.toLocaleString(
@@ -2821,72 +3847,31 @@ const Dashboard = (() => {
     );
   }
 
-  /* ============================================================
-     DATE STRING
-     ============================================================ */
-
-  function _dateStr(
-    d,
-  ) {
-
-    return (
-
-      d.getFullYear() +
-
-      "-" +
-
-      String(
-        d.getMonth() + 1,
-      ).padStart(
-        2,
-        "0",
-      ) +
-
-      "-" +
-
-      String(
-        d.getDate(),
-      ).padStart(
-        2,
-        "0",
-      )
-
-    );
-  }
-
-  /* ============================================================
+  /* ==========================================================
      SAFE TEXT
-     ============================================================ */
+     ========================================================== */
 
-  function _setText(
+  function setText(
     id,
     value,
   ) {
-
     const el =
       document.getElementById(
         id,
       );
 
-
     if (el) {
-
       el.textContent =
         value;
     }
   }
 
-  /* ============================================================
+  /* ==========================================================
      PUBLIC API
-     ============================================================ */
+     ========================================================== */
 
   return {
-
     render,
-
-    refresh:
-      refreshDashboard,
-
+    refresh,
   };
-
 })();
