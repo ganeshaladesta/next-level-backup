@@ -1,10 +1,10 @@
 /* ============================================================
    NEXT LEVEL BEAUTY BAR
    MANAGEMENT DASHBOARD
-   ROBUST VERSION
    ============================================================ */
 
 const Dashboard = (() => {
+
   /* ============================================================
      CHART INSTANCES
      ============================================================ */
@@ -13,8 +13,9 @@ const Dashboard = (() => {
   let serviceChart = null;
   let barChart = null;
 
+
   /* ============================================================
-     STATE
+     DASHBOARD STATE
      ============================================================ */
 
   let currentFilter = "monthly";
@@ -28,6 +29,11 @@ const Dashboard = (() => {
 
   let initialized = false;
   let rendering = false;
+
+
+  /* ============================================================
+     CONSTANTS
+     ============================================================ */
 
   const BRANCHES = [
     "Kemang",
@@ -57,11 +63,15 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function render() {
-    if (rendering) return;
+
+    if (rendering) {
+      return;
+    }
 
     rendering = true;
 
     try {
+
       if (!initialized) {
         setup();
         initialized = true;
@@ -71,11 +81,10 @@ const Dashboard = (() => {
 
       updateFilterUI();
 
-      /*
-       * IMPORTANT:
-       * Setiap bagian punya try/catch sendiri.
-       * Jadi satu error tidak membunuh seluruh dashboard.
-       */
+
+      /* --------------------------------------------------------
+         PROMO BANNER
+         -------------------------------------------------------- */
 
       try {
         await renderPromoBanner();
@@ -86,6 +95,11 @@ const Dashboard = (() => {
         );
       }
 
+
+      /* --------------------------------------------------------
+         KPI
+         -------------------------------------------------------- */
+
       try {
         await renderSummaryCards();
       } catch (error) {
@@ -94,6 +108,11 @@ const Dashboard = (() => {
           error,
         );
       }
+
+
+      /* --------------------------------------------------------
+         CHARTS
+         -------------------------------------------------------- */
 
       try {
         await renderCharts();
@@ -104,6 +123,11 @@ const Dashboard = (() => {
         );
       }
 
+
+      /* --------------------------------------------------------
+         PROMO PERFORMANCE
+         -------------------------------------------------------- */
+
       try {
         await renderPromoPerformance();
       } catch (error) {
@@ -112,6 +136,11 @@ const Dashboard = (() => {
           error,
         );
       }
+
+
+      /* --------------------------------------------------------
+         MANAGER INSIGHTS
+         -------------------------------------------------------- */
 
       try {
         await renderManagerInsights();
@@ -123,11 +152,14 @@ const Dashboard = (() => {
       }
 
     } catch (error) {
+
       console.error(
         "Dashboard fatal error:",
         error,
       );
+
     } finally {
+
       rendering = false;
     }
   }
@@ -143,11 +175,17 @@ const Dashboard = (() => {
      ============================================================ */
 
   function setup() {
+
     setupQuickFilters();
+
     setupChartType();
+
     setupMetric();
+
     setupBranch();
+
     setupCompare();
+
     setupDatePicker();
   }
 
@@ -157,36 +195,46 @@ const Dashboard = (() => {
      ============================================================ */
 
   function setupQuickFilters() {
+
     document
       .querySelectorAll(
         ".filter-btn[data-filter]",
       )
       .forEach((button) => {
+
         button.addEventListener(
           "click",
           async () => {
+
             document
               .querySelectorAll(
                 ".filter-btn[data-filter]",
               )
               .forEach((item) => {
+
                 item.classList.remove(
                   "active",
                 );
+
               });
+
 
             button.classList.add(
               "active",
             );
 
+
             currentFilter =
               button.dataset.filter;
 
+
             clearCustomDateRange();
+
 
             await render();
           },
         );
+
       });
   }
 
@@ -196,34 +244,43 @@ const Dashboard = (() => {
      ============================================================ */
 
   function setupChartType() {
+
     document
       .querySelectorAll(
         ".chart-type-btn",
       )
       .forEach((button) => {
+
         button.addEventListener(
           "click",
           async () => {
+
             document
               .querySelectorAll(
                 ".chart-type-btn",
               )
               .forEach((item) => {
+
                 item.classList.remove(
                   "active",
                 );
+
               });
+
 
             button.classList.add(
               "active",
             );
 
+
             currentChartType =
               button.dataset.chartType;
+
 
             await renderCharts();
           },
         );
+
       });
   }
 
@@ -233,18 +290,24 @@ const Dashboard = (() => {
      ============================================================ */
 
   function setupMetric() {
+
     const element =
       document.getElementById(
         "dashMetricFilter",
       );
 
-    if (!element) return;
+    if (!element) {
+      return;
+    }
+
 
     element.addEventListener(
       "change",
       async (event) => {
+
         currentMetric =
           event.target.value;
+
 
         await render();
       },
@@ -257,26 +320,23 @@ const Dashboard = (() => {
      ============================================================ */
 
   function setupBranch() {
+
     const element =
       document.getElementById(
         "dashBranchFilter",
       );
 
-    if (!element) return;
+    if (!element) {
+      return;
+    }
 
-    element.addEventListener(
-      "change",
-      async (event) => {
-        currentBranch =
-          event.target.value ||
-          "all";
 
-        await render();
-      },
-    );
+    element.value = "all";
+
 
     BRANCHES.forEach(
       (branch) => {
+
         const exists =
           Array.from(
             element.options,
@@ -286,20 +346,43 @@ const Dashboard = (() => {
               branch,
           );
 
+
         if (!exists) {
+
           const option =
             document.createElement(
               "option",
             );
 
-          option.value = branch;
+
+          option.value =
+            branch;
+
+
           option.textContent =
             branch;
+
 
           element.appendChild(
             option,
           );
+
         }
+
+      },
+    );
+
+
+    element.addEventListener(
+      "change",
+      async (event) => {
+
+        currentBranch =
+          event.target.value ||
+          "all";
+
+
+        await render();
       },
     );
   }
@@ -310,19 +393,25 @@ const Dashboard = (() => {
      ============================================================ */
 
   function setupCompare() {
+
     const element =
       document.getElementById(
         "dashCompareFilter",
       );
 
-    if (!element) return;
+    if (!element) {
+      return;
+    }
+
 
     element.addEventListener(
       "change",
       async (event) => {
+
         currentCompare =
           event.target.value ||
           "none";
+
 
         await render();
       },
@@ -335,6 +424,7 @@ const Dashboard = (() => {
      ============================================================ */
 
   function setupDatePicker() {
+
     const start =
       document.getElementById(
         "dashDateStart",
@@ -355,31 +445,38 @@ const Dashboard = (() => {
         "dashDateClear",
       );
 
+
     if (!start || !end) {
       return;
     }
 
+
     start.addEventListener(
       "change",
       () => {
+
         if (start.value) {
           end.min =
             start.value;
         }
 
+
         clearDateError();
       },
     );
 
+
     end.addEventListener(
       "change",
       () => {
+
         if (
           start.value &&
           end.value &&
           end.value <
           start.value
         ) {
+
           showDateError(
             "End date cannot be earlier than start date.",
           );
@@ -387,24 +484,30 @@ const Dashboard = (() => {
           return;
         }
 
+
         clearDateError();
       },
     );
 
+
     if (apply) {
+
       apply.addEventListener(
         "click",
         async () => {
+
           const startValue =
             start.value;
 
           const endValue =
             end.value;
 
+
           if (
             !startValue ||
             !endValue
           ) {
+
             showDateError(
               "Please select both dates.",
             );
@@ -412,10 +515,12 @@ const Dashboard = (() => {
             return;
           }
 
+
           if (
             endValue <
             startValue
           ) {
+
             showDateError(
               "End date cannot be earlier than start date.",
             );
@@ -423,45 +528,59 @@ const Dashboard = (() => {
             return;
           }
 
+
           selectedStartDate =
             startValue;
 
           selectedEndDate =
             endValue;
 
+
           setQuickFilterActive(
             null,
           );
 
+
           clearDateError();
 
+
           await render();
+
         },
       );
+
     }
 
+
     if (clear) {
+
       clear.addEventListener(
         "click",
         async () => {
+
           clearCustomDateRange();
+
 
           setQuickFilterActive(
             currentFilter,
           );
 
+
           await render();
+
         },
       );
+
     }
   }
 
 
   /* ============================================================
-     DATE INPUT INITIALIZATION
+     INITIAL DATE INPUTS
      ============================================================ */
 
   function normalizeInitialDateInputs() {
+
     const start =
       document.getElementById(
         "dashDateStart",
@@ -472,9 +591,11 @@ const Dashboard = (() => {
         "dashDateEnd",
       );
 
+
     if (!start || !end) {
       return;
     }
+
 
     if (start.value) {
       end.min =
@@ -484,24 +605,23 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     CUSTOM DATE RANGE
+     CUSTOM RANGE
      ============================================================ */
 
   function hasCustomDateRange() {
-    return (
-      Boolean(
-        selectedStartDate,
-      ) &&
-      Boolean(
-        selectedEndDate,
-      )
+
+    return Boolean(
+      selectedStartDate &&
+      selectedEndDate,
     );
   }
 
 
   function clearCustomDateRange() {
+
     selectedStartDate = "";
     selectedEndDate = "";
+
 
     const start =
       document.getElementById(
@@ -513,16 +633,20 @@ const Dashboard = (() => {
         "dashDateEnd",
       );
 
+
     if (start) {
       start.value = "";
     }
 
+
     if (end) {
       end.value = "";
+
       end.removeAttribute(
         "min",
       );
     }
+
 
     clearDateError();
   }
@@ -531,16 +655,19 @@ const Dashboard = (() => {
   function setQuickFilterActive(
     filter,
   ) {
+
     document
       .querySelectorAll(
         ".filter-btn[data-filter]",
       )
       .forEach((button) => {
+
         button.classList.toggle(
           "active",
           button.dataset.filter ===
           filter,
         );
+
       });
   }
 
@@ -548,10 +675,12 @@ const Dashboard = (() => {
   function showDateError(
     message,
   ) {
+
     const element =
       document.getElementById(
         "dashDateError",
       );
+
 
     if (element) {
       element.textContent =
@@ -561,10 +690,12 @@ const Dashboard = (() => {
 
 
   function clearDateError() {
+
     const element =
       document.getElementById(
         "dashDateError",
       );
+
 
     if (element) {
       element.textContent = "";
@@ -577,15 +708,18 @@ const Dashboard = (() => {
      ============================================================ */
 
   function updateFilterUI() {
+
     setText(
       "dashboardFilterStatus",
       getPeriodLabel(),
     );
 
+
     setText(
       "dashPeriodLabel",
       getPeriodLabel(),
     );
+
 
     setText(
       "dashCompareLabel",
@@ -599,53 +733,72 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderPromoBanner() {
+
     const banner =
       document.getElementById(
         "promoBanner",
       );
 
+
     if (!banner) {
       return;
     }
 
+
     let promos = [];
 
+
     try {
+
       promos =
         await Store.getActivePromos();
+
     } catch (error) {
+
       console.error(
         "Active promo error:",
         error,
       );
 
+
       banner.style.display =
         "none";
 
+
       return;
     }
+
 
     if (
-      !Array.isArray(promos) ||
+      !Array.isArray(
+        promos,
+      ) ||
       promos.length === 0
     ) {
+
       banner.innerHTML = "";
+
       banner.style.display =
         "none";
 
+
       return;
     }
+
 
     banner.innerHTML =
       promos
         .map(
           (promo) => `
+
             <div class="promo-badge-item">
+
               <span class="promo-badge-icon">
                 🎉
               </span>
 
               <span>
+
                 <strong>
                   ${escapeHtml(
             promo.name,
@@ -653,8 +806,7 @@ const Dashboard = (() => {
                 </strong>
 
                 — ${Number(
-            promo.discount ||
-            0,
+            promo.discount || 0,
           )}% Off
 
                 ${promo.description
@@ -663,11 +815,15 @@ const Dashboard = (() => {
               )}`
               : ""
             }
+
               </span>
+
             </div>
+
           `,
         )
         .join("");
+
 
     banner.style.display =
       "flex";
@@ -675,22 +831,35 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     TRANSACTION DATA
+     SAFE TRANSACTION LOADER
      ============================================================ */
 
-  function getAllTransactions() {
+  function getSafeTransactions() {
+
     try {
-      const data =
+
+      const result =
         Store.getTransactions();
 
-      return Array.isArray(data)
-        ? data
-        : [];
+
+      if (
+        Array.isArray(
+          result,
+        )
+      ) {
+        return result;
+      }
+
+
+      return [];
+
     } catch (error) {
+
       console.error(
-        "getTransactions error:",
+        "Store.getTransactions() error:",
         error,
       );
+
 
       return [];
     }
@@ -698,18 +867,29 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     FILTER BRANCH
+     FILTER BY BRANCH
      ============================================================ */
 
   function filterBranch(
     transactions,
   ) {
+
+    if (
+      !Array.isArray(
+        transactions,
+      )
+    ) {
+      return [];
+    }
+
+
     if (
       currentBranch ===
       "all"
     ) {
       return transactions;
     }
+
 
     const branch =
       String(
@@ -718,6 +898,7 @@ const Dashboard = (() => {
       )
         .trim()
         .toLowerCase();
+
 
     return transactions.filter(
       (transaction) =>
@@ -739,13 +920,16 @@ const Dashboard = (() => {
   function normalizeDate(
     value,
   ) {
+
     if (!value) {
       return "";
     }
 
+
     if (
       value instanceof Date
     ) {
+
       if (
         Number.isNaN(
           value.getTime(),
@@ -754,41 +938,52 @@ const Dashboard = (() => {
         return "";
       }
 
+
       return toDateString(
         value,
       );
     }
+
 
     const raw =
       String(
         value,
       ).trim();
 
+
     if (!raw) {
       return "";
     }
 
-    const isoMatch =
+
+    const iso =
       raw.match(
         /^(\d{4}-\d{2}-\d{2})/,
       );
 
-    if (isoMatch) {
-      return isoMatch[1];
+
+    if (iso) {
+      return iso[1];
     }
 
+
     const parsed =
-      new Date(raw);
+      new Date(
+        raw,
+      );
+
 
     if (
       !Number.isNaN(
         parsed.getTime(),
       )
     ) {
+
       return toDateString(
         parsed,
       );
     }
+
 
     return "";
   }
@@ -802,6 +997,7 @@ const Dashboard = (() => {
     transactions,
     range,
   ) {
+
     if (
       !Array.isArray(
         transactions,
@@ -813,16 +1009,20 @@ const Dashboard = (() => {
       return [];
     }
 
+
     return transactions.filter(
       (transaction) => {
+
         const date =
           normalizeDate(
             transaction.date,
           );
 
+
         if (!date) {
           return false;
         }
+
 
         return (
           date >=
@@ -836,29 +1036,36 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     CURRENT SELECTED RANGE
+     SELECTED RANGE
      ============================================================ */
 
   function getSelectedRange() {
+
     if (
       hasCustomDateRange()
     ) {
+
       return {
+
         start:
           selectedStartDate,
 
         end:
           selectedEndDate,
+
       };
     }
 
+
     const today =
       Store.getTodayStr();
+
 
     if (
       currentFilter ===
       "daily"
     ) {
+
       return {
         start:
           today,
@@ -868,20 +1075,25 @@ const Dashboard = (() => {
       };
     }
 
+
     if (
       currentFilter ===
       "weekly"
     ) {
+
       return getCurrentWeekRange(
         today,
       );
     }
 
+
     if (
       currentFilter ===
       "yearly"
     ) {
+
       return {
+
         start:
           `${today.substring(
             0,
@@ -890,10 +1102,13 @@ const Dashboard = (() => {
 
         end:
           today,
+
       };
     }
 
+
     return {
+
       start:
         `${today.substring(
           0,
@@ -902,6 +1117,7 @@ const Dashboard = (() => {
 
       end:
         today,
+
     };
   }
 
@@ -918,35 +1134,49 @@ const Dashboard = (() => {
   function getCurrentWeekRange(
     date,
   ) {
+
     const current =
       parseDate(
         date,
       );
 
+
     const day =
       current.getDate();
 
+
     let startDay = 1;
+
 
     if (
       day <= 7
     ) {
+
       startDay = 1;
+
     } else if (
       day <= 14
     ) {
+
       startDay = 8;
+
     } else if (
       day <= 21
     ) {
+
       startDay = 15;
+
     } else if (
       day <= 28
     ) {
+
       startDay = 22;
+
     } else {
+
       startDay = 29;
     }
+
 
     const start =
       new Date(
@@ -955,12 +1185,14 @@ const Dashboard = (() => {
         startDay,
       );
 
-    const monthEnd =
+
+    const lastDay =
       new Date(
         current.getFullYear(),
         current.getMonth() + 1,
         0,
-      );
+      ).getDate();
+
 
     let end =
       new Date(
@@ -968,21 +1200,25 @@ const Dashboard = (() => {
         current.getMonth(),
         Math.min(
           startDay + 6,
-          monthEnd.getDate(),
+          lastDay,
         ),
       );
+
 
     if (
       end >
       current
     ) {
+
       end =
         new Date(
           current,
         );
     }
 
+
     return {
+
       start:
         toDateString(
           start,
@@ -992,7 +1228,54 @@ const Dashboard = (() => {
         toDateString(
           end,
         ),
+
     };
+  }
+
+
+  /* ============================================================
+     COMPARISON RANGE
+     ============================================================ */
+
+  function getComparisonRange() {
+
+    if (
+      currentCompare ===
+      "none"
+    ) {
+      return null;
+    }
+
+
+    const selected =
+      getSelectedRange();
+
+
+    if (
+      currentCompare ===
+      "previous_period"
+    ) {
+
+      return getPreviousPeriodRange(
+        selected.start,
+        selected.end,
+      );
+    }
+
+
+    if (
+      currentCompare ===
+      "previous_year"
+    ) {
+
+      return getPreviousYearRange(
+        selected.start,
+        selected.end,
+      );
+    }
+
+
+    return null;
   }
 
 
@@ -1004,10 +1287,12 @@ const Dashboard = (() => {
     start,
     end,
   ) {
+
     const startDate =
       parseDate(
         start,
       );
+
 
     const totalDays =
       diffDays(
@@ -1015,11 +1300,13 @@ const Dashboard = (() => {
         end,
       ) + 1;
 
+
     const previousEnd =
       addDays(
         startDate,
         -1,
       );
+
 
     const previousStart =
       addDays(
@@ -1027,7 +1314,9 @@ const Dashboard = (() => {
         -(totalDays - 1),
       );
 
+
     return {
+
       start:
         toDateString(
           previousStart,
@@ -1037,6 +1326,7 @@ const Dashboard = (() => {
         toDateString(
           previousEnd,
         ),
+
     };
   }
 
@@ -1049,22 +1339,25 @@ const Dashboard = (() => {
     start,
     end,
   ) {
+
     const first =
       parseDate(
         start,
       );
+
 
     const last =
       parseDate(
         end,
       );
 
+
     return {
+
       start:
         toDateString(
           new Date(
-            first.getFullYear() -
-            1,
+            first.getFullYear() - 1,
             first.getMonth(),
             first.getDate(),
           ),
@@ -1073,64 +1366,27 @@ const Dashboard = (() => {
       end:
         toDateString(
           new Date(
-            last.getFullYear() -
-            1,
+            last.getFullYear() - 1,
             last.getMonth(),
             last.getDate(),
           ),
         ),
+
     };
   }
 
 
   /* ============================================================
-     COMPARISON RANGE
-     ============================================================ */
-
-  function getComparisonRange() {
-    if (
-      currentCompare ===
-      "none"
-    ) {
-      return null;
-    }
-
-    const selected =
-      getSelectedRange();
-
-    if (
-      currentCompare ===
-      "previous_period"
-    ) {
-      return getPreviousPeriodRange(
-        selected.start,
-        selected.end,
-      );
-    }
-
-    if (
-      currentCompare ===
-      "previous_year"
-    ) {
-      return getPreviousYearRange(
-        selected.start,
-        selected.end,
-      );
-    }
-
-    return null;
-  }
-
-
-  /* ============================================================
-     SELECTED DATA
+     SELECTED TRANSACTIONS
      ============================================================ */
 
   function getSelectedTransactions() {
+
     const transactions =
       filterBranch(
-        getAllTransactions(),
+        getSafeTransactions(),
       );
+
 
     return filterRange(
       transactions,
@@ -1140,21 +1396,25 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     COMPARISON DATA
+     COMPARISON TRANSACTIONS
      ============================================================ */
 
   function getComparisonTransactions() {
+
     const range =
       getComparisonRange();
+
 
     if (!range) {
       return [];
     }
 
+
     const transactions =
       filterBranch(
-        getAllTransactions(),
+        getSafeTransactions(),
       );
+
 
     return filterRange(
       transactions,
@@ -1168,28 +1428,36 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderSummaryCards() {
+
     const transactions =
       filterBranch(
-        getAllTransactions(),
+        getSafeTransactions(),
       );
+
 
     const today =
       Store.getTodayStr();
 
+
     const todayRange = {
+
       start:
         today,
 
       end:
         today,
+
     };
+
 
     const weekRange =
       getCurrentWeekRange(
         today,
       );
 
+
     const monthRange = {
+
       start:
         `${today.substring(
           0,
@@ -1198,9 +1466,12 @@ const Dashboard = (() => {
 
       end:
         today,
+
     };
 
+
     const yearRange = {
+
       start:
         `${today.substring(
           0,
@@ -1209,7 +1480,9 @@ const Dashboard = (() => {
 
       end:
         today,
+
     };
+
 
     await renderSingleKPI(
       "today",
@@ -1220,6 +1493,7 @@ const Dashboard = (() => {
       todayRange,
     );
 
+
     await renderSingleKPI(
       "week",
       filterRange(
@@ -1228,6 +1502,7 @@ const Dashboard = (() => {
       ),
       weekRange,
     );
+
 
     await renderSingleKPI(
       "month",
@@ -1238,6 +1513,7 @@ const Dashboard = (() => {
       monthRange,
     );
 
+
     await renderSingleKPI(
       "year",
       filterRange(
@@ -1247,11 +1523,13 @@ const Dashboard = (() => {
       yearRange,
     );
 
+
     const selected =
       filterRange(
         transactions,
         getSelectedRange(),
       );
+
 
     const comparison =
       filterRange(
@@ -1259,15 +1537,28 @@ const Dashboard = (() => {
         getComparisonRange(),
       );
 
+
     const revenue =
       sumSales(
         selected,
       );
 
+
     const comparisonRevenue =
       sumSales(
         comparison,
       );
+
+
+    const count =
+      selected.length;
+
+
+    const average =
+      count
+        ? revenue / count
+        : 0;
+
 
     setText(
       "dashTotalRevenue",
@@ -1276,18 +1567,14 @@ const Dashboard = (() => {
       ),
     );
 
+
     setText(
       "dashTotalTransactions",
-      selected.length.toLocaleString(
+      count.toLocaleString(
         "id-ID",
       ),
     );
 
-    const average =
-      selected.length
-        ? revenue /
-        selected.length
-        : 0;
 
     setText(
       "dashAverageTicket",
@@ -1295,6 +1582,7 @@ const Dashboard = (() => {
         average,
       ),
     );
+
 
     setText(
       "dashTotalDiscount",
@@ -1304,6 +1592,7 @@ const Dashboard = (() => {
         ),
       ),
     );
+
 
     setGrowthElement(
       "dashGrowth",
@@ -1324,18 +1613,22 @@ const Dashboard = (() => {
     currentData,
     range,
   ) {
+
     const revenue =
       sumSales(
         currentData,
       );
 
+
     const count =
       currentData.length;
+
 
     if (
       currentMetric ===
       "revenue"
     ) {
+
       setText(
         `${prefix}Revenue`,
         Store.formatCurrency(
@@ -1343,15 +1636,19 @@ const Dashboard = (() => {
         ),
       );
 
+
       setText(
         `${prefix}Count`,
         `${count} transactions`,
       );
+
     } else {
+
       setText(
         `${prefix}Revenue`,
         `${count} Transactions`,
       );
+
 
       setText(
         `${prefix}Count`,
@@ -1359,19 +1656,24 @@ const Dashboard = (() => {
           revenue,
         )}`,
       );
+
     }
+
 
     const all =
       filterBranch(
-        getAllTransactions(),
+        getSafeTransactions(),
       );
 
+
     let comparisonRange;
+
 
     if (
       prefix ===
       "today"
     ) {
+
       const previous =
         addDays(
           parseDate(
@@ -1380,7 +1682,9 @@ const Dashboard = (() => {
           -1,
         );
 
+
       comparisonRange = {
+
         start:
           toDateString(
             previous,
@@ -1390,20 +1694,26 @@ const Dashboard = (() => {
           toDateString(
             previous,
           ),
+
       };
+
     } else {
+
       comparisonRange =
         getPreviousPeriodRange(
           range.start,
           range.end,
         );
+
     }
+
 
     const comparison =
       filterRange(
         all,
         comparisonRange,
       );
+
 
     setGrowthElement(
       `${prefix}Change`,
@@ -1418,15 +1728,19 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     CHART RENDER
+     CHARTS
      ============================================================ */
 
   async function renderCharts() {
+
     updateChartTitles();
+
 
     await renderTrendChart();
 
+
     await renderServiceChart();
+
 
     await renderServiceComparison();
   }
@@ -1437,26 +1751,33 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderTrendChart() {
+
     const canvas =
       document.getElementById(
         "revenueChart",
       );
 
+
     if (!canvas) {
       return;
     }
 
+
     const selected =
       getSelectedTransactions();
+
 
     const comparison =
       getComparisonTransactions();
 
+
     const selectedRange =
       getSelectedRange();
 
+
     const comparisonRange =
       getComparisonRange();
+
 
     const selectedBuckets =
       buildBuckets(
@@ -1464,6 +1785,7 @@ const Dashboard = (() => {
         selectedRange.end,
         selected,
       );
+
 
     const comparisonBuckets =
       comparisonRange
@@ -1474,11 +1796,13 @@ const Dashboard = (() => {
         )
         : [];
 
+
     const labels =
       selectedBuckets.map(
         (bucket) =>
           bucket.label,
       );
+
 
     const selectedValues =
       selectedBuckets.map(
@@ -1486,65 +1810,73 @@ const Dashboard = (() => {
           bucket.value,
       );
 
-    const datasets = [
-      {
-        label:
-          getPeriodLabel(),
 
-        data:
+    const datasets = [];
+
+
+    datasets.push({
+
+      label:
+        getPeriodLabel(),
+
+      data:
+        selectedValues,
+
+      borderColor:
+        "#e30022",
+
+      backgroundColor:
+        makeGradient(
+          canvas,
+          "#e30022",
+        ),
+
+      borderWidth:
+        2.5,
+
+      tension:
+        0.35,
+
+      fill:
+        true,
+
+      spanGaps:
+        false,
+
+      pointRadius:
+        getPointRadius(
           selectedValues,
+          3,
+        ),
 
-        borderColor:
-          "#e30022",
+      pointHoverRadius:
+        6,
 
-        backgroundColor:
-          makeGradient(
-            canvas,
-            "#e30022",
-          ),
+      pointBackgroundColor:
+        "#e30022",
 
-        borderWidth:
-          2.5,
+      pointBorderColor:
+        "#ffffff",
 
-        tension:
-          0.35,
+      pointBorderWidth:
+        2,
 
-        fill:
-          true,
+    });
 
-        spanGaps:
-          false,
-
-        pointRadius:
-          getPointRadius(
-            selectedValues,
-            3,
-          ),
-
-        pointHoverRadius:
-          6,
-
-        pointBackgroundColor:
-          "#e30022",
-
-        pointBorderColor:
-          "#ffffff",
-
-        pointBorderWidth:
-          2,
-      },
-    ];
 
     if (
       comparisonBuckets.length
     ) {
+
       const comparisonValues =
         alignComparison(
           selectedBuckets,
           comparisonBuckets,
         );
 
+
       datasets.push({
+
         label:
           getComparisonLabel(),
 
@@ -1589,69 +1921,88 @@ const Dashboard = (() => {
 
         pointBorderColor:
           "#ffffff",
+
+        pointBorderWidth:
+          1.5,
+
       });
     }
+
 
     destroyChart(
       "revenue",
     );
 
+
+    const chartDatasets =
+      currentChartType ===
+        "bar"
+
+        ? datasets.map(
+          (
+            dataset,
+            index,
+          ) => ({
+
+            label:
+              dataset.label,
+
+            data:
+              dataset.data,
+
+            backgroundColor:
+              index ===
+                0
+                ? "rgba(227,0,34,0.85)"
+                : "rgba(96,165,250,0.72)",
+
+            borderColor:
+              index ===
+                0
+                ? "#e30022"
+                : "#60a5fa",
+
+            borderWidth:
+              1,
+
+            borderRadius:
+              6,
+
+            borderSkipped:
+              false,
+
+            maxBarThickness:
+              42,
+
+          }),
+        )
+
+        : datasets;
+
+
     revenueChart =
       new Chart(
         canvas,
         {
+
           type:
             currentChartType,
 
           data: {
+
             labels,
 
             datasets:
-              currentChartType ===
-                "bar"
-                ? datasets.map(
-                  (
-                    dataset,
-                    index,
-                  ) => ({
-                    label:
-                      dataset.label,
+              chartDatasets,
 
-                    data:
-                      dataset.data,
-
-                    backgroundColor:
-                      index ===
-                        0
-                        ? "rgba(227,0,34,0.85)"
-                        : "rgba(96,165,250,0.72)",
-
-                    borderColor:
-                      index ===
-                        0
-                        ? "#e30022"
-                        : "#60a5fa",
-
-                    borderWidth:
-                      1,
-
-                    borderRadius:
-                      6,
-
-                    borderSkipped:
-                      false,
-
-                    maxBarThickness:
-                      42,
-                  }),
-                )
-                : datasets,
           },
 
           options:
             trendOptions(),
+
         },
       );
+
 
     renderTrendLegend(
       datasets,
@@ -1664,22 +2015,28 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderServiceChart() {
+
     const canvas =
       document.getElementById(
         "serviceChart",
       );
 
+
     if (!canvas) {
       return;
     }
 
+
     const selected =
       getSelectedTransactions();
 
+
     const map = {};
+
 
     selected.forEach(
       (transaction) => {
+
         const service =
           String(
             transaction.serviceName ||
@@ -1687,20 +2044,25 @@ const Dashboard = (() => {
           ).trim() ||
           "Unknown Service";
 
+
         if (!map[service]) {
-          map[service] =
-            0;
+          map[service] = 0;
         }
+
 
         map[service] +=
           metricValue(
             transaction,
           );
+
       },
     );
 
+
     const entries =
-      Object.entries(map)
+      Object.entries(
+        map,
+      )
         .sort(
           (a, b) =>
             b[1] -
@@ -1711,17 +2073,20 @@ const Dashboard = (() => {
           10,
         );
 
+
     const labels =
       entries.map(
         (item) =>
           item[0],
       );
 
+
     const data =
       entries.map(
         (item) =>
           item[1],
       );
+
 
     const colors =
       labels.map(
@@ -1732,22 +2097,28 @@ const Dashboard = (() => {
           ],
       );
 
+
     destroyChart(
       "service",
     );
+
 
     serviceChart =
       new Chart(
         canvas,
         {
+
           type:
             "doughnut",
 
           data: {
+
             labels,
 
             datasets: [
+
               {
+
                 data,
 
                 backgroundColor:
@@ -1758,11 +2129,15 @@ const Dashboard = (() => {
 
                 borderWidth:
                   3,
+
               },
+
             ],
+
           },
 
           options: {
+
             responsive:
               true,
 
@@ -1773,11 +2148,14 @@ const Dashboard = (() => {
               "66%",
 
             plugins: {
+
               legend: {
+
                 position:
                   "bottom",
 
                 labels: {
+
                   color:
                     "#f4f4f5",
 
@@ -1787,19 +2165,29 @@ const Dashboard = (() => {
                   usePointStyle:
                     true,
 
+                  pointStyle:
+                    "circle",
+
                   font: {
                     size:
                       10,
                   },
+
                 },
+
               },
 
+
               tooltip: {
+
                 callbacks: {
+
                   label:
                     (context) => {
+
                       const value =
                         context.parsed;
+
 
                       const total =
                         data.reduce(
@@ -1812,6 +2200,7 @@ const Dashboard = (() => {
                           0,
                         );
 
+
                       const percentage =
                         total
                           ? (
@@ -1823,21 +2212,30 @@ const Dashboard = (() => {
                           )
                           : "0.0";
 
+
                       if (
                         currentMetric ===
                         "revenue"
                       ) {
+
                         return `${context.label}: ${Store.formatCurrency(
                           value,
                         )} (${percentage}%)`;
+
                       }
+
 
                       return `${context.label}: ${value} transactions (${percentage}%)`;
                     },
+
                 },
+
               },
+
             },
+
           },
+
         },
       );
   }
@@ -1848,30 +2246,37 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderServiceComparison() {
+
     const canvas =
       document.getElementById(
         "barChart",
       );
 
+
     if (!canvas) {
       return;
     }
 
+
     const selected =
       getSelectedTransactions();
 
+
     const comparison =
       getComparisonTransactions();
+
 
     const selectedMap =
       serviceMap(
         selected,
       );
 
+
     const comparisonMap =
       serviceMap(
         comparison,
       );
+
 
     const services =
       Array.from(
@@ -1901,6 +2306,7 @@ const Dashboard = (() => {
           10,
         );
 
+
     const selectedValues =
       services.map(
         (service) =>
@@ -1908,6 +2314,7 @@ const Dashboard = (() => {
           service
           ] || 0,
       );
+
 
     const comparisonValues =
       services.map(
@@ -1917,8 +2324,11 @@ const Dashboard = (() => {
           ] || 0,
       );
 
+
     const datasets = [
+
       {
+
         label:
           getPeriodLabel(),
 
@@ -1942,14 +2352,19 @@ const Dashboard = (() => {
 
         maxBarThickness:
           40,
+
       },
+
     ];
+
 
     if (
       currentCompare !==
       "none"
     ) {
+
       datasets.push({
+
         label:
           getComparisonLabel(),
 
@@ -1973,29 +2388,37 @@ const Dashboard = (() => {
 
         maxBarThickness:
           40,
+
       });
+
     }
+
 
     destroyChart(
       "bar",
     );
 
+
     barChart =
       new Chart(
         canvas,
         {
+
           type:
             "bar",
 
           data: {
+
             labels:
               services,
 
             datasets,
+
           },
 
           options:
             serviceComparisonOptions(),
+
         },
       );
   }
@@ -2010,26 +2433,18 @@ const Dashboard = (() => {
     end,
     transactions,
   ) {
+
     const days =
       diffDays(
         start,
         end,
       );
 
-    /*
-     * <= 31 days:
-     * Daily
-     *
-     * <= 180 days:
-     * Weekly buckets
-     *
-     * > 180:
-     * Monthly
-     */
 
     if (
       days <= 31
     ) {
+
       return buildDailyBuckets(
         start,
         end,
@@ -2037,15 +2452,18 @@ const Dashboard = (() => {
       );
     }
 
+
     if (
       days <= 180
     ) {
+
       return buildWeeklyBuckets(
         start,
         end,
         transactions,
       );
     }
+
 
     return buildMonthlyBuckets(
       start,
@@ -2064,28 +2482,41 @@ const Dashboard = (() => {
     end,
     transactions,
   ) {
+
     const buckets = [];
 
     const map = {};
 
+
     let cursor =
-      parseDate(start);
+      parseDate(
+        start,
+      );
+
 
     const finish =
-      parseDate(end);
+      parseDate(
+        end,
+      );
+
 
     while (
-      cursor <= finish
+      cursor <=
+      finish
     ) {
+
       const key =
         toDateString(
           cursor,
         );
 
+
       map[key] =
         0;
 
+
       buckets.push({
+
         key,
 
         label:
@@ -2095,7 +2526,9 @@ const Dashboard = (() => {
 
         value:
           0,
+
       });
+
 
       cursor =
         addDays(
@@ -2104,35 +2537,44 @@ const Dashboard = (() => {
         );
     }
 
+
     transactions.forEach(
       (transaction) => {
-        const key =
+
+        const date =
           normalizeDate(
             transaction.date,
           );
 
+
         if (
-          key &&
+          date &&
           Object.prototype.hasOwnProperty.call(
             map,
-            key,
+            date,
           )
         ) {
-          map[key] +=
+
+          map[date] +=
             metricValue(
               transaction,
             );
+
         }
+
       },
     );
 
+
     return buckets.map(
       (bucket) => ({
+
         ...bucket,
 
         value:
           map[bucket.key] ||
           0,
+
       }),
     );
   }
@@ -2147,21 +2589,32 @@ const Dashboard = (() => {
     end,
     transactions,
   ) {
+
     const buckets = [];
 
+
     let cursor =
-      parseDate(start);
+      parseDate(
+        start,
+      );
+
 
     const finish =
-      parseDate(end);
+      parseDate(
+        end,
+      );
+
 
     while (
-      cursor <= finish
+      cursor <=
+      finish
     ) {
+
       const weekStart =
         new Date(
           cursor,
         );
+
 
       let weekEnd =
         addDays(
@@ -2169,17 +2622,21 @@ const Dashboard = (() => {
           6,
         );
 
+
       if (
         weekEnd >
         finish
       ) {
+
         weekEnd =
           new Date(
             finish,
           );
       }
 
+
       buckets.push({
+
         key:
           toDateString(
             weekStart,
@@ -2202,7 +2659,9 @@ const Dashboard = (() => {
 
         value:
           0,
+
       });
+
 
       cursor =
         addDays(
@@ -2211,19 +2670,26 @@ const Dashboard = (() => {
         );
     }
 
+
     transactions.forEach(
       (transaction) => {
-        const raw =
+
+        const normalized =
           normalizeDate(
             transaction.date,
           );
 
-        if (!raw) {
+
+        if (!normalized) {
           return;
         }
 
+
         const date =
-          parseDate(raw);
+          parseDate(
+            normalized,
+          );
+
 
         const bucket =
           buckets.find(
@@ -2238,14 +2704,18 @@ const Dashboard = (() => {
               ),
           );
 
+
         if (bucket) {
+
           bucket.value +=
             metricValue(
               transaction,
             );
         }
+
       },
     );
+
 
     return buckets;
   }
@@ -2260,15 +2730,23 @@ const Dashboard = (() => {
     end,
     transactions,
   ) {
+
     const buckets = [];
 
     const map = {};
 
+
     const first =
-      parseDate(start);
+      parseDate(
+        start,
+      );
+
 
     const finish =
-      parseDate(end);
+      parseDate(
+        end,
+      );
+
 
     let cursor =
       new Date(
@@ -2277,39 +2755,48 @@ const Dashboard = (() => {
         1,
       );
 
+
     while (
-      cursor <= finish
+      cursor <=
+      finish
     ) {
+
       const key =
         `${cursor.getFullYear()}-${String(
-          cursor.getMonth() +
-          1,
+          cursor.getMonth() + 1,
         ).padStart(
           2,
           "0",
         )}`;
 
+
       map[key] =
         0;
 
+
       buckets.push({
+
         key,
 
         label:
           cursor.toLocaleDateString(
             "en-US",
             {
+
               month:
                 "short",
 
               year:
                 "numeric",
+
             },
           ),
 
         value:
           0,
+
       });
+
 
       cursor =
         new Date(
@@ -2319,16 +2806,20 @@ const Dashboard = (() => {
         );
     }
 
+
     transactions.forEach(
       (transaction) => {
+
         const normalized =
           normalizeDate(
             transaction.date,
           );
 
+
         if (!normalized) {
           return;
         }
+
 
         const key =
           normalized.substring(
@@ -2336,27 +2827,33 @@ const Dashboard = (() => {
             7,
           );
 
+
         if (
           Object.prototype.hasOwnProperty.call(
             map,
             key,
           )
         ) {
+
           map[key] +=
             metricValue(
               transaction,
             );
         }
+
       },
     );
 
+
     return buckets.map(
       (bucket) => ({
+
         ...bucket,
 
         value:
           map[bucket.key] ||
           0,
+
       }),
     );
   }
@@ -2367,13 +2864,14 @@ const Dashboard = (() => {
      ============================================================ */
 
   function alignComparison(
-    selected,
-    comparison,
+    selectedBuckets,
+    comparisonBuckets,
   ) {
-    return selected.map(
+
+    return selectedBuckets.map(
       (_, index) =>
-        comparison[index]
-          ? comparison[index]
+        comparisonBuckets[index]
+          ? comparisonBuckets[index]
             .value
           : 0,
     );
@@ -2387,10 +2885,13 @@ const Dashboard = (() => {
   function serviceMap(
     transactions,
   ) {
+
     const map = {};
+
 
     transactions.forEach(
       (transaction) => {
+
         const service =
           String(
             transaction.serviceName ||
@@ -2398,13 +2899,17 @@ const Dashboard = (() => {
           ).trim() ||
           "Unknown Service";
 
+
         map[service] =
-          (map[service] || 0) +
+          (map[service] ||
+            0) +
           metricValue(
             transaction,
           );
+
       },
     );
+
 
     return map;
   }
@@ -2417,11 +2922,6 @@ const Dashboard = (() => {
   function salesValue(
     transaction,
   ) {
-    /*
-     * Keep dashboard revenue consistent
-     * with existing application logic:
-     * price = treatment total.
-     */
 
     return Number(
       transaction.price ||
@@ -2437,12 +2937,14 @@ const Dashboard = (() => {
   function metricValue(
     transaction,
   ) {
+
     if (
       currentMetric ===
       "count"
     ) {
       return 1;
     }
+
 
     return salesValue(
       transaction,
@@ -2457,6 +2959,7 @@ const Dashboard = (() => {
   function sumSales(
     transactions,
   ) {
+
     return transactions.reduce(
       (
         total,
@@ -2466,18 +2969,20 @@ const Dashboard = (() => {
         salesValue(
           transaction,
         ),
+
       0,
     );
   }
 
 
   /* ============================================================
-     DISCOUNT
+     SUM DISCOUNT
      ============================================================ */
 
   function sumDiscount(
     transactions,
   ) {
+
     return transactions.reduce(
       (
         total,
@@ -2488,6 +2993,7 @@ const Dashboard = (() => {
           transaction.discountAmount ||
           0,
         ),
+
       0,
     );
   }
@@ -2500,16 +3006,21 @@ const Dashboard = (() => {
   function isPromoTransaction(
     transaction,
   ) {
+
     return Boolean(
+
       transaction.promoId ||
+
       Number(
         transaction.promoDiscount ||
         0,
       ) > 0 ||
+
       Number(
         transaction.discountAmount ||
         0,
-      ) > 0,
+      ) > 0
+
     );
   }
 
@@ -2519,18 +3030,22 @@ const Dashboard = (() => {
      ============================================================ */
 
   async function renderPromoPerformance() {
+
     const container =
       document.getElementById(
         "promoPerformance",
       );
 
+
     const selected =
       getSelectedTransactions();
+
 
     const promoTransactions =
       selected.filter(
         isPromoTransaction,
       );
+
 
     const normalTransactions =
       selected.filter(
@@ -2540,26 +3055,33 @@ const Dashboard = (() => {
           ),
       );
 
+
     const promoRevenue =
       sumSales(
         promoTransactions,
       );
+
 
     const normalRevenue =
       sumSales(
         normalTransactions,
       );
 
+
     const totalRevenue =
       promoRevenue +
       normalRevenue;
 
+
     const contribution =
       totalRevenue
-        ? (promoRevenue /
-          totalRevenue) *
+        ? (
+          promoRevenue /
+          totalRevenue
+        ) *
         100
         : 0;
+
 
     const promoAverage =
       promoTransactions.length
@@ -2567,11 +3089,13 @@ const Dashboard = (() => {
         promoTransactions.length
         : 0;
 
+
     const normalAverage =
       normalTransactions.length
         ? normalRevenue /
         normalTransactions.length
         : 0;
+
 
     setText(
       "promoRevenue",
@@ -2580,12 +3104,14 @@ const Dashboard = (() => {
       ),
     );
 
+
     setText(
       "nonPromoRevenue",
       Store.formatCurrency(
         normalRevenue,
       ),
     );
+
 
     setText(
       "promoContribution",
@@ -2594,12 +3120,14 @@ const Dashboard = (() => {
       )}%`,
     );
 
+
     setText(
       "promoTransactionCount",
       promoTransactions.length.toLocaleString(
         "id-ID",
       ),
     );
+
 
     setText(
       "nonPromoTransactionCount",
@@ -2608,6 +3136,7 @@ const Dashboard = (() => {
       ),
     );
 
+
     setText(
       "promoAverageTicket",
       Store.formatCurrency(
@@ -2615,12 +3144,14 @@ const Dashboard = (() => {
       ),
     );
 
+
     setText(
       "nonPromoAverageTicket",
       Store.formatCurrency(
         normalAverage,
       ),
     );
+
 
     setText(
       "promoDiscountTotal",
@@ -2631,56 +3162,83 @@ const Dashboard = (() => {
       ),
     );
 
+
     if (!container) {
       return;
     }
 
+
     if (
       !promoTransactions.length
     ) {
+
       container.innerHTML = `
+
         <div class="empty-state">
+
           No promotion transactions
           in the selected period.
+
         </div>
+
       `;
 
       return;
     }
 
+
     let promos = [];
 
-    try {
-      promos =
-        Store.getPromos();
 
-      if (!Array.isArray(promos)) {
+    try {
+
+      promos =
+        await Store.getPromos();
+
+
+      if (
+        !Array.isArray(
+          promos,
+        )
+      ) {
         promos = [];
       }
+
     } catch (error) {
+
       console.error(
         "Promo list error:",
         error,
       );
 
+
       promos = [];
     }
 
+
     const promoMap = {};
+
 
     promoTransactions.forEach(
       (transaction) => {
+
         if (
           !transaction.promoId
         ) {
           return;
         }
 
+
         const id =
           transaction.promoId;
 
-        if (!promoMap[id]) {
+
+        if (
+          !promoMap[id]
+        ) {
+
           promoMap[id] = {
+
             transactions:
               0,
 
@@ -2689,16 +3247,22 @@ const Dashboard = (() => {
 
             discount:
               0,
+
           };
+
         }
+
 
         promoMap[id]
           .transactions += 1;
 
+
         promoMap[id]
-          .revenue += salesValue(
+          .revenue +=
+          salesValue(
             transaction,
           );
+
 
         promoMap[id]
           .discount +=
@@ -2706,8 +3270,10 @@ const Dashboard = (() => {
             transaction.discountAmount ||
             0,
           );
+
       },
     );
+
 
     const rows =
       promos
@@ -2724,8 +3290,10 @@ const Dashboard = (() => {
         )
         .map(
           (promo) => {
+
             const item =
               promoMap[promo.id];
+
 
             const average =
               item.transactions
@@ -2733,131 +3301,204 @@ const Dashboard = (() => {
                 item.transactions
                 : 0;
 
+
             return `
+
               <tr>
+
                 <td data-label="Promotion">
+
                   <span class="discount-tag">
+
                     🎉 ${escapeHtml(
               promo.name,
             )}
+
                   </span>
+
                 </td>
+
 
                 <td data-label="Transactions">
+
                   ${item.transactions}
+
                 </td>
 
+
                 <td data-label="Revenue">
+
                   ${Store.formatCurrency(
               item.revenue,
             )}
+
                 </td>
 
+
                 <td data-label="Discount">
+
                   ${Store.formatCurrency(
               item.discount,
             )}
+
                 </td>
 
+
                 <td data-label="Avg Ticket">
+
                   ${Store.formatCurrency(
               average,
             )}
+
                 </td>
+
               </tr>
+
             `;
           },
         )
         .join("");
 
+
     if (!rows) {
+
       container.innerHTML = `
+
         <div class="empty-state">
+
           Promotion transactions exist,
-          but no matching promotion record was found.
+          but no matching promotion record
+          was found.
+
         </div>
+
       `;
 
       return;
     }
 
+
     container.innerHTML = `
+
       <div class="table-responsive">
+
         <table class="data-table">
+
           <thead>
+
             <tr>
-              <th>Promotion</th>
-              <th>Transactions</th>
-              <th>Revenue</th>
-              <th>Discount</th>
-              <th>Avg Ticket</th>
+
+              <th>
+                Promotion
+              </th>
+
+              <th>
+                Transactions
+              </th>
+
+              <th>
+                Revenue
+              </th>
+
+              <th>
+                Discount
+              </th>
+
+              <th>
+                Avg Ticket
+              </th>
+
             </tr>
+
           </thead>
 
+
           <tbody>
+
             ${rows}
+
           </tbody>
+
         </table>
+
       </div>
+
     `;
   }
 
 
   /* ============================================================
-     MANAGEMENT INSIGHTS
+     MANAGER INSIGHTS
      ============================================================ */
 
   async function renderManagerInsights() {
+
     const container =
       document.getElementById(
         "managerInsights",
       );
 
+
     if (!container) {
       return;
     }
 
+
     const selected =
       getSelectedTransactions();
 
+
     const comparison =
       getComparisonTransactions();
+
 
     if (
       selected.length ===
       0
     ) {
+
       container.innerHTML = `
+
         <div class="insight-item">
+
           <div class="insight-icon">
             📌
           </div>
 
+
           <div>
+
             <strong>
               No transaction data
             </strong>
+
 
             <span>
               There is no transaction data
               in the selected period.
             </span>
+
           </div>
+
         </div>
+
       `;
 
       return;
     }
+
 
     const revenue =
       sumSales(
         selected,
       );
 
+
     const comparisonRevenue =
       sumSales(
         comparison,
       );
+
 
     const growth =
       calculateGrowth(
@@ -2865,11 +3506,13 @@ const Dashboard = (() => {
         comparisonRevenue,
       );
 
+
     const average =
       selected.length
         ? revenue /
         selected.length
         : 0;
+
 
     const comparisonAverage =
       comparison.length
@@ -2877,33 +3520,41 @@ const Dashboard = (() => {
         comparison.length
         : 0;
 
+
     const averageGrowth =
       calculateGrowth(
         average,
         comparisonAverage,
       );
 
+
     const promoTransactions =
       selected.filter(
         isPromoTransaction,
       );
+
 
     const promoRevenue =
       sumSales(
         promoTransactions,
       );
 
+
     const promoContribution =
       revenue
-        ? (promoRevenue /
-          revenue) *
+        ? (
+          promoRevenue /
+          revenue
+        ) *
         100
         : 0;
+
 
     const services =
       serviceMap(
         selected,
       );
+
 
     const topService =
       Object.entries(
@@ -2914,16 +3565,21 @@ const Dashboard = (() => {
           a[1],
       )[0];
 
+
     const insights = [];
+
 
     if (
       currentCompare !==
       "none"
     ) {
+
       if (
         growth !== null
       ) {
+
         insights.push({
+
           icon:
             growth >= 0
               ? "📈"
@@ -2942,17 +3598,21 @@ const Dashboard = (() => {
 
           text:
             `Compared with ${getComparisonLabel()}.`,
+
         });
+
       }
+
 
       if (
         averageGrowth !==
         null
       ) {
+
         insights.push({
+
           icon:
-            averageGrowth >=
-              0
+            averageGrowth >= 0
               ? "🎯"
               : "⚠️",
 
@@ -2971,12 +3631,18 @@ const Dashboard = (() => {
             `Current average: ${Store.formatCurrency(
               average,
             )}.`,
+
         });
+
       }
+
     }
 
+
     if (topService) {
+
       insights.push({
+
         icon:
           "🏆",
 
@@ -2987,14 +3653,19 @@ const Dashboard = (() => {
           `${formatMetric(
             topService[1],
           )} in the selected period.`,
+
       });
+
     }
+
 
     if (
       promoContribution >
       0
     ) {
+
       insights.push({
+
         icon:
           "🎉",
 
@@ -3005,9 +3676,13 @@ const Dashboard = (() => {
 
         text:
           `${promoTransactions.length} promo transactions recorded.`,
+
       });
+
     } else {
+
       insights.push({
+
         icon:
           "💡",
 
@@ -3016,14 +3691,19 @@ const Dashboard = (() => {
 
         text:
           "Consider whether current promotions are reaching customers.",
+
       });
+
     }
+
 
     if (
       insights.length ===
       0
     ) {
+
       insights.push({
+
         icon:
           "📊",
 
@@ -3032,8 +3712,11 @@ const Dashboard = (() => {
 
         text:
           "No significant movement detected for the selected period.",
+
       });
+
     }
+
 
     container.innerHTML =
       insights
@@ -3043,25 +3726,39 @@ const Dashboard = (() => {
         )
         .map(
           (insight) => `
+
             <div class="insight-item">
+
               <div class="insight-icon">
+
                 ${insight.icon}
+
               </div>
 
+
               <div>
+
                 <strong>
+
                   ${escapeHtml(
             insight.title,
           )}
+
                 </strong>
 
+
                 <span>
+
                   ${escapeHtml(
             insight.text,
           )}
+
                 </span>
+
               </div>
+
             </div>
+
           `,
         )
         .join("");
@@ -3073,32 +3770,44 @@ const Dashboard = (() => {
      ============================================================ */
 
   function trendOptions() {
+
     const revenue =
       currentMetric ===
       "revenue";
 
+
     return {
+
       responsive:
         true,
 
       maintainAspectRatio:
         false,
 
+
       interaction: {
+
         intersect:
           false,
 
         mode:
           "index",
+
       },
 
+
       plugins: {
+
         legend: {
+
           display:
             false,
+
         },
 
+
         tooltip: {
+
           backgroundColor:
             "#18181b",
 
@@ -3111,38 +3820,61 @@ const Dashboard = (() => {
           padding:
             10,
 
+
           callbacks: {
+
             label:
               (context) => {
+
                 const value =
                   context.parsed.y;
 
+
                 if (
-                  value === null ||
+                  value ===
+                  null ||
                   value ===
                   undefined
                 ) {
                   return "";
                 }
 
-                return revenue
-                  ? `${context.dataset.label}: ${Store.formatCurrency(
+
+                if (
+                  revenue
+                ) {
+
+                  return `${context.dataset.label}: ${Store.formatCurrency(
                     value,
-                  )}`
-                  : `${context.dataset.label}: ${value} transactions`;
+                  )}`;
+
+                }
+
+
+                return `${context.dataset.label}: ${value} transactions`;
+
               },
+
           },
+
         },
+
       },
 
+
       scales: {
+
         y: {
+
           beginAtZero:
             true,
 
+
           ticks: {
+
             color:
               "#a1a1aa",
+
 
             callback:
               (value) =>
@@ -3151,16 +3883,24 @@ const Dashboard = (() => {
                     value,
                   )
                   : value,
+
           },
+
 
           grid: {
+
             color:
               "rgba(255,255,255,0.045)",
+
           },
+
         },
 
+
         x: {
+
           ticks: {
+
             color:
               "#a1a1aa",
 
@@ -3175,45 +3915,67 @@ const Dashboard = (() => {
 
             maxTicksLimit:
               getXAxisLimit(),
+
           },
 
+
           grid: {
+
             display:
               false,
+
           },
+
         },
+
       },
+
     };
   }
 
 
+  /* ============================================================
+     SERVICE BAR OPTIONS
+     ============================================================ */
+
   function serviceComparisonOptions() {
+
     const revenue =
       currentMetric ===
       "revenue";
 
+
     return {
+
       responsive:
         true,
 
       maintainAspectRatio:
         false,
 
+
       interaction: {
+
         intersect:
           false,
 
         mode:
           "index",
+
       },
 
+
       plugins: {
+
         legend: {
+
           display:
             currentCompare !==
             "none",
 
+
           labels: {
+
             color:
               "#a1a1aa",
 
@@ -3221,33 +3983,59 @@ const Dashboard = (() => {
               true,
 
             font: {
+
               size:
                 10,
+
             },
+
           },
+
         },
+
 
         tooltip: {
+
           callbacks: {
+
             label:
-              (context) =>
-                revenue
-                  ? `${context.dataset.label}: ${Store.formatCurrency(
+              (context) => {
+
+                if (
+                  revenue
+                ) {
+
+                  return `${context.dataset.label}: ${Store.formatCurrency(
                     context.parsed.y,
-                  )}`
-                  : `${context.dataset.label}: ${context.parsed.y} transactions`,
+                  )}`;
+
+                }
+
+
+                return `${context.dataset.label}: ${context.parsed.y} transactions`;
+
+              },
+
           },
+
         },
+
       },
 
+
       scales: {
+
         y: {
+
           beginAtZero:
             true,
 
+
           ticks: {
+
             color:
               "#a1a1aa",
+
 
             callback:
               (value) =>
@@ -3256,16 +4044,24 @@ const Dashboard = (() => {
                     value,
                   )
                   : value,
+
           },
+
 
           grid: {
+
             color:
               "rgba(255,255,255,0.045)",
+
           },
+
         },
 
+
         x: {
+
           ticks: {
+
             color:
               "#a1a1aa",
 
@@ -3274,21 +4070,34 @@ const Dashboard = (() => {
 
             minRotation:
               0,
+
           },
 
+
           grid: {
+
             display:
               false,
+
           },
+
         },
+
       },
+
     };
   }
 
 
+  /* ============================================================
+     X AXIS LIMIT
+     ============================================================ */
+
   function getXAxisLimit() {
+
     const range =
       getSelectedRange();
+
 
     const days =
       diffDays(
@@ -3296,11 +4105,13 @@ const Dashboard = (() => {
         range.end,
       );
 
+
     if (
       days <= 14
     ) {
       return 15;
     }
+
 
     if (
       days <= 31
@@ -3308,11 +4119,13 @@ const Dashboard = (() => {
       return 10;
     }
 
+
     if (
       days <= 180
     ) {
       return 12;
     }
+
 
     return 14;
   }
@@ -3323,42 +4136,57 @@ const Dashboard = (() => {
      ============================================================ */
 
   function updateChartTitles() {
+
     const revenue =
       currentMetric ===
       "revenue";
 
+
     setText(
       "dashRevenueChartTitle",
+
       revenue
         ? "📈 Revenue Trend"
         : "📈 Transaction Trend",
     );
 
+
     setText(
       "dashRevenueChartSubtitle",
+
       currentCompare ===
         "none"
+
         ? "Selected period performance"
+
         : `Selected period vs ${getComparisonLabel()}`,
     );
 
+
     setText(
       "dashBarChartTitle",
+
       revenue
         ? "📊 Service Comparison"
         : "📊 Transactions by Service",
     );
 
+
     setText(
       "dashBarChartSubtitle",
+
       currentCompare ===
         "none"
+
         ? "Top services in selected period"
+
         : "Selected period vs comparison",
     );
 
+
     setText(
       "dashServiceChartTitle",
+
       revenue
         ? "🍩 Revenue by Service"
         : "🍩 Transactions by Service",
@@ -3373,14 +4201,17 @@ const Dashboard = (() => {
   function renderTrendLegend(
     datasets,
   ) {
+
     const container =
       document.getElementById(
         "trendLegend",
       );
 
+
     if (!container) {
       return;
     }
+
 
     container.innerHTML =
       datasets
@@ -3389,13 +4220,20 @@ const Dashboard = (() => {
             dataset,
             index,
           ) => {
+
             const color =
-              index === 0
+              index ===
+                0
+
                 ? "#e30022"
+
                 : "#60a5fa";
 
+
             return `
+
               <span class="custom-legend-item">
+
                 <span
                   class="custom-legend-dot"
                   style="background:${color}"
@@ -3404,7 +4242,9 @@ const Dashboard = (() => {
                 ${escapeHtml(
               dataset.label,
             )}
+
               </span>
+
             `;
           },
         )
@@ -3413,41 +4253,121 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     CHART DESTROY
+     DESTROY CHART
      ============================================================ */
 
   function destroyChart(
     type,
   ) {
+
     if (
       type ===
       "revenue"
     ) {
+
       if (revenueChart) {
+
         revenueChart.destroy();
+
         revenueChart = null;
+
       }
+
     }
+
 
     if (
       type ===
       "service"
     ) {
+
       if (serviceChart) {
+
         serviceChart.destroy();
+
         serviceChart = null;
+
       }
+
     }
+
 
     if (
       type ===
       "bar"
     ) {
+
       if (barChart) {
+
         barChart.destroy();
+
         barChart = null;
+
       }
+
     }
+  }
+
+
+  /* ============================================================
+     GRADIENT
+     ============================================================ */
+
+  function makeGradient(
+    canvas,
+    color,
+  ) {
+
+    const context =
+      canvas.getContext(
+        "2d",
+      );
+
+
+    const gradient =
+      context.createLinearGradient(
+        0,
+        0,
+        0,
+        canvas.height ||
+        300,
+      );
+
+
+    gradient.addColorStop(
+      0,
+      `${color}55`,
+    );
+
+
+    gradient.addColorStop(
+      1,
+      `${color}00`,
+    );
+
+
+    return gradient;
+  }
+
+
+  /* ============================================================
+     POINT RADIUS
+     ============================================================ */
+
+  function getPointRadius(
+    values,
+    base,
+  ) {
+
+    return values.map(
+      (value) =>
+        value ===
+          null
+
+          ? 0
+
+          : base,
+    );
   }
 
 
@@ -3459,19 +4379,24 @@ const Dashboard = (() => {
     current,
     previous,
   ) {
+
     const currentValue =
       Number(
         current || 0,
       );
+
 
     const previousValue =
       Number(
         previous || 0,
       );
 
+
     if (
-      previousValue === 0
+      previousValue ===
+      0
     ) {
+
       if (
         currentValue ===
         0
@@ -3479,8 +4404,10 @@ const Dashboard = (() => {
         return 0;
       }
 
+
       return null;
     }
+
 
     return (
       (
@@ -3495,18 +4422,25 @@ const Dashboard = (() => {
   }
 
 
+  /* ============================================================
+     GROWTH UI
+     ============================================================ */
+
   function setGrowthElement(
     id,
     value,
   ) {
+
     const element =
       document.getElementById(
         id,
       );
 
+
     if (!element) {
       return;
     }
+
 
     element.classList.remove(
       "positive",
@@ -3514,22 +4448,29 @@ const Dashboard = (() => {
       "neutral",
     );
 
+
     if (
-      value === null
+      value ===
+      null
     ) {
+
       element.textContent =
         "New";
+
 
       element.classList.add(
         "positive",
       );
 
+
       return;
     }
+
 
     if (
       value > 0
     ) {
+
       element.textContent =
         `↑ ${Math.abs(
           value,
@@ -3537,16 +4478,20 @@ const Dashboard = (() => {
           1,
         )}%`;
 
+
       element.classList.add(
         "positive",
       );
 
+
       return;
     }
+
 
     if (
       value < 0
     ) {
+
       element.textContent =
         `↓ ${Math.abs(
           value,
@@ -3554,15 +4499,19 @@ const Dashboard = (() => {
           1,
         )}%`;
 
+
       element.classList.add(
         "negative",
       );
 
+
       return;
     }
 
+
     element.textContent =
       "—";
+
 
     element.classList.add(
       "neutral",
@@ -3575,9 +4524,11 @@ const Dashboard = (() => {
      ============================================================ */
 
   function getPeriodLabel() {
+
     if (
       hasCustomDateRange()
     ) {
+
       return `${formatDate(
         selectedStartDate,
       )} → ${formatDate(
@@ -3585,32 +4536,44 @@ const Dashboard = (() => {
       )}`;
     }
 
+
     if (
       currentFilter ===
       "daily"
     ) {
+
       return "Today";
     }
+
 
     if (
       currentFilter ===
       "weekly"
     ) {
+
       return "This Week";
     }
+
 
     if (
       currentFilter ===
       "yearly"
     ) {
+
       return "This Year";
     }
+
 
     return "This Month";
   }
 
 
+  /* ============================================================
+     COMPARISON LABEL
+     ============================================================ */
+
   function getComparisonLabel() {
+
     if (
       currentCompare ===
       "none"
@@ -3618,12 +4581,15 @@ const Dashboard = (() => {
       return "No comparison";
     }
 
+
     const range =
       getComparisonRange();
+
 
     if (!range) {
       return "No comparison";
     }
+
 
     return `${formatDate(
       range.start,
@@ -3640,14 +4606,17 @@ const Dashboard = (() => {
   function formatMetric(
     value,
   ) {
+
     if (
       currentMetric ===
       "revenue"
     ) {
+
       return Store.formatCurrency(
         value,
       );
     }
+
 
     return `${Number(
       value || 0,
@@ -3658,21 +4627,24 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     CURRENCY
+     SHORT CURRENCY
      ============================================================ */
 
   function shortCurrency(
     value,
   ) {
+
     const number =
       Number(
         value || 0,
       );
 
+
     if (
       number >=
       1000000000
     ) {
+
       return (
         "Rp " +
         (
@@ -3688,10 +4660,12 @@ const Dashboard = (() => {
       );
     }
 
+
     if (
       number >=
       1000000
     ) {
+
       return (
         "Rp " +
         (
@@ -3707,10 +4681,12 @@ const Dashboard = (() => {
       );
     }
 
+
     if (
       number >=
       1000
     ) {
+
       return (
         "Rp " +
         (
@@ -3722,6 +4698,7 @@ const Dashboard = (() => {
       );
     }
 
+
     return (
       "Rp " +
       number.toLocaleString(
@@ -3732,68 +4709,29 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     GRADIENT
-     ============================================================ */
-
-  function makeGradient(
-    canvas,
-    color,
-  ) {
-    const context =
-      canvas.getContext(
-        "2d",
-      );
-
-    const gradient =
-      context.createLinearGradient(
-        0,
-        0,
-        0,
-        canvas.height ||
-        300,
-      );
-
-    gradient.addColorStop(
-      0,
-      `${color}55`,
-    );
-
-    gradient.addColorStop(
-      1,
-      `${color}00`,
-    );
-
-    return gradient;
-  }
-
-
-  /* ============================================================
-     POINT RADIUS
-     ============================================================ */
-
-  function getPointRadius(
-    values,
-    base,
-  ) {
-    return values.map(
-      (value) =>
-        value === null
-          ? 0
-          : base,
-    );
-  }
-
-
-  /* ============================================================
-     DATE PARSE
+     DATE PARSER
      ============================================================ */
 
   function parseDate(
     value,
   ) {
+
     if (
       value instanceof Date
     ) {
+
+      if (
+        Number.isNaN(
+          value.getTime(),
+        )
+      ) {
+
+        return new Date(
+          "invalid",
+        );
+      }
+
+
       return new Date(
         value.getFullYear(),
         value.getMonth(),
@@ -3801,17 +4739,29 @@ const Dashboard = (() => {
       );
     }
 
+
     const raw =
       String(
         value || "",
       ).trim();
+
+
+    if (!raw) {
+
+      return new Date(
+        "invalid",
+      );
+    }
+
 
     const match =
       raw.match(
         /^(\d{4})-(\d{2})-(\d{2})/,
       );
 
+
     if (match) {
+
       return new Date(
         Number(
           match[1],
@@ -3825,18 +4775,24 @@ const Dashboard = (() => {
       );
     }
 
+
     const parsed =
-      new Date(raw);
+      new Date(
+        raw,
+      );
+
 
     if (
       Number.isNaN(
         parsed.getTime(),
       )
     ) {
+
       return new Date(
         "invalid",
       );
     }
+
 
     return new Date(
       parsed.getFullYear(),
@@ -3853,6 +4809,7 @@ const Dashboard = (() => {
   function toDateString(
     date,
   ) {
+
     return (
       date.getFullYear() +
       "-" +
@@ -3881,49 +4838,61 @@ const Dashboard = (() => {
     date,
     amount,
   ) {
+
     const result =
       new Date(
         date,
       );
+
 
     result.setDate(
       result.getDate() +
       amount,
     );
 
+
     return result;
   }
 
 
   /* ============================================================
-     DIFF DAYS
+     DIFFERENCE DAYS
      ============================================================ */
 
   function diffDays(
     start,
     end,
   ) {
-    const a =
-      parseDate(start);
 
-    const b =
-      parseDate(end);
+    const first =
+      parseDate(
+        start,
+      );
+
+
+    const last =
+      parseDate(
+        end,
+      );
+
 
     if (
       Number.isNaN(
-        a.getTime(),
+        first.getTime(),
       ) ||
       Number.isNaN(
-        b.getTime(),
+        last.getTime(),
       )
     ) {
+
       return 0;
     }
 
+
     return Math.floor(
       (
-        b.getTime() -
-        a.getTime()
+        last.getTime() -
+        first.getTime()
       ) /
       86400000,
     );
@@ -3931,46 +4900,56 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     FORMAT SHORT DATE
+     SHORT DATE
      ============================================================ */
 
   function formatShortDate(
     date,
   ) {
+
     return date.toLocaleDateString(
       "en-US",
       {
+
         day:
           "numeric",
 
         month:
           "short",
+
       },
     );
   }
 
 
   /* ============================================================
-     FORMAT DATE LABEL
+     DATE LABEL
      ============================================================ */
 
   function formatDate(
     value,
   ) {
+
     const date =
-      parseDate(value);
+      parseDate(
+        value,
+      );
+
 
     if (
       Number.isNaN(
         date.getTime(),
       )
     ) {
+
       return "—";
     }
+
 
     return date.toLocaleDateString(
       "en-GB",
       {
+
         day:
           "2-digit",
 
@@ -3979,37 +4958,44 @@ const Dashboard = (() => {
 
         year:
           "numeric",
+
       },
     );
   }
 
 
   /* ============================================================
-     SAFE TEXT
+     ESCAPE HTML
      ============================================================ */
 
   function escapeHtml(
     value,
   ) {
+
     return String(
       value ?? "",
     )
+
       .replace(
         /&/g,
         "&amp;",
       )
+
       .replace(
         /</g,
         "&lt;",
       )
+
       .replace(
         />/g,
         "&gt;",
       )
+
       .replace(
         /"/g,
         "&quot;",
       )
+
       .replace(
         /'/g,
         "&#039;",
@@ -4025,12 +5011,15 @@ const Dashboard = (() => {
     id,
     value,
   ) {
+
     const element =
       document.getElementById(
         id,
       );
 
+
     if (element) {
+
       element.textContent =
         value;
     }
@@ -4042,7 +5031,11 @@ const Dashboard = (() => {
      ============================================================ */
 
   return {
+
     render,
+
     refresh,
+
   };
+
 })();
