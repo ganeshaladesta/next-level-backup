@@ -7,8 +7,8 @@
     <title>Next Level Beauty Bar - Dashboard</title>
 
     <!-- =========================================================
-         FONT
-         ========================================================= -->
+       FONT
+       ========================================================= -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
@@ -18,24 +18,24 @@
     />
 
     <!-- =========================================================
-         CHART.JS
-         ========================================================= -->
+       CHART.JS
+       ========================================================= -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 
     <!-- =========================================================
-         OPTIONAL PDF LIBRARIES
-         ========================================================= -->
+       PDF LIBRARIES
+       ========================================================= -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
     <!-- =========================================================
-         SUPABASE
-         ========================================================= -->
+       SUPABASE
+       ========================================================= -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- =========================================================
-         CSS
-         ========================================================= -->
+       CSS
+       ========================================================= -->
     <link rel="stylesheet" href="css/style.css" />
 
     <link rel="icon" href="assets/logo.png" />
@@ -43,8 +43,8 @@
 
   <body>
     <!-- =========================================================
-         APP LOADING
-         ========================================================= -->
+       APP LOADING
+       ========================================================= -->
 
     <div id="appLoading" class="app-loading">
       <div class="app-loading-inner">
@@ -57,58 +57,42 @@
     </div>
 
     <!-- =========================================================
-         SIDEBAR
-         ========================================================= -->
+       SIDEBAR
+       ========================================================= -->
 
     <aside class="sidebar" id="sidebar">
-      <!-- SIDEBAR HEADER -->
-
       <div class="sidebar-header">
         <img src="assets/logo.png" alt="Next Level Logo" class="logo" />
 
         <h1>Next Level</h1>
       </div>
 
-      <!-- SIDEBAR NAV -->
-
       <nav class="sidebar-nav">
-        <!-- DASHBOARD -->
-
         <a href="#dashboard" class="nav-item active" data-view="dashboard">
           <span class="nav-icon">📊</span>
           <span class="nav-text">Dashboard</span>
         </a>
-
-        <!-- TRANSACTIONS -->
 
         <a href="#transactions" class="nav-item" data-view="transactions">
           <span class="nav-icon">💰</span>
           <span class="nav-text">Add Transaction</span>
         </a>
 
-        <!-- SERVICES -->
-
         <a href="#services" class="nav-item" data-view="services">
           <span class="nav-icon">💅</span>
           <span class="nav-text">Services & Pricing</span>
         </a>
-
-        <!-- PROMOS -->
 
         <a href="#promos" class="nav-item" data-view="promos">
           <span class="nav-icon">🎉</span>
           <span class="nav-text">Promotions</span>
         </a>
 
-        <!-- HISTORY -->
-
         <a href="#history" class="nav-item" data-view="history">
           <span class="nav-icon">📋</span>
           <span class="nav-text">History</span>
         </a>
       </nav>
-
-      <!-- SIDEBAR FOOTER -->
 
       <div class="sidebar-footer">
         <p>
@@ -120,19 +104,19 @@
     </aside>
 
     <!-- =========================================================
-         MOBILE OVERLAY
-         ========================================================= -->
+       MOBILE OVERLAY
+       ========================================================= -->
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- =========================================================
-         MAIN CONTENT
-         ========================================================= -->
+       MAIN CONTENT
+       ========================================================= -->
 
     <main class="main-content">
       <!-- =======================================================
-           TOP BAR
-           ======================================================= -->
+         TOP BAR
+         ======================================================= -->
 
       <header class="top-bar">
         <button
@@ -150,24 +134,20 @@
       </header>
 
       <!-- =======================================================
-           PROMO BANNER
-           ======================================================= -->
+         PROMO BANNER
+         ======================================================= -->
 
       <div class="promo-banner" id="promoBanner" style="display: none"></div>
 
       <!-- =======================================================
-           DASHBOARD VIEW
-           ======================================================= -->
+         DASHBOARD VIEW
+         ======================================================= -->
 
       <div class="view active" id="view-dashboard">
-        <!-- =====================================================
-             DASHBOARD EXPORT WRAPPER
-             ===================================================== -->
-
         <div id="dashboardExport">
           <!-- ===================================================
-               SUMMARY CARDS
-               =================================================== -->
+             SUMMARY CARDS
+             =================================================== -->
 
           <div class="summary-cards">
             <!-- TODAY -->
@@ -230,11 +210,12 @@
           </div>
 
           <!-- ===================================================
-               CHART FILTER
-               =================================================== -->
+             DASHBOARD FILTER
+             =================================================== -->
 
           <div class="chart-filter">
-            <!-- TIMEFRAME FILTER -->
+            <!-- TIMEFRAME -->
+
             <span class="filter-label"> Timeframe: </span>
 
             <button type="button" class="filter-btn" data-filter="daily">
@@ -253,8 +234,9 @@
               Yearly
             </button>
 
-            <!-- CHART TYPE FILTER -->
-            <span class="filter-label" style="margin-left: 12px"> Type: </span>
+            <!-- CHART TYPE -->
+
+            <span class="filter-label filter-spacer"> Type: </span>
 
             <button
               type="button"
@@ -272,36 +254,47 @@
               Bar
             </button>
 
-            <!-- METRIC CALCULATION FILTER -->
-            <span class="filter-label" style="margin-left: 12px">
-              Metric:
-            </span>
+            <!-- METRIC -->
 
-            <select id="dashMetricFilter" aria-label="Calculation Metric">
+            <span class="filter-label filter-spacer"> Metric: </span>
+
+            <select
+              id="dashMetricFilter"
+              class="dashboard-select"
+              aria-label="Calculation Metric"
+            >
               <option value="revenue">💰 Total Revenue</option>
+
               <option value="count">🧾 Transaction Count</option>
             </select>
 
-            <!-- BRANCH FILTER -->
-            <span class="filter-label" style="margin-left: 12px">
-              Branch:
-            </span>
+            <!-- BRANCH -->
 
-            <select id="dashBranchFilter" aria-label="Filter Branch">
+            <span class="filter-label filter-spacer"> Branch: </span>
+
+            <select
+              id="dashBranchFilter"
+              class="dashboard-select"
+              aria-label="Filter Branch"
+            >
               <option value="all">All Branches</option>
+
               <option value="Kemang">Kemang</option>
+
               <option value="LCC">LCC</option>
+
               <option value="Bintaro">Bintaro</option>
+
               <option value="Bandung">Bandung</option>
             </select>
           </div>
 
           <!-- ===================================================
-               CHART ROW
-               =================================================== -->
+             CHART ROW
+             =================================================== -->
 
           <div class="charts-grid">
-            <!-- REVENUE / TRANSACTION TREND -->
+            <!-- REVENUE TREND -->
 
             <div class="card chart-card">
               <h3 id="dashRevenueChartTitle">📈 Revenue Trend</h3>
@@ -323,8 +316,8 @@
           </div>
 
           <!-- ===================================================
-               SERVICE COMPARISON
-               =================================================== -->
+             SERVICE COMPARISON
+             =================================================== -->
 
           <div class="card chart-card">
             <h3 id="dashBarChartTitle">📊 Service Comparison</h3>
@@ -337,25 +330,21 @@
       </div>
 
       <!-- =======================================================
-           TRANSACTIONS VIEW
-           ======================================================= -->
+         TRANSACTIONS
+         ======================================================= -->
 
       <div class="view" id="view-transactions">
-        <!-- ADD TRANSACTION -->
-
         <div class="card">
           <h3>💰 Add New Transaction</h3>
 
           <form id="txnForm" class="form" autocomplete="off">
-            <!-- ===============================================
-                 BRANCH + SERVICE
-                 =============================================== -->
+            <!-- BRANCH + SERVICE -->
 
             <div class="form-row">
               <div class="form-group">
                 <label for="txnBranch">
                   Branch
-                  <span class="required"> * </span>
+                  <span class="required">*</span>
                 </label>
 
                 <select id="txnBranch" required>
@@ -369,7 +358,7 @@
               <div class="form-group">
                 <label for="txnService">
                   Service
-                  <span class="required"> * </span>
+                  <span class="required">*</span>
                 </label>
 
                 <select id="txnService" required>
@@ -378,15 +367,13 @@
               </div>
             </div>
 
-            <!-- ===============================================
-                 PRICE + TIME
-                 =============================================== -->
+            <!-- PRICE + TIME -->
 
             <div class="form-row">
               <div class="form-group">
                 <label for="txnPrice">
                   Treatment Total (Rp)
-                  <span class="required"> * </span>
+                  <span class="required">*</span>
                 </label>
 
                 <input
@@ -402,22 +389,20 @@
               <div class="form-group">
                 <label for="txnTime">
                   Treatment Time
-                  <span class="required"> * </span>
+                  <span class="required">*</span>
                 </label>
 
                 <input type="time" id="txnTime" required />
               </div>
             </div>
 
-            <!-- ===============================================
-                 DATE + DP
-                 =============================================== -->
+            <!-- DATE + DP -->
 
             <div class="form-row">
               <div class="form-group">
                 <label for="txnDate">
                   Date
-                  <span class="required"> * </span>
+                  <span class="required">*</span>
                 </label>
 
                 <input type="date" id="txnDate" required />
@@ -426,9 +411,7 @@
               <div class="form-group">
                 <label for="txnDP">
                   Down Payment / DP
-                  <span class="text-muted" style="font-weight: 400">
-                    (Optional)
-                  </span>
+                  <span class="text-muted"> (Optional) </span>
                 </label>
 
                 <input
@@ -442,17 +425,13 @@
               </div>
             </div>
 
-            <!-- ===============================================
-                 PROMO
-                 =============================================== -->
+            <!-- PROMO -->
 
             <div class="form-row">
               <div class="form-group">
                 <label for="txnPromo">
                   Promotion
-                  <span class="text-muted" style="font-weight: 400">
-                    (Optional)
-                  </span>
+                  <span class="text-muted"> (Optional) </span>
                 </label>
 
                 <select id="txnPromo">
@@ -461,114 +440,48 @@
               </div>
             </div>
 
-            <!-- ===============================================
-                 PAYMENT SUMMARY
-                 =============================================== -->
+            <!-- PAYMENT SUMMARY -->
 
-            <div
-              id="txnPaymentSummary"
-              class="card"
-              style="
-                margin-top: 8px;
-                background: rgba(255, 255, 255, 0.025);
-                border: 1px solid var(--border);
-              "
-            >
-              <h4 style="margin: 0 0 16px; font-size: 15px">
-                🧮 Payment Summary
-              </h4>
+            <div id="txnPaymentSummary" class="card payment-summary">
+              <h4>🧮 Payment Summary</h4>
 
-              <div style="display: flex; flex-direction: column; gap: 10px">
-                <!-- TOTAL -->
-
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    gap: 16px;
-                  "
-                >
-                  <span> Treatment Total </span>
-
+              <div class="payment-summary-list">
+                <div class="payment-row">
+                  <span>Treatment Total</span>
                   <strong id="summaryTreatment"> Rp 0 </strong>
                 </div>
 
-                <!-- DP -->
-
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    gap: 16px;
-                  "
-                >
-                  <span> DP Paid </span>
-
+                <div class="payment-row">
+                  <span>DP Paid</span>
                   <strong id="summaryDP"> Rp 0 </strong>
                 </div>
 
-                <!-- BEFORE PROMO -->
-
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    gap: 16px;
-                  "
-                >
-                  <span> Subtotal Before Promo </span>
-
+                <div class="payment-row">
+                  <span>Subtotal Before Promo</span>
                   <strong id="summaryBeforePromo"> Rp 0 </strong>
                 </div>
 
-                <!-- DISCOUNT -->
-
-                <div
-                  id="summaryDiscountRow"
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    gap: 16px;
-                  "
-                >
-                  <span> Discount </span>
+                <div class="payment-row" id="summaryDiscountRow">
+                  <span>Discount</span>
 
                   <strong id="summaryDiscount"> Rp 0 </strong>
                 </div>
 
-                <!-- DIVIDER -->
+                <div class="payment-divider"></div>
 
-                <div
-                  style="height: 1px; background: var(--border); margin: 4px 0"
-                ></div>
-
-                <!-- FINAL -->
-
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    gap: 16px;
-                    font-size: 17px;
-                  "
-                >
+                <div class="payment-row payment-final">
                   <span>
                     <strong> Remaining Balance Due </strong>
                   </span>
 
-                  <strong
-                    id="summaryFinalPayment"
-                    style="color: var(--primary)"
-                  >
+                  <strong id="summaryFinalPayment" class="payment-final-value">
                     Rp 0
                   </strong>
                 </div>
               </div>
             </div>
 
-            <!-- ===============================================
-                 NOTES
-                 =============================================== -->
+            <!-- NOTES -->
 
             <div class="form-group">
               <label for="txnNotes"> Notes </label>
@@ -580,9 +493,7 @@
               ></textarea>
             </div>
 
-            <!-- ===============================================
-                 SUBMIT
-                 =============================================== -->
+            <!-- SUBMIT -->
 
             <div class="form-actions">
               <button type="submit" class="btn btn-primary" id="txnSubmitBtn">
@@ -592,7 +503,7 @@
           </form>
         </div>
 
-        <!-- RECENT TRANSACTIONS -->
+        <!-- RECENT -->
 
         <div class="card">
           <h3>🕐 Recent 10 Transactions</h3>
@@ -604,12 +515,10 @@
       </div>
 
       <!-- =======================================================
-           SERVICES VIEW
-           ======================================================= -->
+         SERVICES
+         ======================================================= -->
 
       <div class="view" id="view-services">
-        <!-- SERVICE FORM -->
-
         <div class="card">
           <h3>💅 Add / Edit Service</h3>
 
@@ -618,7 +527,7 @@
               <div class="form-group">
                 <label for="svcName">
                   Service Name
-                  <span class="required"> * </span>
+                  <span class="required">*</span>
                 </label>
 
                 <input
@@ -632,7 +541,7 @@
               <div class="form-group">
                 <label for="svcPrice">
                   Price (Rp)
-                  <span class="required"> * </span>
+                  <span class="required">*</span>
                 </label>
 
                 <input
@@ -646,7 +555,7 @@
               </div>
 
               <div class="form-group form-group-btn">
-                <label> &nbsp; </label>
+                <label>&nbsp;</label>
 
                 <button type="submit" class="btn btn-primary" id="svcSubmitBtn">
                   ➕ Add Service
@@ -655,8 +564,6 @@
             </div>
           </form>
         </div>
-
-        <!-- SERVICE LIST -->
 
         <div class="card">
           <h3>📋 Service List</h3>
@@ -668,23 +575,19 @@
       </div>
 
       <!-- =======================================================
-           PROMOS VIEW
-           ======================================================= -->
+         PROMOS
+         ======================================================= -->
 
       <div class="view" id="view-promos">
-        <!-- PROMO FORM -->
-
         <div class="card">
           <h3>🎉 Add / Edit Promotion</h3>
 
           <form id="promoForm" class="form" autocomplete="off">
-            <!-- NAME + DISCOUNT -->
-
             <div class="form-row">
               <div class="form-group">
                 <label for="promoName">
                   Promotion Name
-                  <span class="required"> * </span>
+                  <span class="required">*</span>
                 </label>
 
                 <input
@@ -698,7 +601,7 @@
               <div class="form-group">
                 <label for="promoDiscount">
                   Discount (%)
-                  <span class="required"> * </span>
+                  <span class="required">*</span>
                 </label>
 
                 <input
@@ -712,13 +615,11 @@
               </div>
             </div>
 
-            <!-- DATES -->
-
             <div class="form-row">
               <div class="form-group">
                 <label for="promoStart">
                   Start Date
-                  <span class="required"> * </span>
+                  <span class="required">*</span>
                 </label>
 
                 <input type="date" id="promoStart" required />
@@ -727,14 +628,12 @@
               <div class="form-group">
                 <label for="promoEnd">
                   End Date
-                  <span class="required"> * </span>
+                  <span class="required">*</span>
                 </label>
 
                 <input type="date" id="promoEnd" required />
               </div>
             </div>
-
-            <!-- DESCRIPTION -->
 
             <div class="form-group">
               <label for="promoDesc"> Description </label>
@@ -746,8 +645,6 @@
               ></textarea>
             </div>
 
-            <!-- SUBMIT -->
-
             <div class="form-actions">
               <button type="submit" class="btn btn-primary" id="promoSubmitBtn">
                 ➕ Add Promotion
@@ -755,8 +652,6 @@
             </div>
           </form>
         </div>
-
-        <!-- PROMO LIST -->
 
         <div class="card">
           <h3>📋 Promotion List</h3>
@@ -768,13 +663,11 @@
       </div>
 
       <!-- =======================================================
-           HISTORY VIEW
-           ======================================================= -->
+         HISTORY
+         ======================================================= -->
 
       <div class="view" id="view-history">
         <div class="card">
-          <!-- HISTORY HEADER -->
-
           <div class="history-header">
             <h3>📋 Transaction History</h3>
 
@@ -783,13 +676,9 @@
             </button>
           </div>
 
-          <!-- =================================================
-               FILTERS
-               ================================================= -->
+          <!-- FILTERS -->
 
           <div class="history-filters">
-            <!-- SEARCH -->
-
             <div class="form-group">
               <input
                 type="text"
@@ -798,25 +687,23 @@
               />
             </div>
 
-            <!-- BRANCH -->
-
             <div class="form-group">
               <select id="historyFilterBranch">
                 <option value="">All Branches</option>
+
                 <option value="Kemang">Kemang</option>
+
                 <option value="LCC">LCC</option>
+
                 <option value="Bintaro">Bintaro</option>
+
                 <option value="Bandung">Bandung</option>
               </select>
             </div>
 
-            <!-- DATE -->
-
             <div class="form-group">
               <input type="date" id="historyFilterDate" />
             </div>
-
-            <!-- CLEAR -->
 
             <button
               type="button"
@@ -827,9 +714,7 @@
             </button>
           </div>
 
-          <!-- =================================================
-               HISTORY SUMMARY
-               ================================================= -->
+          <!-- SUMMARY -->
 
           <div class="history-summary">
             <span>
@@ -840,9 +725,7 @@
             <span class="text-muted" id="historyCount"> 0 transactions </span>
           </div>
 
-          <!-- =================================================
-               TABLE
-               ================================================= -->
+          <!-- TABLE -->
 
           <div id="historyTable">
             <p class="empty-state">Loading...</p>
@@ -852,38 +735,24 @@
     </main>
 
     <!-- =========================================================
-         TOAST
-         ========================================================= -->
+       TOAST
+       ========================================================= -->
 
     <div class="toast" id="toast"></div>
 
     <!-- =========================================================
-         SCRIPTS
-         
-         ORDER:
-         1. config.js
-         2. Supabase CDN
-         3. store.js
-         4. dashboard.js
-         5. transactions.js
-         6. services.js
-         7. promos.js
-         8. app.js
-         ========================================================= -->
+       SCRIPTS
+       ========================================================= -->
 
-    <!-- CONFIG -->
     <script src="js/config.js"></script>
 
-    <!-- STORE -->
     <script src="js/store.js"></script>
 
-    <!-- MODULES -->
     <script src="js/dashboard.js"></script>
     <script src="js/transactions.js"></script>
     <script src="js/services.js"></script>
     <script src="js/promos.js"></script>
 
-    <!-- APP ROUTER -->
     <script src="js/app.js"></script>
   </body>
 </html>
