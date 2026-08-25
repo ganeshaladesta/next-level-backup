@@ -2,89 +2,67 @@
 <html lang="en">
 
 <head>
-
   <meta charset="UTF-8" />
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>
-    Next Level Beauty Bar - Dashboard
-  </title>
-
+  <title>Next Level Beauty Bar - Dashboard</title>
 
   <!-- =========================================================
-       FONT
-       ========================================================= -->
-
+         FONT
+    ========================================================== -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet" />
 
-
   <!-- =========================================================
-       CHART.JS
-       ========================================================= -->
-
+         CHART.JS
+    ========================================================== -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 
-
   <!-- =========================================================
-       PDF LIBRARIES
-       ========================================================= -->
-
+         PDF LIBRARIES
+    ========================================================== -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
-
   <!-- =========================================================
-       SUPABASE
-       ========================================================= -->
-
+         SUPABASE
+    ========================================================== -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-
   <!-- =========================================================
-       CSS
-       ========================================================= -->
-
+         CSS
+    ========================================================== -->
   <link rel="stylesheet" href="css/style.css" />
 
   <link rel="icon" href="assets/logo.png" />
-
 </head>
-
 
 <body>
 
-
   <!-- =========================================================
-       APP LOADING
-       ========================================================= -->
+         APP LOADING
+    ========================================================== -->
 
   <div id="appLoading" class="app-loading">
-
     <div class="app-loading-inner">
 
       <img src="assets/logo.png" alt="Next Level" class="app-loading-logo" />
 
       <div class="app-loading-spinner"></div>
 
-      <p>
-        Loading application...
-      </p>
+      <p>Loading application...</p>
 
     </div>
-
   </div>
 
 
   <!-- =========================================================
-       SIDEBAR
-       ========================================================= -->
+         SIDEBAR
+    ========================================================== -->
 
   <aside class="sidebar" id="sidebar">
 
@@ -92,9 +70,7 @@
 
       <img src="assets/logo.png" alt="Next Level Logo" class="logo" />
 
-      <h1>
-        Next Level
-      </h1>
+      <h1>Next Level</h1>
 
     </div>
 
@@ -102,67 +78,32 @@
     <nav class="sidebar-nav">
 
       <a href="#dashboard" class="nav-item active" data-view="dashboard">
-
-        <span class="nav-icon">
-          📊
-        </span>
-
-        <span class="nav-text">
-          Dashboard
-        </span>
-
+        <span class="nav-icon">📊</span>
+        <span class="nav-text">Dashboard</span>
       </a>
 
 
       <a href="#transactions" class="nav-item" data-view="transactions">
-
-        <span class="nav-icon">
-          💰
-        </span>
-
-        <span class="nav-text">
-          Add Transaction
-        </span>
-
+        <span class="nav-icon">💰</span>
+        <span class="nav-text">Add Transaction</span>
       </a>
 
 
       <a href="#services" class="nav-item" data-view="services">
-
-        <span class="nav-icon">
-          💅
-        </span>
-
-        <span class="nav-text">
-          Services & Pricing
-        </span>
-
+        <span class="nav-icon">💅</span>
+        <span class="nav-text">Services & Pricing</span>
       </a>
 
 
       <a href="#promos" class="nav-item" data-view="promos">
-
-        <span class="nav-icon">
-          🎉
-        </span>
-
-        <span class="nav-text">
-          Promotions
-        </span>
-
+        <span class="nav-icon">🎉</span>
+        <span class="nav-text">Promotions</span>
       </a>
 
 
       <a href="#history" class="nav-item" data-view="history">
-
-        <span class="nav-icon">
-          📋
-        </span>
-
-        <span class="nav-text">
-          History
-        </span>
-
+        <span class="nav-icon">📋</span>
+        <span class="nav-text">History</span>
       </a>
 
     </nav>
@@ -171,14 +112,9 @@
     <div class="sidebar-footer">
 
       <p>
-
-        Next Level - Beauty Bar
-        &copy; 2026
-
+        Next Level - Beauty Bar &copy; 2026
         <br />
-
         Made with Love by Ganesha
-
       </p>
 
     </div>
@@ -187,22 +123,22 @@
 
 
   <!-- =========================================================
-       MOBILE OVERLAY
-       ========================================================= -->
+         MOBILE OVERLAY
+    ========================================================== -->
 
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 
   <!-- =========================================================
-       MAIN CONTENT
-       ========================================================= -->
+         MAIN CONTENT
+    ========================================================== -->
 
   <main class="main-content">
 
 
     <!-- =======================================================
-         TOP BAR
-         ======================================================= -->
+           TOP BAR
+      ======================================================== -->
 
     <header class="top-bar">
 
@@ -222,25 +158,24 @@
 
 
     <!-- =======================================================
-         PROMO BANNER
-         ======================================================= -->
+           PROMO BANNER
+      ======================================================== -->
 
     <div class="promo-banner" id="promoBanner" style="display: none"></div>
 
 
     <!-- =======================================================
-         DASHBOARD VIEW
-         ======================================================= -->
+           DASHBOARD VIEW
+      ======================================================== -->
 
     <div class="view active" id="view-dashboard">
-
 
       <div id="dashboardExport">
 
 
         <!-- ===================================================
-             SUMMARY CARDS
-             =================================================== -->
+               SUMMARY CARDS
+          ==================================================== -->
 
         <div class="summary-cards">
 
@@ -275,39 +210,9 @@
           </div>
 
 
-          <!-- THIS WEEK -->
+          <!-- MONTH -->
 
           <div class="card summary-card card-purple">
-
-            <div class="card-icon">
-              📈
-            </div>
-
-
-            <div class="card-info">
-
-              <span class="card-label" id="weekCardLabel">
-                This Week
-              </span>
-
-
-              <span class="card-value" id="weekRevenue">
-                Rp 0
-              </span>
-
-
-              <span class="card-sub" id="weekCount">
-                0 transactions
-              </span>
-
-            </div>
-
-          </div>
-
-
-          <!-- THIS MONTH -->
-
-          <div class="card summary-card card-blue">
 
             <div class="card-icon">
               📅
@@ -335,9 +240,9 @@
           </div>
 
 
-          <!-- THIS YEAR -->
+          <!-- YEAR -->
 
-          <div class="card summary-card card-teal">
+          <div class="card summary-card card-blue">
 
             <div class="card-icon">
               📆
@@ -377,7 +282,7 @@
             <div class="card-info">
 
               <span class="card-label">
-                Selected Period
+                Total Transactions
               </span>
 
 
@@ -398,8 +303,8 @@
 
 
         <!-- ===================================================
-             DASHBOARD FILTER
-             =================================================== -->
+               DASHBOARD FILTER
+          ==================================================== -->
 
         <div class="chart-filter">
 
@@ -416,22 +321,30 @@
           </button>
 
 
+          <!-- WEEKLY -->
+
           <button type="button" class="filter-btn" data-filter="weekly">
             Weekly
           </button>
 
+
+          <!-- MONTHLY -->
 
           <button type="button" class="filter-btn active" data-filter="monthly">
             Monthly
           </button>
 
 
+          <!-- YEARLY -->
+
           <button type="button" class="filter-btn" data-filter="yearly">
             Yearly
           </button>
 
 
-          <!-- CHART TYPE -->
+          <!-- =================================================
+                 CHART TYPE
+            ================================================== -->
 
           <span class="filter-label filter-spacer">
             Type:
@@ -448,7 +361,9 @@
           </button>
 
 
-          <!-- METRIC -->
+          <!-- =================================================
+                 METRIC
+            ================================================== -->
 
           <span class="filter-label filter-spacer">
             Metric:
@@ -468,7 +383,9 @@
           </select>
 
 
-          <!-- BRANCH -->
+          <!-- =================================================
+                 BRANCH
+            ================================================== -->
 
           <span class="filter-label filter-spacer">
             Branch:
@@ -503,13 +420,13 @@
 
 
         <!-- ===================================================
-             CHART ROW
-             =================================================== -->
+               CHART ROW
+          ==================================================== -->
 
         <div class="charts-grid">
 
 
-          <!-- REVENUE TREND -->
+          <!-- REVENUE / TRANSACTION TREND -->
 
           <div class="card chart-card">
 
@@ -548,8 +465,8 @@
 
 
         <!-- ===================================================
-             SERVICE COMPARISON
-             =================================================== -->
+               SERVICE COMPARISON
+          ==================================================== -->
 
         <div class="card chart-card">
 
@@ -572,8 +489,8 @@
 
 
     <!-- =======================================================
-         TRANSACTIONS
-         ======================================================= -->
+           TRANSACTIONS
+      ======================================================== -->
 
     <div class="view" id="view-transactions">
 
@@ -591,16 +508,12 @@
 
           <div class="form-row">
 
+
             <div class="form-group">
 
               <label for="txnBranch">
-
                 Branch
-
-                <span class="required">
-                  *
-                </span>
-
+                <span class="required">*</span>
               </label>
 
 
@@ -630,13 +543,8 @@
             <div class="form-group">
 
               <label for="txnService">
-
                 Service
-
-                <span class="required">
-                  *
-                </span>
-
+                <span class="required">*</span>
               </label>
 
 
@@ -657,16 +565,12 @@
 
           <div class="form-row">
 
+
             <div class="form-group">
 
               <label for="txnPrice">
-
                 Treatment Total (Rp)
-
-                <span class="required">
-                  *
-                </span>
-
+                <span class="required">*</span>
               </label>
 
 
@@ -678,13 +582,8 @@
             <div class="form-group">
 
               <label for="txnTime">
-
                 Treatment Time
-
-                <span class="required">
-                  *
-                </span>
-
+                <span class="required">*</span>
               </label>
 
 
@@ -699,16 +598,12 @@
 
           <div class="form-row">
 
+
             <div class="form-group">
 
               <label for="txnDate">
-
                 Date
-
-                <span class="required">
-                  *
-                </span>
-
+                <span class="required">*</span>
               </label>
 
 
@@ -720,13 +615,10 @@
             <div class="form-group">
 
               <label for="txnDP">
-
                 Down Payment / DP
-
                 <span class="text-muted">
                   (Optional)
                 </span>
-
               </label>
 
 
@@ -744,13 +636,10 @@
             <div class="form-group">
 
               <label for="txnPromo">
-
                 Promotion
-
                 <span class="text-muted">
                   (Optional)
                 </span>
-
               </label>
 
 
@@ -777,6 +666,7 @@
 
 
             <div class="payment-summary-list">
+
 
               <div class="payment-row">
 
@@ -836,11 +726,9 @@
               <div class="payment-row payment-final">
 
                 <span>
-
                   <strong>
                     Remaining Balance Due
                   </strong>
-
                 </span>
 
 
@@ -907,8 +795,8 @@
 
 
     <!-- =======================================================
-         SERVICES
-         ======================================================= -->
+           SERVICES
+      ======================================================== -->
 
     <div class="view" id="view-services">
 
@@ -923,16 +811,12 @@
 
           <div class="form-row form-row-inline">
 
+
             <div class="form-group">
 
               <label for="svcName">
-
                 Service Name
-
-                <span class="required">
-                  *
-                </span>
-
+                <span class="required">*</span>
               </label>
 
 
@@ -944,13 +828,8 @@
             <div class="form-group">
 
               <label for="svcPrice">
-
                 Price (Rp)
-
-                <span class="required">
-                  *
-                </span>
-
+                <span class="required">*</span>
               </label>
 
 
@@ -961,9 +840,7 @@
 
             <div class="form-group form-group-btn">
 
-              <label>
-                &nbsp;
-              </label>
+              <label>&nbsp;</label>
 
 
               <button type="submit" class="btn btn-primary" id="svcSubmitBtn">
@@ -1000,8 +877,8 @@
 
 
     <!-- =======================================================
-         PROMOS
-         ======================================================= -->
+           PROMOS
+      ======================================================== -->
 
     <div class="view" id="view-promos">
 
@@ -1014,18 +891,15 @@
 
         <form id="promoForm" class="form" autocomplete="off">
 
+
           <div class="form-row">
+
 
             <div class="form-group">
 
               <label for="promoName">
-
                 Promotion Name
-
-                <span class="required">
-                  *
-                </span>
-
+                <span class="required">*</span>
               </label>
 
 
@@ -1037,13 +911,8 @@
             <div class="form-group">
 
               <label for="promoDiscount">
-
                 Discount (%)
-
-                <span class="required">
-                  *
-                </span>
-
+                <span class="required">*</span>
               </label>
 
 
@@ -1056,16 +925,12 @@
 
           <div class="form-row">
 
+
             <div class="form-group">
 
               <label for="promoStart">
-
                 Start Date
-
-                <span class="required">
-                  *
-                </span>
-
+                <span class="required">*</span>
               </label>
 
 
@@ -1077,13 +942,8 @@
             <div class="form-group">
 
               <label for="promoEnd">
-
                 End Date
-
-                <span class="required">
-                  *
-                </span>
-
+                <span class="required">*</span>
               </label>
 
 
@@ -1140,8 +1000,8 @@
 
 
     <!-- =======================================================
-         HISTORY
-         ======================================================= -->
+           HISTORY
+      ======================================================== -->
 
     <div class="view" id="view-history">
 
@@ -1165,6 +1025,7 @@
         <!-- FILTERS -->
 
         <div class="history-filters">
+
 
           <div class="form-group">
 
@@ -1256,15 +1117,15 @@
 
 
   <!-- =========================================================
-       TOAST
-       ========================================================= -->
+         TOAST
+    ========================================================== -->
 
   <div class="toast" id="toast"></div>
 
 
   <!-- =========================================================
-       SCRIPTS
-       ========================================================= -->
+         SCRIPTS
+    ========================================================== -->
 
   <script src="js/config.js"></script>
 
@@ -1279,7 +1140,6 @@
   <script src="js/promos.js"></script>
 
   <script src="js/app.js"></script>
-
 
 </body>
 
