@@ -1252,13 +1252,17 @@ const Dashboard = (() => {
 
 
   /* ============================================================
-     WEEKLY RANGE
-     1-7
-     8-14
-     15-21
-     22-28
-     29-END
-     ============================================================ */
+   WEEKLY RANGE
+
+   THIS WEEK = 7 HARI TERAKHIR
+   TERMASUK HARI INI.
+
+   Contoh:
+   29 Aug 2026
+
+   Start = 23 Aug 2026
+   End   = 29 Aug 2026
+   ============================================================ */
 
   function getCurrentWeekRange(
     date,
@@ -1270,87 +1274,87 @@ const Dashboard = (() => {
       );
 
 
-    const day =
-      current.getDate();
-
-
-    let startDay = 1;
-
+    /* ==========================================================
+       INVALID DATE SAFETY
+       ========================================================== */
 
     if (
-      day <= 7
+      Number.isNaN(
+        current.getTime(),
+      )
     ) {
 
-      startDay = 1;
+      return {
 
-    } else if (
-      day <= 14
-    ) {
+        start:
+          date,
 
-      startDay = 8;
+        end:
+          date,
 
-    } else if (
-      day <= 21
-    ) {
-
-      startDay = 15;
-
-    } else if (
-      day <= 28
-    ) {
-
-      startDay = 22;
-
-    } else {
-
-      startDay = 29;
+      };
 
     }
 
 
-    const monthLastDay =
-      new Date(
-        current.getFullYear(),
-        current.getMonth() + 1,
-        0,
-      ).getDate();
+    /* ==========================================================
+       END DATE
+       
+       = TODAY
+       ========================================================== */
 
+    const end =
+      new Date(
+        current,
+      );
+
+
+    end.setHours(
+      23,
+      59,
+      59,
+      999,
+    );
+
+
+    /* ==========================================================
+       START DATE
+       
+       = 6 HARI SEBELUM HARI INI
+       
+       Jadi total 7 hari:
+       
+       23
+       24
+       25
+       26
+       27
+       28
+       29
+       ========================================================== */
 
     const start =
       new Date(
-        current.getFullYear(),
-        current.getMonth(),
-        startDay,
+        current,
       );
 
 
-    const endDay =
-      Math.min(
-        startDay + 6,
-        monthLastDay,
-      );
+    start.setDate(
+      start.getDate() - 6,
+    );
 
 
-    let end =
-      new Date(
-        current.getFullYear(),
-        current.getMonth(),
-        endDay,
-      );
+    start.setHours(
+      0,
+      0,
+      0,
+      0,
+    );
 
 
-    if (
-      end >
-      current
-    ) {
-
-      end =
-        new Date(
-          current,
-        );
-
-    }
-
+    /* ==========================================================
+       RETURN
+       ========================================================== */
 
     return {
 
